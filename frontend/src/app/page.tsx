@@ -229,34 +229,30 @@ export default function Home() {
   return (
     <div className="flex h-screen flex-col bg-background">
       {/* Header */}
-      <header className="flex items-center justify-between border-b bg-background/95 px-4 py-2.5 backdrop-blur-sm">
-        <div className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm">
-            <BookOpen className="h-4 w-4 text-white" />
+      <header className="flex items-center justify-between border-b bg-background/80 px-3 py-2 backdrop-blur-md">
+        <div className="flex items-center gap-2">
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm">
+            <BookOpen className="h-3.5 w-3.5 text-white" />
           </div>
-          <div>
-            <h1 className="text-sm font-bold tracking-tight text-foreground">
-              PDF Reader AI
-            </h1>
-            <p className="text-[10px] leading-tight text-muted-foreground">
-              Click any word to understand it instantly
-            </p>
-          </div>
+          <span className="text-sm font-bold text-foreground">PDF Reader AI</span>
         </div>
 
-        <div className="flex items-center gap-2">
-          {user && (
-            <span className="hidden text-xs text-muted-foreground sm:inline">{user.username}</span>
-          )}
-          <SettingsPanel />
+        <div className="flex items-center gap-1.5">
           <UploadZone />
-          <button
-            onClick={logout}
-            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
-            title="Sign out"
-          >
-            <LogOut className="h-4 w-4" />
-          </button>
+          <div className="mx-1 h-4 w-px bg-border/50" />
+          <SettingsPanel />
+          {user && (
+            <div className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground">
+              <span className="hidden sm:inline max-w-[80px] truncate">{user.username}</span>
+              <button
+                onClick={logout}
+                className="ml-0.5 rounded p-0.5 text-muted-foreground/60 hover:text-red-500 transition-colors"
+                title="Sign out"
+              >
+                <LogOut className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
