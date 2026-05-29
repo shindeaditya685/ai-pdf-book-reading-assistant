@@ -52,6 +52,8 @@ export default function Home() {
     clearHistory,
     setPdfDataUrl,
     setPdfFileName,
+    setOcrText,
+    clearOcrText,
   } = usePDFStore()
 
   const dataLoadedRef = useRef<string | null>(null)
@@ -137,14 +139,22 @@ export default function Home() {
         if (!res.ok) return
         const pdf = await res.json()
         if (pdf?.content) {
+          clearOcrText()
           setPdfFileName(fileName)
           setPdfDataUrl(pdf.content)
+
+          // Restore OCR data if available
+          if (pdf.ocrText) {
+            for (const [page, data] of Object.entries(pdf.ocrText)) {
+              setOcrText(Number(page), data as any)
+            }
+          }
         }
       } catch {
         // Not available
       }
     },
-    [setPdfFileName, setPdfDataUrl]
+    [setPdfFileName, setPdfDataUrl, clearOcrText, setOcrText]
   )
 
   // Keyboard shortcuts

@@ -54,6 +54,21 @@ export interface Bookmark {
   pdfFileName: string
 }
 
+export interface OcrWord {
+  text: string
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export interface OcrPageData {
+  text: string
+  words: OcrWord[]
+  width: number
+  height: number
+}
+
 export interface SearchResult {
   pageNumber: number
   text: string
@@ -104,6 +119,12 @@ interface PDFState {
   // Recent PDFs
   recentPdfs: RecentPdf[]
 
+  // OCR state
+  ocrEnabled: boolean
+  ocrText: Record<number, OcrPageData>
+  isOcrProcessing: boolean
+  ocrProgress: number
+
   // UI panels
   showHistory: boolean
   showBookmarks: boolean
@@ -150,6 +171,13 @@ interface PDFState {
   goToNextSearchResult: () => void
   goToPrevSearchResult: () => void
 
+  // OCR actions
+  setOcrEnabled: (enabled: boolean) => void
+  setOcrText: (page: number, data: OcrPageData) => void
+  clearOcrText: () => void
+  setIsOcrProcessing: (processing: boolean) => void
+  setOcrProgress: (progress: number) => void
+
   // Panel actions
   setShowHistory: (show: boolean) => void
   toggleHistory: () => void
@@ -187,6 +215,11 @@ export const usePDFStore = create<PDFState>()(
       searchResults: [],
       currentSearchIndex: -1,
       isSearching: false,
+      ocrEnabled: false,
+      ocrText: {},
+      isOcrProcessing: false,
+      ocrProgress: 0,
+
       showHistory: false,
       showBookmarks: false,
       showSearch: false,
@@ -246,6 +279,10 @@ export const usePDFStore = create<PDFState>()(
           currentSearchIndex: -1,
           isSearching: false,
           showSearch: false,
+          ocrEnabled: false,
+          ocrText: {},
+          isOcrProcessing: false,
+          ocrProgress: 0,
         }),
 
       addToHistory: (entry) =>
@@ -305,5 +342,12 @@ export const usePDFStore = create<PDFState>()(
       toggleBookmarks: () => set((s) => ({ showBookmarks: !s.showBookmarks })),
       setShowSearch: (show) => set({ showSearch: show }),
       toggleSearch: () => set((s) => ({ showSearch: !s.showSearch })),
+
+      setOcrEnabled: (enabled) => set({ ocrEnabled: enabled }),
+      setOcrText: (page, data) =>
+        set((s) => ({ ocrText: { ...s.ocrText, [page]: data } })),
+      clearOcrText: () => set({ ocrText: {} }),
+      setIsOcrProcessing: (processing) => set({ isOcrProcessing: processing }),
+      setOcrProgress: (progress) => set({ ocrProgress: progress }),
   })
 )

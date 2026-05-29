@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
+import { createWorker } from 'tesseract.js'
 import { usePDFStore } from '@/store/use-pdf-store'
 import {
   ChevronLeft,
@@ -12,8 +13,10 @@ import {
   Search,
   Bookmark,
   Clock,
+  Scan,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { SearchBar } from '@/components/search-bar'
 
 // Set worker source
@@ -27,6 +30,7 @@ export function PDFViewer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null)
   const pageTextCacheRef = useRef<Map<number, string>>(new Map())
+  const ocrCancelledRef = useRef(false)
 
   const {
     pdfDataUrl,
@@ -51,6 +55,13 @@ export function PDFViewer() {
     toggleSearch,
     toggleHistory,
     toggleBookmarks,
+    ocrEnabled,
+    ocrText,
+    setOcrText,
+    isOcrProcessing,
+    setIsOcrProcessing,
+    ocrProgress,
+    setOcrProgress,
   } = usePDFStore()
 
   const [isLoading, setIsLoading] = useState(false)
@@ -88,6 +99,11 @@ export function PDFViewer() {
   const getPageText = useCallback(async (pageNum: number): Promise<string> => {
     const cached = pageTextCacheRef.current.get(pageNum)
     if (cached) return cached
+    const pageOcrData = ocrText[pageNum]
+    if (pageOcrData) {
+      pageTextCacheRef.current.set(pageNum, pageOcrData.text)
+      return pageOcrData.text
+    }
     const pdf = pdfDocRef.current
     if (!pdf) return ''
     try {
@@ -102,7 +118,7 @@ export function PDFViewer() {
     } catch {
       return ''
     }
-  }, [])
+  }, [ocrText])
 
   // Render page
   const renderPage = useCallback(async () => {
@@ -129,49 +145,81 @@ export function PDFViewer() {
       renderTaskRef.current = renderTask
       await renderTask.promise
 
-      // Text layer
-      const textContent = await page.getTextContent()
+      // Build text layer
       const textLayer = textLayerRef.current
+      const pageOcrData = ocrText[currentPage]
+      const textContent = await page.getTextContent()
+      const pageText = pageOcrData
+        ? pageOcrData.text
+        : textContent.items
+            .filter((item): item is { str: string } => 'str' in item)
+            .map((item) => item.str)
+            .join(' ')
+      pageTextCacheRef.current.set(currentPage, pageText)
+
       if (textLayer) {
         textLayer.innerHTML = ''
         textLayer.className = 'pdf-text-layer'
         textLayer.style.width = `${viewport.width}px`
         textLayer.style.height = `${viewport.height}px`
 
-        textContent.items.forEach((item) => {
-          if (!('str' in item) || !item.str) return
-          const tx = pdfjsLib.Util.transform(viewport.transform, item.transform)
-          const fontSize = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3])
-          const span = document.createElement('span')
-          span.textContent = item.str
-          span.style.position = 'absolute'
-          span.style.left = `${tx[4]}px`
-          span.style.top = `${tx[5] - fontSize}px`
-          span.style.fontSize = `${fontSize}px`
-          span.style.fontFamily = 'sans-serif'
-          span.style.transformOrigin = '0% 0%'
+        if (pageOcrData && pageOcrData.words.length > 0) {
+          const scaleX = viewport.width / pageOcrData.width
+          const scaleY = viewport.height / pageOcrData.height
+          pageOcrData.words.forEach((word) => {
+            if (!word.text) return
+            const fontSize = Math.min(word.height * scaleY * 0.85, 30)
+            const span = document.createElement('span')
+            span.textContent = word.text
+            span.style.position = 'absolute'
+            span.style.left = `${word.x * scaleX}px`
+            span.style.top = `${word.y * scaleY}px`
+            span.style.fontSize = `${fontSize}px`
+            span.style.fontFamily = 'sans-serif'
+            span.style.transformOrigin = '0% 0%'
 
-          // Highlight search matches
-          if (searchQuery && item.str.toLowerCase().includes(searchQuery.toLowerCase())) {
-            const highlight = document.createElement('mark')
-            highlight.className = 'pdf-search-highlight'
-            if (searchResults[currentSearchIndex]?.text === item.str) {
-              highlight.classList.add('pdf-search-highlight-current')
+            if (searchQuery && word.text.toLowerCase().includes(searchQuery.toLowerCase())) {
+              const highlight = document.createElement('mark')
+              highlight.className = 'pdf-search-highlight'
+              if (searchResults[currentSearchIndex]?.text === word.text) {
+                highlight.classList.add('pdf-search-highlight-current')
+              }
+              highlight.textContent = word.text
+              span.textContent = ''
+              span.appendChild(highlight)
             }
-            highlight.textContent = item.str
-            span.textContent = ''
-            span.appendChild(highlight)
-          }
 
-          textLayer.appendChild(span)
-        })
+            textLayer.appendChild(span)
+          })
+        } else {
+          textContent.items.forEach((item) => {
+            if (!('str' in item) || !item.str) return
+            const tx = pdfjsLib.Util.transform(viewport.transform, item.transform)
+            const fontSize = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3])
+            const span = document.createElement('span')
+            span.textContent = item.str
+            span.style.position = 'absolute'
+            span.style.left = `${tx[4]}px`
+            span.style.top = `${tx[5] - fontSize}px`
+            span.style.fontSize = `${fontSize}px`
+            span.style.fontFamily = 'sans-serif'
+            span.style.transformOrigin = '0% 0%'
+
+            if (searchQuery && item.str.toLowerCase().includes(searchQuery.toLowerCase())) {
+              const highlight = document.createElement('mark')
+              highlight.className = 'pdf-search-highlight'
+              if (searchResults[currentSearchIndex]?.text === item.str) {
+                highlight.classList.add('pdf-search-highlight-current')
+              }
+              highlight.textContent = item.str
+              span.textContent = ''
+              span.appendChild(highlight)
+            }
+
+            textLayer.appendChild(span)
+          })
+        }
       }
-
-      const pageText = textContent.items
-        .filter((item): item is { str: string } => 'str' in item)
-        .map((item) => item.str)
-        .join(' ')
-      pageTextCacheRef.current.set(currentPage, pageText)
     } catch (err: unknown) {
       if (err instanceof Error && err.name !== 'RenderingCancelledException') {
         console.error('Error rendering page:', err)
@@ -184,6 +232,98 @@ export function PDFViewer() {
   useEffect(() => {
     if (pdfDocRef.current) renderPage()
   }, [renderPage])
+
+  // OCR processing
+  useEffect(() => {
+    const pdf = pdfDocRef.current
+    if (!ocrEnabled || !pdf || totalPages === 0) return
+
+    ocrCancelledRef.current = false
+    setIsOcrProcessing(true)
+    setOcrProgress(0)
+
+    const runOcr = async () => {
+      let worker: Awaited<ReturnType<typeof createWorker>> | null = null
+      const ocrCanvas = document.createElement('canvas')
+      try {
+        worker = await createWorker('eng')
+
+        for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
+          if (ocrCancelledRef.current) break
+
+          try {
+            const page = await pdf.getPage(pageNum)
+            const viewport = page.getViewport({ scale: 2 })
+            ocrCanvas.width = viewport.width
+            ocrCanvas.height = viewport.height
+            const ctx = ocrCanvas.getContext('2d')
+            if (!ctx) continue
+
+            await page.render({ canvasContext: ctx, viewport }).promise
+
+            const blob = await new Promise<Blob | null>((resolve) =>
+              ocrCanvas.toBlob(resolve, 'image/png')
+            )
+            if (!blob) continue
+
+            const { data } = await worker.recognize(blob)
+            const words = data.words
+              .filter((w) => w.text.trim())
+              .map((w) => ({
+                text: w.text.trim(),
+                x: w.bbox.x0,
+                y: w.bbox.y0,
+                width: w.bbox.x1 - w.bbox.x0,
+                height: w.bbox.y1 - w.bbox.y0,
+              }))
+
+            setOcrText(pageNum, {
+              text: data.text,
+              words,
+              width: viewport.width,
+              height: viewport.height,
+            })
+          } catch {
+            // skip failed page
+          }
+
+          setOcrProgress(Math.round((pageNum / totalPages) * 100))
+        }
+
+        // Save OCR results to MongoDB
+        if (!ocrCancelledRef.current) {
+          const store = usePDFStore.getState()
+          const fileName = store.pdfFileName
+          if (fileName) {
+            const allOcrText: Record<string, { text: string; words: { text: string; x: number; y: number; width: number; height: number }[]; width: number; height: number }> = {}
+            const state = usePDFStore.getState()
+            for (const [page, data] of Object.entries(state.ocrText)) {
+              allOcrText[page] = data
+            }
+            fetch('/api/db/pdf', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fileName, ocrText: allOcrText }),
+            }).catch(() => {})
+          }
+        }
+      } catch {
+        // OCR failed
+      } finally {
+        if (worker) await worker.terminate()
+        if (!ocrCancelledRef.current) {
+          setIsOcrProcessing(false)
+          setOcrProgress(100)
+        }
+      }
+    }
+
+    runOcr()
+
+    return () => {
+      ocrCancelledRef.current = true
+    }
+  }, [ocrEnabled, totalPages, setOcrText, setIsOcrProcessing, setOcrProgress])
 
   const extractSentence = useCallback((text: string, word: string): string => {
     const sentences = text.match(/[^.!?\n]+[.!?]+/g) || [text]
@@ -363,6 +503,14 @@ export function PDFViewer() {
         </div>
       </div>
 
+      {(isOcrProcessing || ocrProgress > 0 && ocrProgress < 100) && (
+        <div className="flex items-center justify-center gap-2 border-b px-3 py-1">
+          <Scan className="h-3 w-3 animate-pulse text-emerald-500" />
+          <span className="text-[10px] text-muted-foreground">OCR in progress...</span>
+          <Progress value={ocrProgress} className="h-1 w-20" />
+          <span className="text-[10px] text-muted-foreground">{ocrProgress}%</span>
+        </div>
+      )}
       <div ref={containerRef} className="pdf-scroll-container relative flex-1 overflow-auto bg-muted/30 dark:bg-muted/10" onClick={handleContainerClick} onMouseUp={handleMouseUp}>
         {isLoading && (
           <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-sm">

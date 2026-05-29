@@ -57,3 +57,25 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false })
   }
 }
+
+export async function PATCH(request: Request) {
+  const conn = await connectToDatabase()
+  if (!conn) return NextResponse.json({ success: false })
+
+  try {
+    const body = await request.json()
+    const { fileName, ocrText } = body
+    if (!fileName) return NextResponse.json({ success: false })
+
+    const existing = await conn.db.collection('pdfs').findOne({ fileName })
+    if (!existing) return NextResponse.json({ success: false })
+
+    await conn.db.collection('pdfs').updateOne(
+      { _id: existing._id },
+      { $set: { ocrText: ocrText || {}, updatedAt: new Date() } }
+    )
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ success: false })
+  }
+}
