@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import {
   MousePointer,
   Highlighter,
@@ -15,22 +15,23 @@ import { usePDFStore } from '@/store/use-pdf-store'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 
-// Pastel selection highlights
 const HIGHLIGHT_COLORS = [
-  { value: 'rgba(254, 240, 138, 0.45)', label: 'Yellow', tailwind: 'bg-yellow-200' },
-  { value: 'rgba(187, 247, 208, 0.45)', label: 'Green', tailwind: 'bg-green-200' },
-  { value: 'rgba(251, 207, 232, 0.45)', label: 'Pink', tailwind: 'bg-pink-200' },
-  { value: 'rgba(191, 219, 254, 0.45)', label: 'Blue', tailwind: 'bg-blue-200' },
+  { value: 'rgba(254, 240, 138, 0.45)', label: 'Yellow', tailwind: 'bg-yellow-300 border-yellow-400' },
+  { value: 'rgba(187, 247, 208, 0.45)', label: 'Green',  tailwind: 'bg-green-300 border-green-400' },
+  { value: 'rgba(251, 207, 232, 0.45)', label: 'Pink',   tailwind: 'bg-pink-300 border-pink-400' },
+  { value: 'rgba(191, 219, 254, 0.45)', label: 'Blue',   tailwind: 'bg-blue-300 border-blue-400' },
 ]
 
-// Drawing pen colors
 const PEN_COLORS = [
-  { value: '#EF4444', tailwind: 'bg-red-500', label: 'Red' },
-  { value: '#3B82F6', tailwind: 'bg-blue-500', label: 'Blue' },
+  { value: '#EF4444', tailwind: 'bg-red-500',     label: 'Red' },
+  { value: '#3B82F6', tailwind: 'bg-blue-500',    label: 'Blue' },
   { value: '#10B981', tailwind: 'bg-emerald-500', label: 'Green' },
-  { value: '#F59E0B', tailwind: 'bg-amber-500', label: 'Yellow' },
-  { value: '#8B5CF6', tailwind: 'bg-purple-500', label: 'Purple' },
+  { value: '#F59E0B', tailwind: 'bg-amber-500',   label: 'Yellow' },
+  { value: '#8B5CF6', tailwind: 'bg-purple-500',  label: 'Purple' },
+  { value: '#1F2937', tailwind: 'bg-gray-800',    label: 'Black' },
 ]
+
+type OpenPanel = 'highlight' | 'pen' | null
 
 export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
   const {
@@ -46,186 +47,259 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
   } = usePDFStore()
 
   const [isMinimized, setIsMinimized] = useState(false)
+  const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
+  const toolbarRef = useRef<HTMLDivElement>(null)
+
+  // Close panel when clicking outside the toolbar
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (toolbarRef.current && !toolbarRef.current.contains(e.target as Node)) {
+        setOpenPanel(null)
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside)
+    return () => document.removeEventListener('mousedown', handleClickOutside)
+  }, [])
+
+  const togglePanel = (panel: OpenPanel) => {
+    setOpenPanel((prev) => (prev === panel ? null : panel))
+  }
 
   if (!pdfFileName) return null
 
   return (
-    <div className="absolute left-4 top-1/2 z-40 -translate-y-1/2 flex items-center gap-2 pointer-events-auto select-none">
-      {/* Toggle Button */}
-      <Button
-        variant="outline"
-        size="icon"
-        className="h-6 w-6 rounded-full bg-background/95 shadow-md border hover:bg-muted"
-        onClick={() => setIsMinimized(!isMinimized)}
-        title={isMinimized ? "Show Toolbar" : "Hide Toolbar"}
-      >
-        {isMinimized ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
-      </Button>
+    <div
+      ref={toolbarRef}
+      className="absolute left-3 top-1/2 z-40 -translate-y-1/2 flex items-start gap-2 pointer-events-auto select-none"
+    >
+      {/* Collapse Toggle */}
+      <div className="flex flex-col items-center gap-1 mt-1">
+        <Button
+          variant="outline"
+          size="icon"
+          className="h-6 w-6 rounded-full bg-background/95 shadow-md border hover:bg-muted"
+          onClick={() => { setIsMinimized(!isMinimized); setOpenPanel(null) }}
+          title={isMinimized ? 'Show Toolbar' : 'Hide Toolbar'}
+        >
+          {isMinimized ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+        </Button>
+      </div>
 
       <AnimatePresence>
         {!isMinimized && (
           <motion.div
-            initial={{ opacity: 0, x: -20, scale: 0.95 }}
+            initial={{ opacity: 0, x: -16, scale: 0.95 }}
             animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -20, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="flex flex-col gap-2 rounded-2xl border border-border/80 bg-background/90 p-2 shadow-2xl backdrop-blur-md"
+            exit={{ opacity: 0, x: -16, scale: 0.95 }}
+            transition={{ duration: 0.18 }}
+            className="flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md"
           >
-            {/* 1. SELECT MODE */}
-            <Button
-              variant={annotationMode === 'select' ? 'default' : 'ghost'}
-              size="icon"
-              className={`h-9 w-9 rounded-xl transition-all ${
-                annotationMode === 'select'
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md'
-                  : 'text-muted-foreground hover:bg-muted/80'
-              }`}
-              onClick={() => setAnnotationMode('select')}
-              title="Text Selection / Dictionary Mode"
+            {/* ── 1. SELECT ── */}
+            <ToolBtn
+              active={annotationMode === 'select'}
+              onClick={() => { setAnnotationMode('select'); setOpenPanel(null) }}
+              title="Select / Dictionary Mode"
             >
               <MousePointer className="h-4 w-4" />
-            </Button>
+            </ToolBtn>
 
-            {/* 2. HIGHLIGHT MODE */}
-            <div className="relative group">
-              <Button
-                variant={annotationMode === 'highlight' ? 'default' : 'ghost'}
-                size="icon"
-                className={`h-9 w-9 rounded-xl transition-all ${
-                  annotationMode === 'highlight'
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md'
-                    : 'text-muted-foreground hover:bg-muted/80'
-                }`}
-                onClick={() => setAnnotationMode('highlight')}
-                title="Highlight Mode"
+            {/* ── 2. HIGHLIGHT ── */}
+            <div className="relative">
+              <ToolBtn
+                active={annotationMode === 'highlight'}
+                panelOpen={openPanel === 'highlight'}
+                onClick={() => {
+                  setAnnotationMode('highlight')
+                  togglePanel('highlight')
+                }}
+                title="Highlight (click for colours)"
               >
                 <Highlighter className="h-4 w-4" />
-              </Button>
+              </ToolBtn>
 
-              {/* Color choices on hover */}
-              <div className="absolute left-12 top-0 hidden group-hover:flex items-center gap-1.5 rounded-xl border bg-background/95 p-1.5 shadow-lg backdrop-blur-md">
-                {HIGHLIGHT_COLORS.map((color) => {
-                  const isActive = highlightColor === color.value
-                  return (
-                    <button
-                      key={color.value}
-                      onClick={() => {
-                        setHighlightColor(color.value)
-                        setAnnotationMode('highlight')
-                      }}
-                      className={`h-5 w-5 rounded-full ${
-                        color.tailwind
-                      } transition-all hover:scale-125 border ${
-                        isActive ? 'ring-2 ring-emerald-500 border-white' : 'border-border'
-                      }`}
-                      title={color.label}
-                    />
-                  )
-                })}
-              </div>
+              <AnimatePresence>
+                {openPanel === 'highlight' && (
+                  <Popover>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
+                      Highlight colour
+                    </p>
+                    <div className="flex gap-2">
+                      {HIGHLIGHT_COLORS.map((c) => (
+                        <ColorSwatch
+                          key={c.value}
+                          tailwind={c.tailwind}
+                          label={c.label}
+                          active={highlightColor === c.value}
+                          onClick={() => {
+                            setHighlightColor(c.value)
+                            setAnnotationMode('highlight')
+                            setOpenPanel(null)
+                          }}
+                        />
+                      ))}
+                    </div>
+                  </Popover>
+                )}
+              </AnimatePresence>
             </div>
 
-            {/* 3. PEN MODE */}
-            <div className="relative group">
-              <Button
-                variant={annotationMode === 'pen' ? 'default' : 'ghost'}
-                size="icon"
-                className={`h-9 w-9 rounded-xl transition-all ${
-                  annotationMode === 'pen'
-                    ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md'
-                    : 'text-muted-foreground hover:bg-muted/80'
-                }`}
-                onClick={() => setAnnotationMode('pen')}
-                title="Freehand Drawing Pen"
+            {/* ── 3. PEN ── */}
+            <div className="relative">
+              <ToolBtn
+                active={annotationMode === 'pen'}
+                panelOpen={openPanel === 'pen'}
+                onClick={() => {
+                  setAnnotationMode('pen')
+                  togglePanel('pen')
+                }}
+                title="Freehand Pen (click for options)"
               >
                 <PenTool className="h-4 w-4" />
-              </Button>
+              </ToolBtn>
 
-              {/* Color & Size adjustments on hover */}
-              <div className="absolute left-12 top-0 hidden group-hover:flex flex-col gap-2 rounded-xl border bg-background/95 p-2.5 shadow-lg backdrop-blur-md w-36">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Pen Color</span>
-                <div className="flex gap-1.5">
-                  {PEN_COLORS.map((color) => {
-                    const isActive = penColor === color.value
-                    return (
-                      <button
-                        key={color.value}
-                        onClick={() => {
-                          setPenColor(color.value)
-                          setAnnotationMode('pen')
-                        }}
-                        className={`h-4.5 w-4.5 rounded-full ${
-                          color.tailwind
-                        } transition-all hover:scale-125 border ${
-                          isActive ? 'ring-2 ring-emerald-500 border-white' : 'border-border'
-                        }`}
-                        title={color.label}
+              <AnimatePresence>
+                {openPanel === 'pen' && (
+                  <Popover wide>
+                    <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
+                      Pen colour
+                    </p>
+                    <div className="flex flex-wrap gap-2 mb-3">
+                      {PEN_COLORS.map((c) => (
+                        <ColorSwatch
+                          key={c.value}
+                          tailwind={c.tailwind}
+                          label={c.label}
+                          active={penColor === c.value}
+                          onClick={() => {
+                            setPenColor(c.value)
+                            setAnnotationMode('pen')
+                          }}
+                        />
+                      ))}
+                    </div>
+                    <div className="border-t border-border pt-2">
+                      <div className="flex items-center justify-between mb-1.5">
+                        <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground">
+                          Thickness
+                        </p>
+                        <span className="text-[10px] font-semibold text-emerald-500">{penWidth}px</span>
+                      </div>
+                      <input
+                        type="range"
+                        min={1}
+                        max={12}
+                        value={penWidth}
+                        onChange={(e) => setPenWidth(Number(e.target.value))}
+                        className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-emerald-500 bg-muted"
                       />
-                    )
-                  })}
-                </div>
-                <div className="border-t border-border my-1" />
-                <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Thickness: {penWidth}px
-                  </span>
-                </div>
-                <input
-                  type="range"
-                  min={1}
-                  max={10}
-                  value={penWidth}
-                  onChange={(e) => setPenWidth(Number(e.target.value))}
-                  className="w-full h-1 bg-muted rounded-lg appearance-none cursor-pointer accent-emerald-500"
-                />
-              </div>
+                    </div>
+                  </Popover>
+                )}
+              </AnimatePresence>
             </div>
 
-            {/* 4. ERASER MODE */}
-            <Button
-              variant={annotationMode === 'eraser' ? 'default' : 'ghost'}
-              size="icon"
-              className={`h-9 w-9 rounded-xl transition-all ${
-                annotationMode === 'eraser'
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md'
-                  : 'text-muted-foreground hover:bg-muted/80'
-              }`}
-              onClick={() => setAnnotationMode('eraser')}
-              title="Eraser (Drawings)"
+            {/* ── 4. ERASER ── */}
+            <ToolBtn
+              active={annotationMode === 'eraser'}
+              onClick={() => { setAnnotationMode('eraser'); setOpenPanel(null) }}
+              title="Eraser"
             >
               <Eraser className="h-4 w-4" />
-            </Button>
+            </ToolBtn>
 
-            {/* 5. STICKY NOTE MODE */}
-            <Button
-              variant={annotationMode === 'note' ? 'default' : 'ghost'}
-              size="icon"
-              className={`h-9 w-9 rounded-xl transition-all ${
-                annotationMode === 'note'
-                  ? 'bg-emerald-600 text-white hover:bg-emerald-700 shadow-md'
-                  : 'text-muted-foreground hover:bg-muted/80'
-              }`}
-              onClick={() => setAnnotationMode('note')}
-              title="Add Sticky Note Comment"
+            {/* ── 5. STICKY NOTE ── */}
+            <ToolBtn
+              active={annotationMode === 'note'}
+              onClick={() => { setAnnotationMode('note'); setOpenPanel(null) }}
+              title="Add Sticky Note"
             >
               <MessageSquarePlus className="h-4 w-4" />
-            </Button>
+            </ToolBtn>
 
-            <div className="border-t border-border/80 my-1" />
+            <div className="my-0.5 border-t border-border/60" />
 
-            {/* 6. CLEAR ALL ANNOTATIONS */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-9 w-9 rounded-xl text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600 transition-all active:scale-95"
-              onClick={onClearAll}
+            {/* ── 6. CLEAR ALL ── */}
+            <button
+              onClick={() => { onClearAll(); setOpenPanel(null) }}
               title="Clear all page annotations"
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-all active:scale-90"
             >
               <Trash2 className="h-4 w-4" />
-            </Button>
+            </button>
           </motion.div>
         )}
       </AnimatePresence>
     </div>
+  )
+}
+
+/* ─── Small shared sub-components ─────────────────────────────── */
+
+function ToolBtn({
+  active,
+  panelOpen,
+  onClick,
+  title,
+  children,
+}: {
+  active: boolean
+  panelOpen?: boolean
+  onClick: () => void
+  title: string
+  children: React.ReactNode
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={title}
+      className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all active:scale-90
+        ${active
+          ? 'bg-emerald-600 text-white shadow-md shadow-emerald-500/30'
+          : panelOpen
+            ? 'bg-muted text-foreground'
+            : 'text-muted-foreground hover:bg-muted/80 hover:text-foreground'
+        }`}
+    >
+      {children}
+    </button>
+  )
+}
+
+function Popover({ children, wide }: { children: React.ReactNode; wide?: boolean }) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, x: -6, scale: 0.96 }}
+      animate={{ opacity: 1, x: 0, scale: 1 }}
+      exit={{ opacity: 0, x: -6, scale: 0.96 }}
+      transition={{ duration: 0.14 }}
+      className={`absolute left-[calc(100%+10px)] top-0 z-50 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md ${wide ? 'w-44' : 'w-auto'}`}
+      // Prevent clicks inside the popover from propagating to the PDF canvas
+      onMouseDown={(e) => e.stopPropagation()}
+      onClick={(e) => e.stopPropagation()}
+    >
+      {children}
+    </motion.div>
+  )
+}
+
+function ColorSwatch({
+  tailwind,
+  label,
+  active,
+  onClick,
+}: {
+  tailwind: string
+  label: string
+  active: boolean
+  onClick: () => void
+}) {
+  return (
+    <button
+      onClick={onClick}
+      title={label}
+      className={`h-5 w-5 rounded-full border-2 transition-all hover:scale-125 active:scale-95
+        ${tailwind}
+        ${active ? 'ring-2 ring-emerald-500 ring-offset-1 border-white' : 'border-transparent'}`}
+    />
   )
 }
