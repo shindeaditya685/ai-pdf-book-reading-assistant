@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
+import { getUserFromRequest } from '@/lib/auth'
 
 export async function GET(request: Request) {
+  const user = getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(request.url)
   const pdfFileName = searchParams.get('pdfFileName')
   if (!pdfFileName) {
@@ -14,7 +18,7 @@ export async function GET(request: Request) {
   try {
     const bookmarks = await conn.db
       .collection('bookmarks')
-      .find({ pdfFileName })
+      .find({ pdfFileName, username: user.username })
       .sort({ timestamp: -1 })
       .toArray()
     return NextResponse.json(bookmarks)
@@ -24,6 +28,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const user = getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json({ success: false })
 
@@ -43,6 +50,7 @@ export async function POST(request: Request) {
       sentence: sentence || '',
       pageNumber: pageNumber || 0,
       pdfFileName,
+      username: user.username,
       timestamp: new Date(),
     }
     const result = await conn.db.collection('bookmarks').insertOne(doc)
@@ -54,6 +62,9 @@ export async function POST(request: Request) {
 }
 
 export async function DELETE(request: Request) {
+  const user = getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json({ success: false })
 
@@ -63,7 +74,7 @@ export async function DELETE(request: Request) {
     if (!id) return NextResponse.json({ success: false })
 
     const { ObjectId } = await import('mongodb')
-    await conn.db.collection('bookmarks').deleteOne({ _id: new ObjectId(id) })
+    await conn.db.collection('bookmarks').deleteOne({ _id: new ObjectId(id), username: user.username })
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ success: false })

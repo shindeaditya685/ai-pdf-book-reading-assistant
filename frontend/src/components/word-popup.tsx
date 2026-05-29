@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { X, Volume2, Loader2, Sparkles, Languages, Bookmark, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePDFStore, LANGUAGE_LABELS } from '@/store/use-pdf-store'
+import { authFetch } from '@/lib/api'
 
 export function WordPopup() {
   const {
@@ -53,7 +54,7 @@ export function WordPopup() {
       }
       addToHistory(entry)
       // Sync to MongoDB
-      fetch('/api/db/history', {
+      authFetch('/api/db/history', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(entry),
@@ -82,7 +83,7 @@ export function WordPopup() {
       )
       if (existing) {
         removeBookmark(existing.id)
-        fetch(`/api/db/bookmarks?id=${existing.id}`, { method: 'DELETE' }).catch(() => {})
+        authFetch(`/api/db/bookmarks?id=${existing.id}`, { method: 'DELETE' }).catch(() => {})
       }
       return
     }
@@ -100,7 +101,7 @@ export function WordPopup() {
     }
     addBookmark(bookmark)
     // Sync to MongoDB
-    fetch('/api/db/bookmarks', {
+    authFetch('/api/db/bookmarks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bookmark),

@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
+import { getUserFromRequest } from '@/lib/auth'
 
 export async function GET(request: Request) {
+  const user = getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(request.url)
   const pdfFileName = searchParams.get('pdfFileName')
   if (!pdfFileName) return NextResponse.json([])
@@ -12,7 +16,7 @@ export async function GET(request: Request) {
   try {
     const history = await conn.db
       .collection('wordHistory')
-      .find({ pdfFileName })
+      .find({ pdfFileName, username: user.username })
       .sort({ timestamp: -1 })
       .limit(100)
       .toArray()
@@ -23,6 +27,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const user = getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json({ success: false })
 
@@ -39,6 +46,7 @@ export async function POST(request: Request) {
       sentence: sentence || '',
       pageNumber: pageNumber || 0,
       pdfFileName,
+      username: user.username,
       timestamp: new Date(),
     }
     const result = await conn.db.collection('wordHistory').insertOne(doc)

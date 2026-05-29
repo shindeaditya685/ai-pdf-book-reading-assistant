@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Switch } from '@/components/ui/switch'
 import { usePDFStore } from '@/store/use-pdf-store'
+import { authFetch } from '@/lib/api'
 
 export function UploadZone() {
   const { setPdfFile, setPdfDataUrl, pdfFileName, addRecentPdf, ocrEnabled, setOcrEnabled, clearOcrText } = usePDFStore()
@@ -53,7 +54,7 @@ export function UploadZone() {
         addRecentPdf({ fileName: file.name, timestamp: Date.now() })
         clearOcrText()
         // Save PDF to MongoDB
-        fetch('/api/db/pdf', {
+        authFetch('/api/db/pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ fileName: file.name, content: dataUrl, pageCount: 0 }),

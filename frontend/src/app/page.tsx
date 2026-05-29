@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { BookOpen, Brain, Sparkles, FileText } from 'lucide-react'
+import { BookOpen, Brain, Sparkles, FileText, LogOut } from 'lucide-react'
+import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
 import { WordPopup } from '@/components/word-popup'
 import { SettingsPanel } from '@/components/settings-panel'
@@ -10,6 +11,7 @@ import { HistoryPanel } from '@/components/history-panel'
 import { BookmarksPanel } from '@/components/bookmarks-panel'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { usePDFStore } from '@/store/use-pdf-store'
+import { authFetch } from '@/lib/api'
 
 // Dynamically import PDFViewer to avoid loading pdfjs-dist in the initial bundle
 const PDFViewer = dynamic(
@@ -56,6 +58,8 @@ export default function Home() {
     clearOcrText,
   } = usePDFStore()
 
+  const { user, logout } = useAuth()
+
   const dataLoadedRef = useRef<string | null>(null)
   const recentLoadedRef = useRef(false)
 
@@ -64,7 +68,7 @@ export default function Home() {
     if (recentLoadedRef.current) return
     recentLoadedRef.current = true
 
-    fetch('/api/db/pdf')
+    authFetch('/api/db/pdf')
       .then((res) => res.json())
       .then((pdfs: any[]) => {
         if (Array.isArray(pdfs)) {
@@ -86,8 +90,8 @@ export default function Home() {
         usePDFStore.setState({ wordHistory: [], bookmarks: [] })
 
         const [bookmarksRes, historyRes] = await Promise.all([
-          fetch(`/api/db/bookmarks?pdfFileName=${encodeURIComponent(pdfFileName)}`),
-          fetch(`/api/db/history?pdfFileName=${encodeURIComponent(pdfFileName)}`),
+          authFetch(`/api/db/bookmarks?pdfFileName=${encodeURIComponent(pdfFileName)}`),
+          authFetch(`/api/db/history?pdfFileName=${encodeURIComponent(pdfFileName)}`),
         ])
 
         if (bookmarksRes.ok) {
@@ -135,7 +139,7 @@ export default function Home() {
   const handleLoadRecentPdf = useCallback(
     async (fileName: string) => {
       try {
-        const res = await fetch(`/api/db/pdf?fileName=${encodeURIComponent(fileName)}`)
+        const res = await authFetch(`/api/db/pdf?fileName=${encodeURIComponent(fileName)}`)
         if (!res.ok) return
         const pdf = await res.json()
         if (pdf?.content) {
@@ -240,9 +244,19 @@ export default function Home() {
           </div>
         </div>
 
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-2">
+          {user && (
+            <span className="hidden text-xs text-muted-foreground sm:inline">{user.username}</span>
+          )}
           <SettingsPanel />
           <UploadZone />
+          <button
+            onClick={logout}
+            className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+            title="Sign out"
+          >
+            <LogOut className="h-4 w-4" />
+          </button>
         </div>
       </header>
 

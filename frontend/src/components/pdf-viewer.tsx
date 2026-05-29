@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
 import { createWorker } from 'tesseract.js'
 import { usePDFStore } from '@/store/use-pdf-store'
+import { authFetch } from '@/lib/api'
 import {
   ChevronLeft,
   ChevronRight,
@@ -300,7 +301,7 @@ export function PDFViewer() {
             for (const [page, data] of Object.entries(state.ocrText)) {
               allOcrText[page] = data
             }
-            fetch('/api/db/pdf', {
+            authFetch('/api/db/pdf', {
               method: 'PATCH',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({ fileName, ocrText: allOcrText }),

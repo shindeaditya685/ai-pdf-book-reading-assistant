@@ -1,7 +1,11 @@
 import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
+import { getUserFromRequest } from '@/lib/auth'
 
 export async function GET(request: Request) {
+  const user = getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const { searchParams } = new URL(request.url)
   const fileName = searchParams.get('fileName')
 
@@ -10,14 +14,14 @@ export async function GET(request: Request) {
 
   try {
     if (fileName) {
-      const pdf = await conn.db.collection('pdfs').findOne({ fileName })
+      const pdf = await conn.db.collection('pdfs').findOne({ fileName, username: user.username })
       if (!pdf) return NextResponse.json(null)
       return NextResponse.json(pdf)
     }
 
     const pdfs = await conn.db
       .collection('pdfs')
-      .find({}, { projection: { content: 0 } })
+      .find({ username: user.username }, { projection: { content: 0 } })
       .sort({ updatedAt: -1 })
       .limit(10)
       .toArray()
@@ -28,6 +32,9 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
+  const user = getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json({ success: false })
 
@@ -36,7 +43,7 @@ export async function POST(request: Request) {
     const { fileName, content, pageCount } = body
     if (!fileName || !content) return NextResponse.json({ success: false })
 
-    const existing = await conn.db.collection('pdfs').findOne({ fileName })
+    const existing = await conn.db.collection('pdfs').findOne({ fileName, username: user.username })
     if (existing) {
       await conn.db.collection('pdfs').updateOne(
         { _id: existing._id },
@@ -49,6 +56,7 @@ export async function POST(request: Request) {
       fileName,
       content,
       pageCount: pageCount || 0,
+      username: user.username,
       createdAt: new Date(),
       updatedAt: new Date(),
     })
@@ -59,6 +67,9 @@ export async function POST(request: Request) {
 }
 
 export async function PATCH(request: Request) {
+  const user = getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json({ success: false })
 
@@ -67,7 +78,7 @@ export async function PATCH(request: Request) {
     const { fileName, ocrText } = body
     if (!fileName) return NextResponse.json({ success: false })
 
-    const existing = await conn.db.collection('pdfs').findOne({ fileName })
+    const existing = await conn.db.collection('pdfs').findOne({ fileName, username: user.username })
     if (!existing) return NextResponse.json({ success: false })
 
     await conn.db.collection('pdfs').updateOne(
