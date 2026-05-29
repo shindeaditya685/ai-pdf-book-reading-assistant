@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Bookmark, Trash2, BookOpen, Volume2 } from 'lucide-react'
+import { X, Bookmark, Trash2, BookOpen, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePDFStore } from '@/store/use-pdf-store'
 
@@ -13,42 +13,36 @@ export function BookmarksPanel() {
     setShowBookmarks,
     removeBookmark,
     setCurrentPage,
-    currentPage,
-    setSelectedWord,
-    setSelectedSentence,
-    setSelectedPageNumber,
-    setPopupPosition,
-    setExplanation,
-    setIsExplaining,
+    pdfFileName,
   } = usePDFStore()
 
   const handleGoToPage = useCallback(
     (page: number) => {
       setCurrentPage(page)
-    },
-    [setCurrentPage]
-  )
-
-  const handleRestoreBookmark = useCallback(
-    (bm: (typeof bookmarks)[0]) => {
-      setCurrentPage(bm.pageNumber)
-      if (bm.word) {
-        setSelectedWord(bm.word)
-        setSelectedSentence(bm.sentence)
-        setSelectedPageNumber(bm.pageNumber)
-        setPopupPosition({ x: window.innerWidth / 2, y: 150 })
-        setExplanation({
-          word: bm.word,
-          meaning: bm.meaning,
-          pronunciation: bm.pronunciation,
-          translation: bm.translation,
-        })
-        setIsExplaining(false)
-      }
       setShowBookmarks(false)
     },
-    [setCurrentPage, setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, setExplanation, setIsExplaining, setShowBookmarks]
+    [setCurrentPage, setShowBookmarks]
   )
+
+  const handleExport = useCallback(() => {
+    if (bookmarks.length === 0) return
+    const content = bookmarks
+      .map(
+        (bm, i) =>
+          `${i + 1}. Word: ${bm.word}\n   Meaning: ${bm.meaning}\n   Pronunciation: ${bm.pronunciation}\n   Translation: ${bm.translation}\n   Sentence: "${bm.sentence}"\n   Page: ${bm.pageNumber}\n   Date: ${new Date(bm.timestamp).toLocaleString()}\n`
+      )
+      .join('\n---\n\n')
+
+    const blob = new Blob([content], { type: 'text/plain' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `${pdfFileName || 'bookmarks'}-bookmarks.txt`
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+  }, [bookmarks, pdfFileName])
 
   if (!showBookmarks) return null
 
@@ -72,6 +66,17 @@ export function BookmarksPanel() {
             </span>
           </div>
           <div className="flex items-center gap-1">
+            {bookmarks.length > 0 && (
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-7 w-7 text-muted-foreground hover:text-foreground"
+                onClick={handleExport}
+                title="Export as text file"
+              >
+                <Download className="h-3.5 w-3.5" />
+              </Button>
+            )}
             <Button
               variant="ghost"
               size="icon"
@@ -108,7 +113,7 @@ export function BookmarksPanel() {
                     <div className="flex items-start justify-between">
                       <button
                         className="flex-1 text-left"
-                        onClick={() => handleRestoreBookmark(bm)}
+                        onClick={() => handleGoToPage(bm.pageNumber)}
                       >
                         <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                           {bm.word}
