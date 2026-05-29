@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef } from 'react'
 import dynamic from 'next/dynamic'
-import { BookOpen, Brain, Sparkles } from 'lucide-react'
+import { BookOpen, Brain, Sparkles, FileText } from 'lucide-react'
 import { UploadZone } from '@/components/upload-zone'
 import { WordPopup } from '@/components/word-popup'
 import { SettingsPanel } from '@/components/settings-panel'
@@ -48,9 +48,31 @@ export default function Home() {
     bookmarks,
     addToHistory,
     addBookmark,
+    addRecentPdf,
+    clearHistory,
+    setPdfDataUrl,
+    setPdfFileName,
   } = usePDFStore()
 
   const dataLoadedRef = useRef<string | null>(null)
+  const recentLoadedRef = useRef(false)
+
+  // Load recent PDFs from MongoDB on mount
+  useEffect(() => {
+    if (recentLoadedRef.current) return
+    recentLoadedRef.current = true
+
+    fetch('/api/db/pdf')
+      .then((res) => res.json())
+      .then((pdfs: any[]) => {
+        if (Array.isArray(pdfs)) {
+          pdfs.forEach((p) =>
+            addRecentPdf({ fileName: p.fileName, timestamp: new Date(p.updatedAt || p.createdAt).getTime() })
+          )
+        }
+      })
+      .catch(() => {})
+  }, [addRecentPdf])
 
   // Load bookmarks and history from MongoDB when PDF loads
   useEffect(() => {
@@ -59,6 +81,8 @@ export default function Home() {
 
     const loadData = async () => {
       try {
+        usePDFStore.setState({ wordHistory: [], bookmarks: [] })
+
         const [bookmarksRes, historyRes] = await Promise.all([
           fetch(`/api/db/bookmarks?pdfFileName=${encodeURIComponent(pdfFileName)}`),
           fetch(`/api/db/history?pdfFileName=${encodeURIComponent(pdfFileName)}`),
@@ -97,13 +121,31 @@ export default function Home() {
             })
           })
         }
-      } catch {
-        // MongoDB unavailable - using local storage
+      } catch (e) {
+        console.error('Failed to load data from MongoDB:', e)
       }
     }
 
     loadData()
   }, [pdfFileName, addBookmark, addToHistory])
+
+  // Load a recent PDF from MongoDB
+  const handleLoadRecentPdf = useCallback(
+    async (fileName: string) => {
+      try {
+        const res = await fetch(`/api/db/pdf?fileName=${encodeURIComponent(fileName)}`)
+        if (!res.ok) return
+        const pdf = await res.json()
+        if (pdf?.content) {
+          setPdfFileName(fileName)
+          setPdfDataUrl(pdf.content)
+        }
+      } catch {
+        // Not available
+      }
+    },
+    [setPdfFileName, setPdfDataUrl]
+  )
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback(
@@ -218,13 +260,15 @@ export default function Home() {
                     const wordCount = wordHistory.filter((w) => w.pdfFileName === pdf.fileName).length
                     const bmCount = bookmarks.filter((b) => b.pdfFileName === pdf.fileName).length
                     return (
-                      <div
+                      <button
                         key={pdf.fileName}
-                        className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-xs text-muted-foreground"
+                        onClick={() => handleLoadRecentPdf(pdf.fileName)}
+                        className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-emerald-400 hover:bg-emerald-50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/20"
                       >
+                        <FileText className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
                         <span className="font-medium text-foreground">{pdf.fileName}</span>
                         <span className="text-[10px]">{wordCount} words, {bmCount} bookmarks</span>
-                      </div>
+                      </button>
                     )
                   })}
                 </div>

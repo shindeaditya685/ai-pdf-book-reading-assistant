@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Volume2, Loader2, Sparkles, Languages, Bookmark } from 'lucide-react'
+import { X, Volume2, Loader2, Sparkles, Languages, Bookmark, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePDFStore, LANGUAGE_LABELS } from '@/store/use-pdf-store'
 
@@ -26,6 +26,7 @@ export function WordPopup() {
   const [simplified, setSimplified] = useState<string | null>(null)
   const [isSimplifying, setIsSimplifying] = useState(false)
   const [showSimplified, setShowSimplified] = useState(false)
+  const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const historyAddedRef = useRef(false)
 
   // Save to history when explanation is received
@@ -60,9 +61,10 @@ export function WordPopup() {
     }
   }, [explanation, selectedWord, selectedSentence, selectedPageNumber, isExplaining, addToHistory, pdfFileName])
 
-  // Reset history flag when word changes
+  // Reset history flag and drag offset when word changes
   useEffect(() => {
     historyAddedRef.current = false
+    setDragOffset({ x: 0, y: 0 })
   }, [selectedWord])
 
   const isBookmarked = selectedPageNumber && selectedWord
@@ -154,14 +156,13 @@ export function WordPopup() {
   const spaceBelow = vh - popupY
   const showAbove = spaceAbove > spaceBelow && spaceAbove > popupHeight
 
-  // Adjust Y and transform
-  const popupTop = showAbove ? popupY : popupY + 20
-  const popupTransform = showAbove ? 'translateY(-100%)' : 'none'
+  // Position top/bottom edge (no CSS transform, to avoid conflict with drag)
+  const popupTop = showAbove
+    ? Math.max(8, popupY - popupHeight)
+    : Math.min(popupY + 20, vh - 60)
 
-  // Clamp Y - ensure popup stays in viewport
-  const clampedTop = showAbove
-    ? Math.max(8, popupTop)
-    : Math.min(popupTop, vh - 60)
+  const clampedTop = popupTop + dragOffset.y
+  const clampedLeft = popupX + dragOffset.x
 
   return (
     <AnimatePresence>
@@ -169,20 +170,28 @@ export function WordPopup() {
         data-popup
         className="fixed z-50"
         style={{
-          left: popupX,
+          left: clampedLeft,
           top: clampedTop,
           width: popupWidth,
-          transform: popupTransform,
         }}
         initial={{ opacity: 0, y: showAbove ? 10 : -10, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: showAbove ? 5 : -5, scale: 0.95 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
+        drag
+        dragMomentum={false}
+        onDragEnd={(_, info) =>
+          setDragOffset((prev) => ({
+            x: prev.x + info.offset.x,
+            y: prev.y + info.offset.y,
+          }))
+        }
       >
         <div className="rounded-xl border border-border bg-background shadow-2xl">
-          {/* Header */}
-          <div className="flex items-start justify-between border-b px-4 pt-3 pb-2">
-            <div className="flex-1">
+          {/* Header - drag handle */}
+          <div className="flex items-start justify-between border-b px-3 pt-3 pb-2 cursor-grab active:cursor-grabbing select-none">
+            <div className="flex items-center gap-1 flex-1 min-w-0">
+              <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
               <h3 className="text-base font-bold text-foreground">
                 {selectedWord}
               </h3>

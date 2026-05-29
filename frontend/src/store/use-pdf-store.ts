@@ -1,5 +1,4 @@
 import { create } from 'zustand'
-import { persist } from 'zustand/middleware'
 
 export interface WordExplanation {
   word: string
@@ -112,6 +111,7 @@ interface PDFState {
 
   // Actions
   setPdfFile: (file: File | null) => void
+  setPdfFileName: (name: string | null) => void
   setPdfDataUrl: (url: string | null) => void
   setTotalPages: (pages: number) => void
   setCurrentPage: (page: number) => void
@@ -160,9 +160,8 @@ interface PDFState {
 }
 
 export const usePDFStore = create<PDFState>()(
-  persist(
-    (set, get) => ({
-      pdfFile: null,
+  (set, get) => ({
+    pdfFile: null,
       pdfDataUrl: null,
       pdfFileName: null,
       totalPages: 0,
@@ -197,6 +196,8 @@ export const usePDFStore = create<PDFState>()(
           pdfFile: file,
           pdfFileName: file?.name ?? null,
         }),
+
+      setPdfFileName: (name) => set({ pdfFileName: name }),
 
       setPdfDataUrl: (url) => set({ pdfDataUrl: url }),
       setTotalPages: (pages) => set({ totalPages: pages }),
@@ -304,16 +305,5 @@ export const usePDFStore = create<PDFState>()(
       toggleBookmarks: () => set((s) => ({ showBookmarks: !s.showBookmarks })),
       setShowSearch: (show) => set({ showSearch: show }),
       toggleSearch: () => set((s) => ({ showSearch: !s.showSearch })),
-    }),
-    {
-      name: 'pdf-reader-ai-storage',
-      partialize: (state) => ({
-        wordHistory: state.wordHistory,
-        bookmarks: state.bookmarks,
-        recentPdfs: state.recentPdfs,
-        theme: state.theme,
-        translationLanguage: state.translationLanguage,
-      }),
-    }
-  )
+  })
 )
