@@ -459,7 +459,21 @@ export function PDFViewer() {
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goToPrevPage} disabled={currentPage <= 1}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
-          <span className="min-w-[80px] text-center text-xs text-muted-foreground">Page {currentPage} of {totalPages}</span>
+          <input
+            type="number"
+            min={1}
+            max={totalPages}
+            value={currentPage}
+            onChange={(e) => {
+              const page = parseInt(e.target.value, 10)
+              if (page >= 1 && page <= totalPages) {
+                clearSelection()
+                setCurrentPage(page)
+              }
+            }}
+            className="w-10 rounded border bg-background px-1 py-0.5 text-center text-xs outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+          />
+          <span className="text-xs text-muted-foreground">/ {totalPages}</span>
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goToNextPage} disabled={currentPage >= totalPages}>
             <ChevronRight className="h-4 w-4" />
           </Button>

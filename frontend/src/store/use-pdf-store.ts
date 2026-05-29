@@ -194,7 +194,7 @@ export const usePDFStore = create<PDFState>()(
       pdfFileName: null,
       totalPages: 0,
       currentPage: 1,
-      scale: 1.5,
+      scale: 1,
       uploadProgress: 0,
 
       selectedWord: null,
@@ -266,7 +266,7 @@ export const usePDFStore = create<PDFState>()(
           pdfFileName: null,
           totalPages: 0,
           currentPage: 1,
-          scale: 1.5,
+          scale: 1,
           uploadProgress: 0,
           selectedWord: null,
           selectedSentence: null,
