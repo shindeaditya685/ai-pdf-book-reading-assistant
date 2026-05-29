@@ -1,0 +1,1 @@
+import Groq from 'groq-sdk'; const g = new Groq({ apiKey: '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' }); const r = await g.chat.completions.create({ messages: [{ role: 'user', content: 'Say hello in JSON only like {greeting:hello}' }], model: 'llama-3.3-70b-versatile' }); console.log('OK:', r.choices?.[0]?.message?.content)
