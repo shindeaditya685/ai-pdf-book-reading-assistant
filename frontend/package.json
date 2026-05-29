@@ -39,6 +39,7 @@
     "framer-motion": "^12.23.2",
     "groq-sdk": "^0.14.0",
     "lucide-react": "^0.525.0",
+    "mongodb": "^7.2.0",
     "next": "^16.1.1",
     "next-themes": "^0.4.6",
     "pdfjs-dist": "4.4.168",

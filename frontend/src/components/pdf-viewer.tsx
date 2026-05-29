@@ -9,8 +9,12 @@ import {
   ZoomIn,
   ZoomOut,
   Loader2,
+  Search,
+  Bookmark,
+  Clock,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { SearchBar } from '@/components/search-bar'
 
 // Set worker source
 if (typeof window !== 'undefined') {
@@ -40,6 +44,13 @@ export function PDFViewer() {
     setIsExplaining,
     clearSelection,
     translationLanguage,
+    searchQuery,
+    searchResults,
+    currentSearchIndex,
+    showSearch,
+    toggleSearch,
+    toggleHistory,
+    toggleBookmarks,
   } = usePDFStore()
 
   const [isLoading, setIsLoading] = useState(false)
@@ -139,6 +150,19 @@ export function PDFViewer() {
           span.style.fontSize = `${fontSize}px`
           span.style.fontFamily = 'sans-serif'
           span.style.transformOrigin = '0% 0%'
+
+          // Highlight search matches
+          if (searchQuery && item.str.toLowerCase().includes(searchQuery.toLowerCase())) {
+            const highlight = document.createElement('mark')
+            highlight.className = 'pdf-search-highlight'
+            if (searchResults[currentSearchIndex]?.text === item.str) {
+              highlight.classList.add('pdf-search-highlight-current')
+            }
+            highlight.textContent = item.str
+            span.textContent = ''
+            span.appendChild(highlight)
+          }
+
           textLayer.appendChild(span)
         })
       }
@@ -155,7 +179,7 @@ export function PDFViewer() {
     } finally {
       setIsLoading(false)
     }
-  }, [currentPage, scale])
+  }, [currentPage, scale, searchQuery, searchResults, currentSearchIndex])
 
   useEffect(() => {
     if (pdfDocRef.current) renderPage()
@@ -213,10 +237,9 @@ export function PDFViewer() {
 
     const range = selection.getRangeAt(0)
     const rect = range.getBoundingClientRect()
-    const containerRect = containerRef.current?.getBoundingClientRect()
     const position = {
-      x: rect.left + rect.width / 2 - (containerRect?.left || 0),
-      y: rect.top - (containerRect?.top || 0) + (containerRef.current?.scrollTop || 0) - 10,
+      x: rect.left + rect.width / 2,
+      y: rect.top - 10,
     }
 
     setSelectedWord(word)
@@ -240,10 +263,9 @@ export function PDFViewer() {
       const sentence = extractSentence(pageText, word)
 
       const rect = target.getBoundingClientRect()
-      const containerRect = containerRef.current?.getBoundingClientRect()
       const position = {
-        x: rect.left + rect.width / 2 - (containerRect?.left || 0),
-        y: rect.top - (containerRect?.top || 0) + (containerRef.current?.scrollTop || 0) - 10,
+        x: rect.left + rect.width / 2,
+        y: rect.top - 10,
       }
 
       setSelectedWord(word)
@@ -301,7 +323,36 @@ export function PDFViewer() {
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
+          {showSearch && <SearchBar />}
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-7 ${showSearch ? 'text-emerald-500' : 'text-muted-foreground'}`}
+            onClick={toggleSearch}
+            title="Search in PDF (/ or F)"
+          >
+            <Search className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground"
+            onClick={toggleBookmarks}
+            title="Bookmarks (B)"
+          >
+            <Bookmark className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground"
+            onClick={toggleHistory}
+            title="Word History (H)"
+          >
+            <Clock className="h-3.5 w-3.5" />
+          </Button>
+          <div className="mx-1 h-4 w-px bg-border" />
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut} disabled={scale <= 0.5}>
             <ZoomOut className="h-3.5 w-3.5" />
           </Button>

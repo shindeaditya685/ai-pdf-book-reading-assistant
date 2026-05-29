@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 
 export interface WordExplanation {
   word: string
@@ -30,6 +31,41 @@ export const LANGUAGE_LABELS: Record<TranslationLanguage, string> = {
   ru: 'Russian',
 }
 
+export interface WordHistoryEntry {
+  id: string
+  word: string
+  meaning: string
+  pronunciation: string
+  translation: string
+  sentence: string
+  pageNumber: number
+  pdfFileName: string
+  timestamp: number
+}
+
+export interface Bookmark {
+  id: string
+  pageNumber: number
+  word: string
+  meaning: string
+  pronunciation: string
+  translation: string
+  sentence: string
+  timestamp: number
+  pdfFileName: string
+}
+
+export interface SearchResult {
+  pageNumber: number
+  text: string
+  index: number
+}
+
+export interface RecentPdf {
+  fileName: string
+  timestamp: number
+}
+
 interface PDFState {
   // PDF file state
   pdfFile: File | null
@@ -38,6 +74,7 @@ interface PDFState {
   totalPages: number
   currentPage: number
   scale: number
+  uploadProgress: number
 
   // Word selection state
   selectedWord: string | null
@@ -51,6 +88,27 @@ interface PDFState {
 
   // Settings
   translationLanguage: TranslationLanguage
+  theme: 'light' | 'dark'
+
+  // Word History
+  wordHistory: WordHistoryEntry[]
+
+  // Bookmarks
+  bookmarks: Bookmark[]
+
+  // Search
+  searchQuery: string
+  searchResults: SearchResult[]
+  currentSearchIndex: number
+  isSearching: boolean
+
+  // Recent PDFs
+  recentPdfs: RecentPdf[]
+
+  // UI panels
+  showHistory: boolean
+  showBookmarks: boolean
+  showSearch: boolean
 
   // Actions
   setPdfFile: (file: File | null) => void
@@ -58,6 +116,7 @@ interface PDFState {
   setTotalPages: (pages: number) => void
   setCurrentPage: (page: number) => void
   setScale: (scale: number) => void
+  setUploadProgress: (progress: number) => void
   setSelectedWord: (word: string | null) => void
   setSelectedSentence: (sentence: string | null) => void
   setSelectedPageNumber: (page: number | null) => void
@@ -65,72 +124,196 @@ interface PDFState {
   setExplanation: (explanation: WordExplanation | null) => void
   setIsExplaining: (loading: boolean) => void
   setTranslationLanguage: (lang: TranslationLanguage) => void
+  setTheme: (theme: 'light' | 'dark') => void
+  toggleTheme: () => void
   clearSelection: () => void
   reset: () => void
+
+  // History actions
+  addToHistory: (entry: WordHistoryEntry) => void
+  clearHistory: () => void
+  removeHistoryEntry: (id: string) => void
+
+  // Bookmark actions
+  addBookmark: (bookmark: Bookmark) => void
+  removeBookmark: (id: string) => void
+  isPageBookmarked: (page: number) => boolean
+
+  // Recent PDF actions
+  addRecentPdf: (pdf: RecentPdf) => void
+
+  // Search actions
+  setSearchQuery: (query: string) => void
+  setSearchResults: (results: SearchResult[]) => void
+  setCurrentSearchIndex: (index: number) => void
+  setIsSearching: (searching: boolean) => void
+  goToNextSearchResult: () => void
+  goToPrevSearchResult: () => void
+
+  // Panel actions
+  setShowHistory: (show: boolean) => void
+  toggleHistory: () => void
+  setShowBookmarks: (show: boolean) => void
+  toggleBookmarks: () => void
+  setShowSearch: (show: boolean) => void
+  toggleSearch: () => void
 }
 
-export const usePDFStore = create<PDFState>((set) => ({
-  pdfFile: null,
-  pdfDataUrl: null,
-  pdfFileName: null,
-  totalPages: 0,
-  currentPage: 1,
-  scale: 1.5,
-
-  selectedWord: null,
-  selectedSentence: null,
-  selectedPageNumber: null,
-  popupPosition: null,
-
-  explanation: null,
-  isExplaining: false,
-
-  translationLanguage: 'hi',
-
-  setPdfFile: (file) =>
-    set({
-      pdfFile: file,
-      pdfFileName: file?.name ?? null,
-    }),
-
-  setPdfDataUrl: (url) => set({ pdfDataUrl: url }),
-
-  setTotalPages: (pages) => set({ totalPages: pages }),
-  setCurrentPage: (page) => set({ currentPage: page }),
-  setScale: (scale) => set({ scale }),
-
-  setSelectedWord: (word) => set({ selectedWord: word }),
-  setSelectedSentence: (sentence) => set({ selectedSentence: sentence }),
-  setSelectedPageNumber: (page) => set({ selectedPageNumber: page }),
-  setPopupPosition: (pos) => set({ popupPosition: pos }),
-
-  setExplanation: (explanation) => set({ explanation }),
-  setIsExplaining: (loading) => set({ isExplaining: loading }),
-  setTranslationLanguage: (lang) => set({ translationLanguage: lang }),
-
-  clearSelection: () =>
-    set({
-      selectedWord: null,
-      selectedSentence: null,
-      selectedPageNumber: null,
-      popupPosition: null,
-      explanation: null,
-      isExplaining: false,
-    }),
-
-  reset: () =>
-    set({
+export const usePDFStore = create<PDFState>()(
+  persist(
+    (set, get) => ({
       pdfFile: null,
       pdfDataUrl: null,
       pdfFileName: null,
       totalPages: 0,
       currentPage: 1,
       scale: 1.5,
+      uploadProgress: 0,
+
       selectedWord: null,
       selectedSentence: null,
       selectedPageNumber: null,
       popupPosition: null,
+
       explanation: null,
       isExplaining: false,
+
+      translationLanguage: 'hi',
+      theme: 'dark',
+
+      wordHistory: [],
+      bookmarks: [],
+      recentPdfs: [],
+      searchQuery: '',
+      searchResults: [],
+      currentSearchIndex: -1,
+      isSearching: false,
+      showHistory: false,
+      showBookmarks: false,
+      showSearch: false,
+
+      setPdfFile: (file) =>
+        set({
+          pdfFile: file,
+          pdfFileName: file?.name ?? null,
+        }),
+
+      setPdfDataUrl: (url) => set({ pdfDataUrl: url }),
+      setTotalPages: (pages) => set({ totalPages: pages }),
+      setCurrentPage: (page) => set({ currentPage: page }),
+      setScale: (scale) => set({ scale }),
+      setUploadProgress: (progress) => set({ uploadProgress: progress }),
+
+      setSelectedWord: (word) => set({ selectedWord: word }),
+      setSelectedSentence: (sentence) => set({ selectedSentence: sentence }),
+      setSelectedPageNumber: (page) => set({ selectedPageNumber: page }),
+      setPopupPosition: (pos) => set({ popupPosition: pos }),
+
+      setExplanation: (explanation) => set({ explanation }),
+      setIsExplaining: (loading) => set({ isExplaining: loading }),
+      setTranslationLanguage: (lang) => set({ translationLanguage: lang }),
+      setTheme: (theme) => set({ theme }),
+      toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+
+      clearSelection: () =>
+        set({
+          selectedWord: null,
+          selectedSentence: null,
+          selectedPageNumber: null,
+          popupPosition: null,
+          explanation: null,
+          isExplaining: false,
+        }),
+
+      reset: () =>
+        set({
+          pdfFile: null,
+          pdfDataUrl: null,
+          pdfFileName: null,
+          totalPages: 0,
+          currentPage: 1,
+          scale: 1.5,
+          uploadProgress: 0,
+          selectedWord: null,
+          selectedSentence: null,
+          selectedPageNumber: null,
+          popupPosition: null,
+          explanation: null,
+          isExplaining: false,
+          searchQuery: '',
+          searchResults: [],
+          currentSearchIndex: -1,
+          isSearching: false,
+          showSearch: false,
+        }),
+
+      addToHistory: (entry) =>
+        set((s) => ({
+          wordHistory: [entry, ...s.wordHistory].slice(0, 100),
+        })),
+      clearHistory: () => set({ wordHistory: [] }),
+      removeHistoryEntry: (id) =>
+        set((s) => ({
+          wordHistory: s.wordHistory.filter((e) => e.id !== id),
+        })),
+
+      addBookmark: (bookmark) =>
+        set((s) => ({
+          bookmarks: [...s.bookmarks, bookmark],
+        })),
+      removeBookmark: (id) =>
+        set((s) => ({
+          bookmarks: s.bookmarks.filter((b) => b.id !== id),
+        })),
+      isPageBookmarked: (page) => get().bookmarks.some((b) => b.pageNumber === page),
+
+      addRecentPdf: (pdf) =>
+        set((s) => ({
+          recentPdfs: [pdf, ...s.recentPdfs.filter((p) => p.fileName !== pdf.fileName)].slice(0, 5),
+        })),
+
+      setSearchQuery: (query) => set({ searchQuery: query }),
+      setSearchResults: (results) =>
+        set({ searchResults: results, currentSearchIndex: results.length > 0 ? 0 : -1 }),
+      setCurrentSearchIndex: (index) => set({ currentSearchIndex: index }),
+      setIsSearching: (searching) => set({ isSearching: searching }),
+      goToNextSearchResult: () =>
+        set((s) => {
+          if (s.searchResults.length === 0) return s
+          const next = (s.currentSearchIndex + 1) % s.searchResults.length
+          return {
+            currentSearchIndex: next,
+            currentPage: s.searchResults[next].pageNumber,
+          }
+        }),
+      goToPrevSearchResult: () =>
+        set((s) => {
+          if (s.searchResults.length === 0) return s
+          const prev =
+            (s.currentSearchIndex - 1 + s.searchResults.length) %
+            s.searchResults.length
+          return {
+            currentSearchIndex: prev,
+            currentPage: s.searchResults[prev].pageNumber,
+          }
+        }),
+
+      setShowHistory: (show) => set({ showHistory: show }),
+      toggleHistory: () => set((s) => ({ showHistory: !s.showHistory })),
+      setShowBookmarks: (show) => set({ showBookmarks: show }),
+      toggleBookmarks: () => set((s) => ({ showBookmarks: !s.showBookmarks })),
+      setShowSearch: (show) => set({ showSearch: show }),
+      toggleSearch: () => set((s) => ({ showSearch: !s.showSearch })),
     }),
-}))
+    {
+      name: 'pdf-reader-ai-storage',
+      partialize: (state) => ({
+        wordHistory: state.wordHistory,
+        bookmarks: state.bookmarks,
+        recentPdfs: state.recentPdfs,
+        theme: state.theme,
+        translationLanguage: state.translationLanguage,
+      }),
+    }
+  )
+)

@@ -1,6 +1,6 @@
 'use client'
 
-import { Globe, Settings2 } from 'lucide-react'
+import { Globe, Moon, Sun } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -10,9 +10,10 @@ import {
 } from '@/components/ui/select'
 import { usePDFStore, LANGUAGE_LABELS, type TranslationLanguage } from '@/store/use-pdf-store'
 import { Label } from '@/components/ui/label'
+import { Button } from '@/components/ui/button'
 
 export function SettingsPanel() {
-  const { translationLanguage, setTranslationLanguage } = usePDFStore()
+  const { translationLanguage, setTranslationLanguage, theme, toggleTheme } = usePDFStore()
 
   return (
     <div className="flex items-center gap-2">
@@ -37,6 +38,19 @@ export function SettingsPanel() {
           </SelectContent>
         </Select>
       </div>
+      <Button
+        variant="outline"
+        size="icon"
+        className="h-8 w-8"
+        onClick={toggleTheme}
+        title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} mode`}
+      >
+        {theme === 'dark' ? (
+          <Sun className="h-3.5 w-3.5" />
+        ) : (
+          <Moon className="h-3.5 w-3.5" />
+        )}
+      </Button>
     </div>
   )
 }

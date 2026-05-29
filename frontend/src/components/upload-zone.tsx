@@ -1,14 +1,25 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Upload, FileText, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { Progress } from '@/components/ui/progress'
 import { usePDFStore } from '@/store/use-pdf-store'
 
 export function UploadZone() {
-  const { setPdfFile, setPdfDataUrl, pdfFileName } = usePDFStore()
+  const { setPdfFile, setPdfDataUrl, pdfFileName, addRecentPdf } = usePDFStore()
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
+  const [progress, setProgress] = useState(0)
+  const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current)
+      }
+    }
+  }, [])
 
   const handleFile = useCallback(
     async (file: File) => {
@@ -17,20 +28,46 @@ export function UploadZone() {
         return
       }
       setIsLoading(true)
+      setProgress(0)
+
+      progressIntervalRef.current = setInterval(() => {
+        setProgress((p) => Math.min(p + Math.random() * 20, 90))
+      }, 200)
+
       try {
         const dataUrl = await new Promise<string>((resolve, reject) => {
           const reader = new FileReader()
+          reader.onprogress = (e) => {
+            if (e.lengthComputable) {
+              setProgress(Math.round((e.loaded / e.total) * 90))
+            }
+          }
           reader.onload = () => resolve(reader.result as string)
           reader.onerror = reject
           reader.readAsDataURL(file)
         })
+        setProgress(100)
         setPdfFile(file)
         setPdfDataUrl(dataUrl)
+        addRecentPdf({ fileName: file.name, timestamp: Date.now() })
+        // Save PDF to MongoDB
+        fetch('/api/db/pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ fileName: file.name, content: dataUrl, pageCount: 0 }),
+        }).catch(() => {})
       } catch (err) {
         console.error('Error reading PDF:', err)
         alert('Failed to read PDF file')
       } finally {
-        setIsLoading(false)
+        if (progressIntervalRef.current) {
+          clearInterval(progressIntervalRef.current)
+          progressIntervalRef.current = null
+        }
+        setTimeout(() => {
+          setIsLoading(false)
+          setProgress(0)
+        }, 500)
       }
     },
     [setPdfFile, setPdfDataUrl]
@@ -75,6 +112,9 @@ export function UploadZone() {
         <span className="max-w-[200px] truncate text-sm font-medium text-emerald-700 dark:text-emerald-300">
           {pdfFileName}
         </span>
+        {isLoading && (
+          <Progress value={progress} className="h-1.5 w-16" />
+        )}
         <Button
           variant="ghost"
           size="icon"
@@ -105,23 +145,28 @@ export function UploadZone() {
             : 'text-muted-foreground'
         }`}
       />
-      <label className="cursor-pointer">
-        <span className="text-sm text-muted-foreground">
-          {isLoading ? 'Loading...' : 'Drop PDF here or '}
-          {!isLoading && (
+      {isLoading ? (
+        <div className="flex flex-col gap-1.5">
+          <span className="text-sm text-muted-foreground">Loading...</span>
+          <Progress value={progress} className="h-1.5 w-28" />
+        </div>
+      ) : (
+        <label className="cursor-pointer">
+          <span className="text-sm text-muted-foreground">
+            Drop PDF here or{' '}
             <span className="font-medium text-emerald-600 underline decoration-emerald-300 underline-offset-2 dark:text-emerald-400 dark:decoration-emerald-700">
               browse
             </span>
-          )}
-        </span>
-        <input
-          type="file"
-          accept=".pdf,application/pdf"
-          onChange={handleInputChange}
-          className="hidden"
-          disabled={isLoading}
-        />
-      </label>
+          </span>
+          <input
+            type="file"
+            accept=".pdf,application/pdf"
+            onChange={handleInputChange}
+            className="hidden"
+            disabled={isLoading}
+          />
+        </label>
+      )}
     </div>
   )
 }

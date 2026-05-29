@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Volume2, Loader2, Sparkles, Languages } from 'lucide-react'
+import { X, Volume2, Loader2, Sparkles, Languages, Bookmark } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePDFStore, LANGUAGE_LABELS } from '@/store/use-pdf-store'
 
@@ -15,11 +15,95 @@ export function WordPopup() {
     clearSelection,
     translationLanguage,
     selectedSentence,
+    selectedPageNumber,
+    pdfFileName,
+    addToHistory,
+    addBookmark,
+    removeBookmark,
+    bookmarks,
   } = usePDFStore()
 
   const [simplified, setSimplified] = useState<string | null>(null)
   const [isSimplifying, setIsSimplifying] = useState(false)
   const [showSimplified, setShowSimplified] = useState(false)
+  const historyAddedRef = useRef(false)
+
+  // Save to history when explanation is received
+  useEffect(() => {
+    if (
+      explanation &&
+      selectedWord &&
+      selectedSentence &&
+      selectedPageNumber &&
+      !isExplaining &&
+      !historyAddedRef.current
+    ) {
+      historyAddedRef.current = true
+      const entry = {
+        id: `hist-${Date.now()}`,
+        word: selectedWord,
+        meaning: explanation.meaning,
+        pronunciation: explanation.pronunciation,
+        translation: explanation.translation,
+        sentence: selectedSentence,
+        pageNumber: selectedPageNumber,
+        pdfFileName: pdfFileName || 'unknown',
+        timestamp: Date.now(),
+      }
+      addToHistory(entry)
+      // Sync to MongoDB
+      fetch('/api/db/history', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(entry),
+      }).catch(() => {})
+    }
+  }, [explanation, selectedWord, selectedSentence, selectedPageNumber, isExplaining, addToHistory, pdfFileName])
+
+  // Reset history flag when word changes
+  useEffect(() => {
+    historyAddedRef.current = false
+  }, [selectedWord])
+
+  const isBookmarked = selectedPageNumber && selectedWord
+    ? bookmarks.some(
+        (b) => b.pageNumber === selectedPageNumber && b.word === selectedWord
+      )
+    : false
+
+  const handleBookmark = useCallback(() => {
+    if (!selectedPageNumber || !explanation) return
+
+    if (isBookmarked) {
+      const existing = bookmarks.find(
+        (b) => b.pageNumber === selectedPageNumber && b.word === selectedWord
+      )
+      if (existing) {
+        removeBookmark(existing.id)
+        fetch(`/api/db/bookmarks?id=${existing.id}`, { method: 'DELETE' }).catch(() => {})
+      }
+      return
+    }
+
+    const bookmark = {
+      id: `bm-${Date.now()}`,
+      pageNumber: selectedPageNumber,
+      word: selectedWord || '',
+      meaning: explanation.meaning,
+      pronunciation: explanation.pronunciation,
+      translation: explanation.translation,
+      sentence: selectedSentence || '',
+      timestamp: Date.now(),
+      pdfFileName: pdfFileName || 'unknown',
+    }
+    addBookmark(bookmark)
+    // Sync to MongoDB
+    fetch('/api/db/bookmarks', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bookmark),
+    }).catch(() => {})
+  }, [selectedPageNumber, explanation, selectedWord, selectedSentence, addBookmark, removeBookmark, bookmarks, isBookmarked, pdfFileName])
 
   const handleSimplify = useCallback(async () => {
     if (!selectedSentence) return
@@ -53,17 +137,31 @@ export function WordPopup() {
 
   if (!selectedWord || !popupPosition) return null
 
-  // Calculate popup position
+  // Calculate popup position - viewport-relative
   const popupWidth = 320
-  const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 1000
-  const popupX = Math.max(
-    10,
-    Math.min(popupPosition.x - popupWidth / 2, viewportWidth - popupWidth - 20)
-  )
-  const popupY = popupPosition.y
+  const popupHeight = 300
+  const vw = typeof window !== 'undefined' ? window.innerWidth : 1000
+  const vh = typeof window !== 'undefined' ? window.innerHeight : 800
 
-  // Determine if popup should show above or below
-  const showAbove = popupY > 200
+  let popupX = popupPosition.x - popupWidth / 2
+  let popupY = popupPosition.y
+
+  // Clamp X to viewport
+  popupX = Math.max(12, Math.min(popupX, vw - popupWidth - 12))
+
+  // Determine if popup should show above or below based on available space
+  const spaceAbove = popupY
+  const spaceBelow = vh - popupY
+  const showAbove = spaceAbove > spaceBelow && spaceAbove > popupHeight
+
+  // Adjust Y and transform
+  const popupTop = showAbove ? popupY : popupY + 20
+  const popupTransform = showAbove ? 'translateY(-100%)' : 'none'
+
+  // Clamp Y - ensure popup stays in viewport
+  const clampedTop = showAbove
+    ? Math.max(8, popupTop)
+    : Math.min(popupTop, vh - 60)
 
   return (
     <AnimatePresence>
@@ -72,9 +170,9 @@ export function WordPopup() {
         className="fixed z-50"
         style={{
           left: popupX,
-          top: showAbove ? popupY : popupY + 30,
+          top: clampedTop,
           width: popupWidth,
-          ...(showAbove ? { transform: 'translateY(-100%)' } : {}),
+          transform: popupTransform,
         }}
         initial={{ opacity: 0, y: showAbove ? 10 : -10, scale: 0.95 }}
         animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -109,14 +207,29 @@ export function WordPopup() {
                 </div>
               )}
             </div>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 -mt-0.5 -mr-1 text-muted-foreground hover:text-foreground"
-              onClick={clearSelection}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
+            <div className="flex items-center gap-0.5">
+              {selectedPageNumber && explanation && !isExplaining && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={`h-6 w-6 ${isBookmarked ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-amber-500'}`}
+                  onClick={handleBookmark}
+                  title={isBookmarked ? 'Remove bookmark' : 'Bookmark this word'}
+                >
+                  <Bookmark
+                    className={`h-3.5 w-3.5 ${isBookmarked ? 'fill-amber-500' : ''}`}
+                  />
+                </Button>
+              )}
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                onClick={clearSelection}
+              >
+                <X className="h-3.5 w-3.5" />
+              </Button>
+            </div>
           </div>
 
           {/* Content */}

@@ -121,6 +121,19 @@
   }
 }
 
+/* Search Highlight */
+.pdf-search-highlight {
+  background: rgba(250, 204, 21, 0.4);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.pdf-search-highlight-current {
+  background: rgba(16, 185, 129, 0.5);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
 /* PDF Text Layer Styles */
 .pdf-text-layer {
   position: absolute;
