@@ -2,8 +2,23 @@ import { NextRequest, NextResponse } from 'next/server'
 import Groq from 'groq-sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 
-const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' })
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
+
+function getGroqClients(): Groq[] {
+  const keyEnv = process.env.GROQ_API_KEY || ''
+  if (!keyEnv || keyEnv === 'your_groq_api_key_here') return []
+  const keys = keyEnv.split(',').map((k) => k.trim()).filter(Boolean)
+  return keys.map((apiKey) => new Groq({ apiKey }))
+}
+
+function shuffleArray<T>(array: T[]): T[] {
+  const arr = [...array]
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [arr[i], arr[j]] = [arr[j], arr[i]]
+  }
+  return arr
+}
 
 const LANGUAGE_NAMES: Record<string, string> = {
   hi: 'Hindi (Devanagari script)',
@@ -80,25 +95,34 @@ export async function POST(req: NextRequest) {
     const prompt = buildPrompt(sentence, translationLanguage)
 
     let lastError = ''
+    let content = ''
 
-    // Try Groq first
-    if (process.env.GROQ_API_KEY && process.env.GROQ_API_KEY !== 'your_groq_api_key_here') {
-      try {
-        const completion = await groq.chat.completions.create({
-          messages: [{ role: 'user', content: prompt }],
-          model: 'llama-3.3-70b-versatile',
-          temperature: 0.3,
-        })
-        const content = completion.choices?.[0]?.message?.content || ''
-        if (content) {
-          const parsed = parseJSON(content)
-          const result = formatResult(parsed, sentence, content.substring(0, 300))
-          if (result) return NextResponse.json(result)
+    // Try Groq first with multi-key failover
+    const clients = shuffleArray(getGroqClients())
+    if (clients.length > 0) {
+      for (let i = 0; i < clients.length; i++) {
+        const client = clients[i]
+        try {
+          const completion = await client.chat.completions.create({
+            messages: [{ role: 'user', content: prompt }],
+            model: 'llama-3.3-70b-versatile',
+            temperature: 0.3,
+          })
+          content = completion.choices?.[0]?.message?.content || ''
+          if (content) {
+            break // Success!
+          }
+        } catch (e) {
+          lastError = e instanceof Error ? e.message : 'Groq simplify failed'
+          console.warn(`Groq key index ${i} failed:`, lastError)
         }
-      } catch (e) {
-        lastError = e instanceof Error ? e.message : 'Groq simplify failed'
-        console.warn('Groq failed:', lastError)
       }
+    }
+
+    if (content) {
+      const parsed = parseJSON(content)
+      const result = formatResult(parsed, sentence, content.substring(0, 300))
+      if (result) return NextResponse.json(result)
     }
 
     // Fallback to Gemini
