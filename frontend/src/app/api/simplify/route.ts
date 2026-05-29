@@ -5,12 +5,39 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' })
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  hi: 'Hindi (Devanagari script)',
+  mr: 'Marathi (Devanagari script)',
+  bn: 'Bengali (Bangla script)',
+  or: 'Odia (Odia script)',
+  kn: 'Kannada (Kannada script)',
+  te: 'Telugu (Telugu script)',
+  ta: 'Tamil (Tamil script)',
+  pa: 'Punjabi (Gurmukhi script)',
+  ml: 'Malayalam (Malayalam script)',
+  ur: 'Urdu (Nastaliq script)',
+  gu: 'Gujarati (Gujarati script)',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  pt: 'Portuguese',
+  ja: 'Japanese',
+  zh: 'Chinese (Simplified)',
+  ko: 'Korean',
+  ar: 'Arabic',
+  ru: 'Russian',
+  tr: 'Turkish',
+  ku: 'Kurdish (Kurmanji)',
+  am: 'Amharic (Geʻez script)',
+}
+
 function buildPrompt(sentence: string, translationLanguage: string) {
+  const langName = LANGUAGE_NAMES[translationLanguage] || translationLanguage
   return `Simplify this sentence to make it easier to understand. Use simpler words and shorter structure while keeping the original meaning.
 
 Original sentence: "${sentence}"
 
-${translationLanguage && translationLanguage !== 'none' ? `Also provide a translation of the simplified sentence in ${translationLanguage === 'hi' ? 'Hindi (Devanagari script)' : translationLanguage === 'mr' ? 'Marathi (Devanagari script)' : translationLanguage}.` : ''}
+${translationLanguage && translationLanguage !== 'none' ? `Also provide a translation of the simplified sentence in ${langName}.` : ''}
 
 IMPORTANT: Respond ONLY with valid JSON in this exact format, no extra text:
 {

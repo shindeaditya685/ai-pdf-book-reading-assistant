@@ -5,10 +5,36 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 const groq = new Groq({ apiKey: process.env.GROQ_API_KEY || '' })
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  hi: 'Hindi (Devanagari script)',
+  mr: 'Marathi (Devanagari script)',
+  bn: 'Bengali (Bangla script)',
+  or: 'Odia (Odia script)',
+  kn: 'Kannada (Kannada script)',
+  te: 'Telugu (Telugu script)',
+  ta: 'Tamil (Tamil script)',
+  pa: 'Punjabi (Gurmukhi script)',
+  ml: 'Malayalam (Malayalam script)',
+  ur: 'Urdu (Nastaliq script)',
+  gu: 'Gujarati (Gujarati script)',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  pt: 'Portuguese',
+  ja: 'Japanese',
+  zh: 'Chinese (Simplified)',
+  ko: 'Korean',
+  ar: 'Arabic',
+  ru: 'Russian',
+  tr: 'Turkish',
+  ku: 'Kurdish (Kurmanji)',
+  am: 'Amharic (Geʻez script)',
+}
+
 function buildPrompt(word: string, sentence: string, pageNumber: number | null, translationLanguage: string) {
   const langInstruction =
     translationLanguage && translationLanguage !== 'none'
-      ? `Also provide the translation of the word "${word}" in ${translationLanguage === 'hi' ? 'Hindi (Devanagari script)' : translationLanguage === 'mr' ? 'Marathi (Devanagari script)' : translationLanguage === 'es' ? 'Spanish' : translationLanguage === 'fr' ? 'French' : translationLanguage === 'de' ? 'German' : translationLanguage === 'ja' ? 'Japanese' : translationLanguage === 'zh' ? 'Chinese (Simplified)' : translationLanguage === 'pt' ? 'Portuguese' : translationLanguage === 'ar' ? 'Arabic' : translationLanguage === 'ko' ? 'Korean' : translationLanguage === 'ru' ? 'Russian' : 'English'}.`
+      ? `Also provide the translation of the word "${word}" in ${LANGUAGE_NAMES[translationLanguage] || 'English'}.`
       : 'Do NOT provide any translation.'
 
   return `You are an expert English dictionary assistant. A user is reading a PDF and has selected a word they want to understand.

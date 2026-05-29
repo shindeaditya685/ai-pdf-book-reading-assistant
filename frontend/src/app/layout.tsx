@@ -45,7 +45,7 @@ export default function RootLayout({
             __html: `
               (function() {
                 try {
-                  var theme = JSON.parse(localStorage.getItem('pdf-reader-ai-storage') || '{}').theme || 'dark';
+                  var theme = localStorage.getItem('pdf-reader-ai-theme') || 'dark';
                   document.documentElement.classList.add(theme);
                 } catch(e) {
                   document.documentElement.classList.add('dark');

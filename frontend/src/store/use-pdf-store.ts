@@ -13,21 +13,65 @@ export interface PopupPosition {
   y: number
 }
 
-export type TranslationLanguage = 'none' | 'hi' | 'mr' | 'es' | 'fr' | 'de' | 'ja' | 'zh' | 'pt' | 'ar' | 'ko' | 'ru'
+export type TranslationLanguage =
+  | 'none'
+  | 'hi' | 'mr' | 'bn' | 'or' | 'kn' | 'te' | 'ta' | 'pa' | 'ml' | 'ur' | 'gu'
+  | 'es' | 'fr' | 'de' | 'pt'
+  | 'ja' | 'zh' | 'ko'
+  | 'ar' | 'ru' | 'tr' | 'ku' | 'am'
 
 export const LANGUAGE_LABELS: Record<TranslationLanguage, string> = {
   none: 'No Translation',
   hi: 'Hindi',
   mr: 'Marathi',
+  bn: 'Bengali',
+  or: 'Odia',
+  kn: 'Kannada',
+  te: 'Telugu',
+  ta: 'Tamil',
+  pa: 'Punjabi',
+  ml: 'Malayalam',
+  ur: 'Urdu',
+  gu: 'Gujarati',
   es: 'Spanish',
   fr: 'French',
   de: 'German',
+  pt: 'Portuguese',
   ja: 'Japanese',
   zh: 'Chinese',
-  pt: 'Portuguese',
-  ar: 'Arabic',
   ko: 'Korean',
+  ar: 'Arabic',
   ru: 'Russian',
+  tr: 'Turkish',
+  ku: 'Kurdish',
+  am: 'Amharic',
+}
+
+// Used by API routes to tell the AI which language + script to output
+export const LANGUAGE_SCRIPT: Record<string, string> = {
+  hi: 'Hindi (Devanagari script)',
+  mr: 'Marathi (Devanagari script)',
+  bn: 'Bengali (Bangla script)',
+  or: 'Odia (Odia script)',
+  kn: 'Kannada (Kannada script)',
+  te: 'Telugu (Telugu script)',
+  ta: 'Tamil (Tamil script)',
+  pa: 'Punjabi (Gurmukhi script)',
+  ml: 'Malayalam (Malayalam script)',
+  ur: 'Urdu (Nastaliq script)',
+  gu: 'Gujarati (Gujarati script)',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  pt: 'Portuguese',
+  ja: 'Japanese',
+  zh: 'Chinese (Simplified)',
+  ko: 'Korean',
+  ar: 'Arabic',
+  ru: 'Russian',
+  tr: 'Turkish',
+  ku: 'Kurdish (Kurmanji)',
+  am: 'Amharic (Geʻez script)',
 }
 
 export interface WordHistoryEntry {
@@ -246,8 +290,22 @@ export const usePDFStore = create<PDFState>()(
       setExplanation: (explanation) => set({ explanation }),
       setIsExplaining: (loading) => set({ isExplaining: loading }),
       setTranslationLanguage: (lang) => set({ translationLanguage: lang }),
-      setTheme: (theme) => set({ theme }),
-      toggleTheme: () => set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' })),
+      setTheme: (theme) => {
+        if (typeof window !== 'undefined') {
+          document.documentElement.classList.toggle('dark', theme === 'dark')
+          localStorage.setItem('pdf-reader-ai-theme', theme)
+        }
+        set({ theme })
+      },
+      toggleTheme: () => {
+        if (typeof window !== 'undefined') {
+          const root = document.documentElement
+          const isDark = root.classList.contains('dark')
+          root.classList.toggle('dark', !isDark)
+          localStorage.setItem('pdf-reader-ai-theme', isDark ? 'light' : 'dark')
+        }
+        set((s) => ({ theme: s.theme === 'dark' ? 'light' : 'dark' }))
+      },
 
       clearSelection: () =>
         set({
