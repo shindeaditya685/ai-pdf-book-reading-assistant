@@ -19,6 +19,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { SearchBar } from '@/components/search-bar'
+import { AnnotationToolbar } from '@/components/annotation-toolbar'
+import { StickyNoteItem } from '@/components/sticky-note-item'
 
 // Set worker source
 if (typeof window !== 'undefined') {
@@ -63,11 +65,27 @@ export function PDFViewer() {
     setIsOcrProcessing,
     ocrProgress,
     setOcrProgress,
+    annotationMode,
+    setAnnotationMode,
+    highlightColor,
+    penColor,
+    penWidth,
+    annotations,
+    setAnnotations,
+    addAnnotation,
+    updateAnnotation,
+    removeAnnotation,
+    pdfFileName,
   } = usePDFStore()
 
   const [isLoading, setIsLoading] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null)
+
+  // Drawing and annotation refs/states
+  const drawingCanvasRef = useRef<HTMLCanvasElement>(null)
+  const [isDrawing, setIsDrawing] = useState(false)
+  const currentPathRef = useRef<{ x: number; y: number }[]>([])
 
   // Load PDF document
   useEffect(() => {
@@ -365,12 +383,286 @@ export function PDFViewer() {
     [setExplanation, setIsExplaining, translationLanguage]
   )
 
+  // Load annotations on mount or when PDF filename changes
+  useEffect(() => {
+    setAnnotations([])
+    if (!pdfFileName) return
+
+    const fetchAnnotations = async () => {
+      try {
+        const res = await authFetch(`/api/db/annotations?pdfFileName=${encodeURIComponent(pdfFileName)}`)
+        if (res.ok) {
+          const data = await res.json()
+          if (Array.isArray(data)) {
+            const mapped = data.map((ann: any) => ({
+              id: ann.annotationId || ann._id?.toString() || `ann-${Date.now()}-${Math.random()}`,
+              pdfFileName: ann.pdfFileName,
+              pageNumber: ann.pageNumber,
+              type: ann.type,
+              color: ann.color,
+              rects: ann.rects,
+              points: ann.points,
+              thickness: ann.thickness,
+              noteText: ann.noteText,
+              x: ann.x,
+              y: ann.y,
+              timestamp: ann.timestamp ? new Date(ann.timestamp).getTime() : Date.now(),
+            }))
+            setAnnotations(mapped)
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load annotations:', err)
+      }
+    }
+
+    fetchAnnotations()
+  }, [pdfFileName, setAnnotations])
+
+  // Sync size of drawing canvas
+  useEffect(() => {
+    if ((annotationMode === 'pen' || annotationMode === 'eraser') && drawingCanvasRef.current && canvasRef.current) {
+      drawingCanvasRef.current.width = canvasRef.current.width
+      drawingCanvasRef.current.height = canvasRef.current.height
+    }
+  }, [annotationMode, scale, currentPage])
+
+  // Save annotation to MongoDB helper
+  const saveAnnotationToDb = useCallback(async (ann: any) => {
+    try {
+      await authFetch('/api/db/annotations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(ann),
+      })
+    } catch (err) {
+      console.error('Failed to sync annotation to db:', err)
+    }
+  }, [])
+
+  // Delete annotation from MongoDB helper
+  const deleteAnnotationFromDb = useCallback(async (id: string) => {
+    try {
+      await authFetch(`/api/db/annotations?id=${encodeURIComponent(id)}`, {
+        method: 'DELETE',
+      })
+    } catch (err) {
+      console.error('Failed to delete annotation from db:', err)
+    }
+  }, [])
+
+  // Eraser helper: erase drawing stroke near (px, py)
+  const eraseDrawingAtPoint = useCallback((px: number, py: number) => {
+    const pageAnns = annotations.filter((a) => a.pageNumber === currentPage && a.type === 'drawing')
+    
+    const isPointNearLine = (px: number, py: number, x1: number, y1: number, x2: number, y2: number, threshold = 8) => {
+      const A = px - x1
+      const B = py - y1
+      const C = x2 - x1
+      const D = y2 - y1
+
+      const dot = A * C + B * D
+      const lenSq = C * C + D * D
+      let param = -1
+      if (lenSq !== 0) {
+        param = dot / lenSq
+      }
+
+      let xx, yy
+      if (param < 0) {
+        xx = x1
+        yy = y1
+      } else if (param > 1) {
+        xx = x2
+        yy = y2
+      } else {
+        xx = x1 + param * C
+        yy = y1 + param * D
+      }
+
+      const dx = px - xx
+      const dy = py - yy
+      return Math.sqrt(dx * dx + dy * dy) < threshold
+    }
+
+    for (const ann of pageAnns) {
+      if (!ann.points) continue
+      for (let i = 0; i < ann.points.length - 1; i++) {
+        const p1 = ann.points[i]
+        const p2 = ann.points[i + 1]
+        if (isPointNearLine(px, py, p1.x, p1.y, p2.x, p2.y, 10 / scale)) {
+          removeAnnotation(ann.id)
+          deleteAnnotationFromDb(ann.id)
+          return
+        }
+      }
+    }
+  }, [annotations, currentPage, removeAnnotation, deleteAnnotationFromDb, scale])
+
+  // Drawing event handlers
+  const handleDrawingStart = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    const canvas = drawingCanvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / scale
+    const y = (e.clientY - rect.top) / scale
+
+    if (annotationMode === 'pen') {
+      setIsDrawing(true)
+      currentPathRef.current = [{ x, y }]
+
+      const ctx = canvas.getContext('2d')
+      if (ctx) {
+        ctx.strokeStyle = penColor
+        ctx.lineWidth = penWidth * scale
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        ctx.beginPath()
+        ctx.moveTo(x * scale, y * scale)
+        ctx.lineTo(x * scale, y * scale)
+        ctx.stroke()
+      }
+    } else if (annotationMode === 'eraser') {
+      eraseDrawingAtPoint(x, y)
+    }
+  }
+
+  const handleDrawingMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
+    if (!isDrawing && annotationMode !== 'eraser') return
+    const canvas = drawingCanvasRef.current
+    if (!canvas) return
+    const rect = canvas.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / scale
+    const y = (e.clientY - rect.top) / scale
+
+    if (annotationMode === 'pen' && isDrawing) {
+      const prevPoint = currentPathRef.current[currentPathRef.current.length - 1]
+      currentPathRef.current.push({ x, y })
+
+      const ctx = canvas.getContext('2d')
+      if (ctx && prevPoint) {
+        ctx.strokeStyle = penColor
+        ctx.lineWidth = penWidth * scale
+        ctx.lineCap = 'round'
+        ctx.lineJoin = 'round'
+        ctx.beginPath()
+        ctx.moveTo(prevPoint.x * scale, prevPoint.y * scale)
+        ctx.lineTo(x * scale, y * scale)
+        ctx.stroke()
+      }
+    } else if (annotationMode === 'eraser') {
+      if (e.buttons === 1) {
+        eraseDrawingAtPoint(x, y)
+      }
+    }
+  }
+
+  const handleDrawingEnd = () => {
+    if (!isDrawing) return
+    setIsDrawing(false)
+
+    if (currentPathRef.current.length > 1) {
+      const newId = `ann-${Date.now()}-${Math.random()}`
+      const newDrawing = {
+        id: newId,
+        pdfFileName: pdfFileName || 'unknown',
+        pageNumber: currentPage,
+        type: 'drawing' as const,
+        color: penColor,
+        thickness: penWidth,
+        points: currentPathRef.current,
+        timestamp: Date.now(),
+      }
+
+      addAnnotation(newDrawing)
+      saveAnnotationToDb(newDrawing)
+    }
+
+    const canvas = drawingCanvasRef.current
+    if (canvas) {
+      const ctx = canvas.getContext('2d')
+      ctx?.clearRect(0, 0, canvas.width, canvas.height)
+    }
+    currentPathRef.current = []
+  }
+
+  // Sticky Note placement click handler
+  const handleNotePlacement = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect()
+    const x = (e.clientX - rect.left) / scale
+    const y = (e.clientY - rect.top) / scale
+
+    const newId = `ann-${Date.now()}-${Math.random()}`
+    const newNote = {
+      id: newId,
+      pdfFileName: pdfFileName || 'unknown',
+      pageNumber: currentPage,
+      type: 'note' as const,
+      color: '#F59E0B',
+      noteText: '',
+      x,
+      y,
+      timestamp: Date.now(),
+    }
+
+    addAnnotation(newNote)
+    saveAnnotationToDb(newNote)
+    setAnnotationMode('select')
+  }
+
+  // Clear annotations helper
+  const handleClearAllPageAnnotations = useCallback(async () => {
+    const pageAnns = annotations.filter((a) => a.pageNumber === currentPage)
+    if (pageAnns.length === 0) return
+
+    if (confirm('Are you sure you want to clear all highlights, drawings, and notes on this page?')) {
+      for (const ann of pageAnns) {
+        removeAnnotation(ann.id)
+        deleteAnnotationFromDb(ann.id)
+      }
+    }
+  }, [annotations, currentPage, removeAnnotation, deleteAnnotationFromDb])
+
+  // Mouse up selection handler
   const handleMouseUp = useCallback(async () => {
     const selection = window.getSelection()
     if (!selection || selection.isCollapsed || !selection.toString().trim()) return
     const selectedText = selection.toString().trim()
     const textLayer = textLayerRef.current
     if (!textLayer || !textLayer.contains(selection.anchorNode)) return
+
+    // If Highlight tool is active, instantly apply text selection highlight
+    if (annotationMode === 'highlight') {
+      const range = selection.getRangeAt(0)
+      const clientRects = Array.from(range.getClientRects())
+      const canvasElement = canvasRef.current
+      if (canvasElement && clientRects.length > 0) {
+        const canvasRect = canvasElement.getBoundingClientRect()
+        const rects = clientRects.map((r) => ({
+          left: (r.left - canvasRect.left) / scale,
+          top: (r.top - canvasRect.top) / scale,
+          width: r.width / scale,
+          height: r.height / scale,
+        }))
+
+        const newId = `ann-${Date.now()}-${Math.random()}`
+        const newHighlight = {
+          id: newId,
+          pdfFileName: pdfFileName || 'unknown',
+          pageNumber: currentPage,
+          type: 'highlight' as const,
+          color: highlightColor,
+          rects,
+          noteText: selectedText,
+          timestamp: Date.now(),
+        }
+
+        addAnnotation(newHighlight)
+        saveAnnotationToDb(newHighlight)
+        selection.removeAllRanges()
+      }
+      return
+    }
 
     const word = selectedText.split(/\s+/)[0]
     const pageText = await getPageText(currentPage)
@@ -388,7 +680,22 @@ export function PDFViewer() {
     setSelectedPageNumber(currentPage)
     setPopupPosition(position)
     fetchExplanation(word, sentence, currentPage)
-  }, [currentPage, getPageText, extractSentence, setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, fetchExplanation])
+  }, [
+    currentPage,
+    getPageText,
+    extractSentence,
+    setSelectedWord,
+    setSelectedSentence,
+    setSelectedPageNumber,
+    setPopupPosition,
+    fetchExplanation,
+    annotationMode,
+    highlightColor,
+    pdfFileName,
+    scale,
+    addAnnotation,
+    saveAnnotationToDb,
+  ])
 
   const getWordAtPoint = useCallback((target: HTMLElement, clientX: number, clientY: number): string => {
     const text = target.textContent || ''
@@ -407,6 +714,7 @@ export function PDFViewer() {
 
   const handleClick = useCallback(
     async (e: React.MouseEvent) => {
+      if (annotationMode !== 'select') return
       const target = e.target as HTMLElement
       if (target.tagName !== 'SPAN' || !target.textContent) return
       const textLayer = textLayerRef.current
@@ -541,16 +849,113 @@ export function PDFViewer() {
           <span className="text-[10px] text-muted-foreground">{ocrProgress}%</span>
         </div>
       )}
-      <div ref={containerRef} className="pdf-scroll-container relative flex-1 overflow-auto bg-muted/30 dark:bg-muted/10" onClick={handleContainerClick} onMouseUp={handleMouseUp}>
-        {isLoading && (
-          <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-sm">
-            <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
-          </div>
-        )}
-        <div className="flex justify-center py-6">
-          <div className="relative shadow-xl">
-            <canvas ref={canvasRef} className="block" />
-            <div ref={textLayerRef} className="pdf-text-layer" onClick={handleClick} />
+      <div className="relative flex-1 overflow-hidden">
+        {/* Floating Annotation Toolbar */}
+        <AnnotationToolbar onClearAll={handleClearAllPageAnnotations} />
+
+        <div ref={containerRef} className="pdf-scroll-container h-full overflow-auto bg-muted/30 dark:bg-muted/10" onClick={handleContainerClick} onMouseUp={handleMouseUp}>
+          {isLoading && (
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-sm">
+              <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+            </div>
+          )}
+          <div className="flex justify-center py-6">
+            <div className="relative shadow-xl">
+              <canvas ref={canvasRef} className="block" />
+              <div ref={textLayerRef} className="pdf-text-layer" onClick={handleClick} />
+
+              {/* Highlights Overlay Layer */}
+              <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                {annotations
+                  .filter((ann) => ann.pageNumber === currentPage && ann.type === 'highlight' && ann.rects)
+                  .map((ann) =>
+                    ann.rects!.map((rect, idx) => (
+                      <div
+                        key={`${ann.id}-${idx}`}
+                        style={{
+                          position: 'absolute',
+                          left: `${rect.left * scale}px`,
+                          top: `${rect.top * scale}px`,
+                          width: `${rect.width * scale}px`,
+                          height: `${rect.height * scale}px`,
+                          backgroundColor: ann.color,
+                          opacity: 0.35,
+                          mixBlendMode: 'multiply',
+                        }}
+                      />
+                    ))
+                  )}
+              </div>
+
+              {/* SVG Drawing Paths Overlay Layer */}
+              <svg
+                className="absolute inset-0 pointer-events-none z-10"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                }}
+              >
+                {annotations
+                  .filter((ann) => ann.pageNumber === currentPage && ann.type === 'drawing' && ann.points)
+                  .map((ann) => {
+                    const pathData = ann.points!
+                      .map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x * scale} ${p.y * scale}`)
+                      .join(' ')
+                    return (
+                      <path
+                        key={ann.id}
+                        d={pathData}
+                        stroke={ann.color}
+                        strokeWidth={(ann.thickness || 3) * scale}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )
+                  })}
+              </svg>
+
+              {/* Sticky Notes Pin Layer */}
+              <div className="absolute inset-0 pointer-events-none z-30">
+                {annotations
+                  .filter((ann) => ann.pageNumber === currentPage && ann.type === 'note')
+                  .map((ann) => (
+                    <StickyNoteItem
+                      key={ann.id}
+                      annotation={ann}
+                      scale={scale}
+                      onUpdate={(text) => {
+                        updateAnnotation(ann.id, text)
+                        saveAnnotationToDb({ ...ann, noteText: text })
+                      }}
+                      onDelete={() => {
+                        removeAnnotation(ann.id)
+                        deleteAnnotationFromDb(ann.id)
+                      }}
+                    />
+                  ))}
+              </div>
+
+              {/* Interactive Drawing Layer (only visible/active in Pen/Eraser modes) */}
+              {(annotationMode === 'pen' || annotationMode === 'eraser') && (
+                <canvas
+                  ref={drawingCanvasRef}
+                  className="absolute inset-0 z-20 cursor-crosshair touch-none"
+                  onPointerDown={handleDrawingStart}
+                  onPointerMove={handleDrawingMove}
+                  onPointerUp={handleDrawingEnd}
+                  onPointerLeave={handleDrawingEnd}
+                />
+              )}
+
+              {/* Sticky Note Placement Overlay Layer */}
+              {annotationMode === 'note' && (
+                <div
+                  className="absolute inset-0 z-20 cursor-copy"
+                  onClick={handleNotePlacement}
+                />
+              )}
+            </div>
           </div>
         </div>
       </div>

@@ -98,6 +98,21 @@ export interface Bookmark {
   pdfFileName: string
 }
 
+export interface Annotation {
+  id: string
+  pdfFileName: string
+  pageNumber: number
+  type: 'highlight' | 'drawing' | 'note'
+  color: string
+  rects?: { left: number; top: number; width: number; height: number }[]
+  points?: { x: number; y: number }[]
+  thickness?: number
+  noteText?: string
+  x?: number
+  y?: number
+  timestamp?: number
+}
+
 export interface OcrWord {
   text: string
   x: number
@@ -162,6 +177,13 @@ interface PDFState {
 
   // Recent PDFs
   recentPdfs: RecentPdf[]
+
+  // Annotations state
+  annotationMode: 'select' | 'highlight' | 'pen' | 'eraser' | 'note'
+  highlightColor: string
+  penColor: string
+  penWidth: number
+  annotations: Annotation[]
 
   // OCR state
   ocrEnabled: boolean
@@ -229,6 +251,16 @@ interface PDFState {
   toggleBookmarks: () => void
   setShowSearch: (show: boolean) => void
   toggleSearch: () => void
+
+  // Annotation actions
+  setAnnotationMode: (mode: 'select' | 'highlight' | 'pen' | 'eraser' | 'note') => void
+  setHighlightColor: (color: string) => void
+  setPenColor: (color: string) => void
+  setPenWidth: (width: number) => void
+  setAnnotations: (annotations: Annotation[]) => void
+  addAnnotation: (annotation: Annotation) => void
+  updateAnnotation: (id: string, text: string) => void
+  removeAnnotation: (id: string) => void
 }
 
 export const usePDFStore = create<PDFState>()(
@@ -267,6 +299,12 @@ export const usePDFStore = create<PDFState>()(
       showHistory: false,
       showBookmarks: false,
       showSearch: false,
+
+      annotationMode: 'select',
+      highlightColor: '#FEF08A',
+      penColor: '#EF4444',
+      penWidth: 3,
+      annotations: [],
 
       setPdfFile: (file) =>
         set({
@@ -341,6 +379,8 @@ export const usePDFStore = create<PDFState>()(
           ocrText: {},
           isOcrProcessing: false,
           ocrProgress: 0,
+          annotationMode: 'select',
+          annotations: [],
         }),
 
       addToHistory: (entry) =>
@@ -400,6 +440,19 @@ export const usePDFStore = create<PDFState>()(
       toggleBookmarks: () => set((s) => ({ showBookmarks: !s.showBookmarks })),
       setShowSearch: (show) => set({ showSearch: show }),
       toggleSearch: () => set((s) => ({ showSearch: !s.showSearch })),
+
+      setAnnotationMode: (mode) => set({ annotationMode: mode }),
+      setHighlightColor: (color) => set({ highlightColor: color }),
+      setPenColor: (color) => set({ penColor: color }),
+      setPenWidth: (width) => set({ penWidth: width }),
+      setAnnotations: (annotations) => set({ annotations }),
+      addAnnotation: (ann) => set((s) => ({ annotations: [...s.annotations, ann] })),
+      updateAnnotation: (id, text) => set((s) => ({
+        annotations: s.annotations.map((a) => a.id === id ? { ...a, noteText: text } : a)
+      })),
+      removeAnnotation: (id) => set((s) => ({
+        annotations: s.annotations.filter((a) => a.id !== id)
+      })),
 
       setOcrEnabled: (enabled) => set({ ocrEnabled: enabled }),
       setOcrText: (page, data) =>

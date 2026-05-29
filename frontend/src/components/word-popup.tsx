@@ -7,6 +7,13 @@ import { Button } from '@/components/ui/button'
 import { usePDFStore, LANGUAGE_LABELS } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 
+const HIGHLIGHT_COLORS = [
+  { value: 'rgba(254, 240, 138, 0.45)', label: 'Yellow', tailwind: 'bg-yellow-200 border-yellow-300' },
+  { value: 'rgba(187, 247, 208, 0.45)', label: 'Green', tailwind: 'bg-green-200 border-green-300' },
+  { value: 'rgba(251, 207, 232, 0.45)', label: 'Pink', tailwind: 'bg-pink-200 border-pink-300' },
+  { value: 'rgba(191, 219, 254, 0.45)', label: 'Blue', tailwind: 'bg-blue-200 border-blue-300' },
+]
+
 export function WordPopup() {
   const {
     selectedWord,
@@ -131,6 +138,54 @@ export function WordPopup() {
       setIsSimplifying(false)
     }
   }, [selectedSentence, translationLanguage])
+
+  const handleHighlightFromPopup = useCallback((colorValue: string) => {
+    const selection = window.getSelection()
+    if (!selection || selection.isCollapsed || !selection.toString().trim()) return
+    const textLayer = document.querySelector('.pdf-text-layer')
+    if (!textLayer || !textLayer.contains(selection.anchorNode)) return
+
+    const canvasElement = document.querySelector('canvas')
+    if (!canvasElement) return
+    const canvasRect = canvasElement.getBoundingClientRect()
+    const range = selection.getRangeAt(0)
+    const clientRects = Array.from(range.getClientRects())
+    
+    const store = usePDFStore.getState()
+    const activeScale = store.scale
+
+    const rects = clientRects.map((r) => ({
+      left: (r.left - canvasRect.left) / activeScale,
+      top: (r.top - canvasRect.top) / activeScale,
+      width: r.width / activeScale,
+      height: r.height / activeScale,
+    }))
+
+    const newId = `ann-${Date.now()}-${Math.random()}`
+    const newHighlight = {
+      id: newId,
+      pdfFileName: pdfFileName || 'unknown',
+      pageNumber: selectedPageNumber || 1,
+      type: 'highlight' as const,
+      color: colorValue,
+      rects,
+      noteText: selection.toString().trim(),
+      timestamp: Date.now(),
+    }
+
+    store.addAnnotation(newHighlight)
+    
+    // Sync to DB
+    authFetch('/api/db/annotations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(newHighlight),
+    }).catch(() => {})
+
+    // Clear selection
+    selection.removeAllRanges()
+    clearSelection()
+  }, [pdfFileName, selectedPageNumber, clearSelection])
 
   // Reset simplified state when word changes
   if (selectedWord && showSimplified && explanation?.word !== selectedWord) {
@@ -308,6 +363,23 @@ export function WordPopup() {
                         </p>
                       </div>
                     )}
+                  </div>
+                )}
+
+                {/* Highlight Options */}
+                {selectedPageNumber && explanation && !isExplaining && (
+                  <div className="flex items-center justify-between border-t border-border/80 pt-2.5 mt-2">
+                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Highlight Selection</span>
+                    <div className="flex items-center gap-1.5">
+                      {HIGHLIGHT_COLORS.map((color) => (
+                        <button
+                          key={color.value}
+                          onClick={() => handleHighlightFromPopup(color.value)}
+                          className={`h-5 w-5 rounded-full ${color.tailwind} transition-all hover:scale-125 border border-border shadow-sm active:scale-95`}
+                          title={`Highlight as ${color.label}`}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
               </div>
