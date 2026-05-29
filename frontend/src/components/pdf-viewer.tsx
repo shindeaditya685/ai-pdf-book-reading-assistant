@@ -390,6 +390,21 @@ export function PDFViewer() {
     fetchExplanation(word, sentence, currentPage)
   }, [currentPage, getPageText, extractSentence, setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, fetchExplanation])
 
+  const getWordAtPoint = useCallback((target: HTMLElement, clientX: number, clientY: number): string => {
+    const text = target.textContent || ''
+    if (!('caretRangeFromPoint' in document)) {
+      return text.trim().replace(/[^\w'-]/g, '')
+    }
+    const range = (document as any).caretRangeFromPoint(clientX, clientY)
+    if (!range || !range.startContainer) return text.trim().replace(/[^\w'-]/g, '')
+    const offset = range.startOffset
+    const before = text.slice(0, offset)
+    const after = text.slice(offset)
+    const matchBefore = before.match(/(\w['\w-]*)$/)
+    const matchAfter = after.match(/^(['\w-]*\w)/)
+    return ((matchBefore?.[1] || '') + (matchAfter?.[1] || '')).trim()
+  }, [])
+
   const handleClick = useCallback(
     async (e: React.MouseEvent) => {
       const target = e.target as HTMLElement
@@ -397,7 +412,7 @@ export function PDFViewer() {
       const textLayer = textLayerRef.current
       if (!textLayer || !textLayer.contains(target)) return
 
-      const word = target.textContent.trim().replace(/[^\w'-]/g, '')
+      const word = getWordAtPoint(target, e.clientX, e.clientY)
       if (!word || word.length < 2) return
 
       const pageText = await getPageText(currentPage)
@@ -415,7 +430,7 @@ export function PDFViewer() {
       setPopupPosition(position)
       fetchExplanation(word, sentence, currentPage)
     },
-    [currentPage, getPageText, extractSentence, setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, fetchExplanation]
+    [currentPage, getPageText, extractSentence, setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, fetchExplanation, getWordAtPoint]
   )
 
   const handleContainerClick = useCallback((e: React.MouseEvent) => {

@@ -4,6 +4,8 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:webpack": "next dev --webpack",
+    "dev:lowmem": "cmd /c \"set NODE_OPTIONS=--max-old-space-size=2048 && next dev --webpack\"",
     "build": "next build",
     "start": "next start",
     "lint": "next lint"
