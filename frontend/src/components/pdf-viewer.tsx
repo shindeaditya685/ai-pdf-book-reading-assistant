@@ -66,6 +66,7 @@ export function PDFViewer() {
   } = usePDFStore()
 
   const [isLoading, setIsLoading] = useState(false)
+  const [pdfReady, setPdfReady] = useState(false)
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null)
 
   // Load PDF document
@@ -73,6 +74,7 @@ export function PDFViewer() {
     if (!pdfDataUrl) {
       pdfDocRef.current = null
       setTotalPages(0)
+      setPdfReady(false)
       pageTextCacheRef.current.clear()
       return
     }
@@ -86,6 +88,7 @@ export function PDFViewer() {
         setTotalPages(pdf.numPages)
         setCurrentPage(1)
         pageTextCacheRef.current.clear()
+        setPdfReady(true)
       } catch (err) {
         console.error('Error loading PDF:', err)
       } finally {
@@ -232,7 +235,7 @@ export function PDFViewer() {
 
   useEffect(() => {
     if (pdfDocRef.current) renderPage()
-  }, [renderPage])
+  }, [renderPage, pdfReady])
 
   // OCR processing
   useEffect(() => {
