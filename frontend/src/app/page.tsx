@@ -1,8 +1,8 @@
 'use client'
 
-import { useCallback, useEffect, useRef } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { BookOpen, Brain, Sparkles, FileText, LogOut } from 'lucide-react'
+import { BookOpen, Brain, Sparkles, FileText, LogOut, Loader2 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
 import { WordPopup } from '@/components/word-popup'
@@ -59,6 +59,7 @@ export default function Home() {
   } = usePDFStore()
 
   const { user, logout } = useAuth()
+  const [recentLoading, setRecentLoading] = useState<string | null>(null)
 
   const dataLoadedRef = useRef<string | null>(null)
   const recentLoadedRef = useRef(false)
@@ -138,9 +139,10 @@ export default function Home() {
   // Load a recent PDF from MongoDB
   const handleLoadRecentPdf = useCallback(
     async (fileName: string) => {
+      setRecentLoading(fileName)
       try {
         const res = await authFetch(`/api/db/pdf?fileName=${encodeURIComponent(fileName)}`)
-        if (!res.ok) return
+        if (!res.ok) { setRecentLoading(null); return }
         const pdf = await res.json()
         if (pdf?.content) {
           clearOcrText()
@@ -157,6 +159,7 @@ export default function Home() {
       } catch {
         // Not available
       }
+      setRecentLoading(null)
     },
     [setPdfFileName, setPdfDataUrl, clearOcrText, setOcrText]
   )
@@ -283,9 +286,14 @@ export default function Home() {
                       <button
                         key={pdf.fileName}
                         onClick={() => handleLoadRecentPdf(pdf.fileName)}
-                        className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-emerald-400 hover:bg-emerald-50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/20"
+                        disabled={recentLoading === pdf.fileName}
+                        className="flex items-center gap-2 rounded-lg border bg-background px-3 py-2 text-xs text-muted-foreground transition-colors hover:border-emerald-400 hover:bg-emerald-50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/20 disabled:opacity-50 disabled:cursor-wait"
                       >
-                        <FileText className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                        {recentLoading === pdf.fileName ? (
+                          <Loader2 className="h-3.5 w-3.5 shrink-0 animate-spin text-emerald-500" />
+                        ) : (
+                          <FileText className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                        )}
                         <span className="font-medium text-foreground">{pdf.fileName}</span>
                         <span className="text-[10px]">{wordCount} words, {bmCount} bookmarks</span>
                       </button>

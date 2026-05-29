@@ -113,10 +113,8 @@ export function PDFViewer() {
     try {
       const page = await pdf.getPage(pageNum)
       const textContent = await page.getTextContent()
-      const text = textContent.items
-        .filter((item): item is { str: string; transform: number[] } => 'str' in item)
-        .map((item) => item.str)
-        .join(' ')
+      const items = textContent.items.filter((item): item is any => 'str' in item)
+      const text = items.map((item) => item.str).join(' ')
       pageTextCacheRef.current.set(pageNum, text)
       return text
     } catch {
@@ -153,12 +151,10 @@ export function PDFViewer() {
       const textLayer = textLayerRef.current
       const pageOcrData = ocrText[currentPage]
       const textContent = await page.getTextContent()
+      const textItems = textContent.items.filter((item): item is any => 'str' in item)
       const pageText = pageOcrData
         ? pageOcrData.text
-        : textContent.items
-            .filter((item): item is { str: string } => 'str' in item)
-            .map((item) => item.str)
-            .join(' ')
+        : textItems.map((item) => item.str).join(' ')
       pageTextCacheRef.current.set(currentPage, pageText)
 
       if (textLayer) {
@@ -270,10 +266,11 @@ export function PDFViewer() {
             )
             if (!blob) continue
 
-            const { data } = await worker.recognize(blob)
-            const words = data.words
-              .filter((w) => w.text.trim())
-              .map((w) => ({
+            const ocrResult = await worker.recognize(blob)
+            const imageWords: any[] = (ocrResult as any).data?.words || []
+            const words = imageWords
+              .filter((w: any) => w.text.trim())
+              .map((w: any) => ({
                 text: w.text.trim(),
                 x: w.bbox.x0,
                 y: w.bbox.y0,
@@ -282,7 +279,7 @@ export function PDFViewer() {
               }))
 
             setOcrText(pageNum, {
-              text: data.text,
+              text: (ocrResult as any).data.text,
               words,
               width: viewport.width,
               height: viewport.height,
@@ -355,12 +352,12 @@ export function PDFViewer() {
         })
         const data = await res.json()
         if (data.error) {
-          setExplanation({ word, meaning: data.error, pronunciation: '', translation: null })
+          setExplanation({ word, meaning: data.error, pronunciation: '', translation: '' })
         } else {
           setExplanation(data)
         }
       } catch {
-        setExplanation({ word, meaning: 'Failed to get explanation. Please try again.', pronunciation: '', translation: null })
+        setExplanation({ word, meaning: 'Failed to get explanation. Please try again.', pronunciation: '', translation: '' })
       } finally {
         setIsExplaining(false)
       }
