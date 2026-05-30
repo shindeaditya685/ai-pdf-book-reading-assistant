@@ -8,10 +8,10 @@ import { usePDFStore, LANGUAGE_LABELS } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 
 const HIGHLIGHT_COLORS = [
-  { value: 'rgba(254, 240, 138, 0.45)', label: 'Yellow', tailwind: 'bg-yellow-200 border-yellow-300' },
-  { value: 'rgba(187, 247, 208, 0.45)', label: 'Green', tailwind: 'bg-green-200 border-green-300' },
-  { value: 'rgba(251, 207, 232, 0.45)', label: 'Pink', tailwind: 'bg-pink-200 border-pink-300' },
-  { value: 'rgba(191, 219, 254, 0.45)', label: 'Blue', tailwind: 'bg-blue-200 border-blue-300' },
+  { value: 'rgba(253, 224, 71, 0.65)', label: 'Yellow', tailwind: 'bg-yellow-400 border-yellow-500' },
+  { value: 'rgba(74, 222, 128, 0.65)', label: 'Green',  tailwind: 'bg-green-400 border-green-500' },
+  { value: 'rgba(244, 114, 182, 0.65)', label: 'Pink',   tailwind: 'bg-pink-400 border-pink-500' },
+  { value: 'rgba(96, 165, 250, 0.65)', label: 'Blue',   tailwind: 'bg-blue-400 border-blue-500' },
 ]
 
 export function WordPopup() {

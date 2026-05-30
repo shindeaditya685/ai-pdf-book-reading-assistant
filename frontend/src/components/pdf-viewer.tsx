@@ -33,6 +33,8 @@ export function PDFViewer() {
   const textLayerRef = useRef<HTMLDivElement>(null)
   const containerRef = useRef<HTMLDivElement>(null)
   const renderTaskRef = useRef<pdfjsLib.RenderTask | null>(null)
+  const renderChainRef = useRef<Promise<void>>(Promise.resolve())
+  const renderRequestIdRef = useRef<number>(0)
   const pageTextCacheRef = useRef<Map<number, string>>(new Map())
   const ocrCancelledRef = useRef(false)
 
@@ -151,110 +153,136 @@ export function PDFViewer() {
 
   // Render page
   const renderPage = useCallback(async () => {
-    const pdf = pdfDocRef.current
-    if (!pdf || !canvasRef.current) return
+    const reqId = ++renderRequestIdRef.current
 
-    if (renderTaskRef.current) {
-      try { renderTaskRef.current.cancel() } catch { /* ignore */ }
-      renderTaskRef.current = null
-    }
+    const promise = (async () => {
+      // 1. Wait for any previous render operation to completely finish/abort
+      try {
+        await renderChainRef.current
+      } catch {
+        // ignore
+      }
 
-    setIsLoading(true)
-    try {
-      const page = await pdf.getPage(currentPage)
-      const viewport = page.getViewport({ scale })
-      const canvas = canvasRef.current
-      const context = canvas.getContext('2d')
-      if (!context) return
+      // 2. If a newer render request has arrived, abort immediately
+      if (reqId !== renderRequestIdRef.current) return
 
-      canvas.height = viewport.height
-      canvas.width = viewport.width
+      const pdf = pdfDocRef.current
+      if (!pdf || !canvasRef.current) return
 
-      const renderTask = page.render({ canvasContext: context, viewport })
-      renderTaskRef.current = renderTask
-      await renderTask.promise
+      // 3. Cancel any currently executing render task
+      if (renderTaskRef.current) {
+        try {
+          renderTaskRef.current.cancel()
+        } catch {
+          /* ignore */
+        }
+        renderTaskRef.current = null
+      }
 
-      // Build text layer
-      const textLayer = textLayerRef.current
-      const pageOcrData = ocrText[currentPage]
-      const textContent = await page.getTextContent()
-      const textItems = textContent.items.filter((item): item is any => 'str' in item)
-      const pageText = pageOcrData
-        ? pageOcrData.text
-        : textItems.map((item) => item.str).join(' ')
-      pageTextCacheRef.current.set(currentPage, pageText)
+      setIsLoading(true)
+      try {
+        const page = await pdf.getPage(currentPage)
+        const viewport = page.getViewport({ scale })
+        const canvas = canvasRef.current
+        const context = canvas.getContext('2d')
+        if (!context) return
 
-      if (textLayer) {
-        textLayer.innerHTML = ''
-        textLayer.className = 'pdf-text-layer'
-        textLayer.style.width = `${viewport.width}px`
-        textLayer.style.height = `${viewport.height}px`
+        canvas.height = viewport.height
+        canvas.width = viewport.width
 
-        if (pageOcrData && pageOcrData.words.length > 0) {
-          const scaleX = viewport.width / pageOcrData.width
-          const scaleY = viewport.height / pageOcrData.height
-          pageOcrData.words.forEach((word) => {
-            if (!word.text) return
-            const fontSize = Math.min(word.height * scaleY * 0.85, 30)
-            const span = document.createElement('span')
-            span.textContent = word.text
-            span.style.position = 'absolute'
-            span.style.left = `${word.x * scaleX}px`
-            span.style.top = `${word.y * scaleY}px`
-            span.style.fontSize = `${fontSize}px`
-            span.style.fontFamily = 'sans-serif'
-            span.style.transformOrigin = '0% 0%'
+        const renderTask = page.render({ canvasContext: context, viewport })
+        renderTaskRef.current = renderTask
+        await renderTask.promise
+        renderTaskRef.current = null
 
-            if (searchQuery && word.text.toLowerCase().includes(searchQuery.toLowerCase())) {
-              const highlight = document.createElement('mark')
-              highlight.className = 'pdf-search-highlight'
-              if (searchResults[currentSearchIndex]?.text === word.text) {
-                highlight.classList.add('pdf-search-highlight-current')
+        if (reqId !== renderRequestIdRef.current) return
+
+        // Build text layer
+        const textLayer = textLayerRef.current
+        const pageOcrData = ocrText[currentPage]
+        const textContent = await page.getTextContent()
+        const textItems = textContent.items.filter((item): item is any => 'str' in item)
+        const pageText = pageOcrData
+          ? pageOcrData.text
+          : textItems.map((item) => item.str).join(' ')
+        pageTextCacheRef.current.set(currentPage, pageText)
+
+        if (textLayer) {
+          textLayer.innerHTML = ''
+          textLayer.className = 'pdf-text-layer'
+          textLayer.style.width = `${viewport.width}px`
+          textLayer.style.height = `${viewport.height}px`
+
+          if (pageOcrData && pageOcrData.words.length > 0) {
+            const scaleX = viewport.width / pageOcrData.width
+            const scaleY = viewport.height / pageOcrData.height
+            pageOcrData.words.forEach((word) => {
+              if (!word.text) return
+              const fontSize = Math.min(word.height * scaleY * 0.85, 30)
+              const span = document.createElement('span')
+              span.textContent = word.text
+              span.style.position = 'absolute'
+              span.style.left = `${word.x * scaleX}px`
+              span.style.top = `${word.y * scaleY}px`
+              span.style.fontSize = `${fontSize}px`
+              span.style.fontFamily = 'sans-serif'
+              span.style.transformOrigin = '0% 0%'
+
+              if (searchQuery && word.text.toLowerCase().includes(searchQuery.toLowerCase())) {
+                const highlight = document.createElement('mark')
+                highlight.className = 'pdf-search-highlight'
+                if (searchResults[currentSearchIndex]?.text === word.text) {
+                  highlight.classList.add('pdf-search-highlight-current')
+                }
+                highlight.textContent = word.text
+                span.textContent = ''
+                span.appendChild(highlight)
               }
-              highlight.textContent = word.text
-              span.textContent = ''
-              span.appendChild(highlight)
-            }
 
-            textLayer.appendChild(span)
-          })
-        } else {
-          textContent.items.forEach((item) => {
-            if (!('str' in item) || !item.str) return
-            const tx = pdfjsLib.Util.transform(viewport.transform, item.transform)
-            const fontSize = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3])
-            const span = document.createElement('span')
-            span.textContent = item.str
-            span.style.position = 'absolute'
-            span.style.left = `${tx[4]}px`
-            span.style.top = `${tx[5] - fontSize}px`
-            span.style.fontSize = `${fontSize}px`
-            span.style.fontFamily = 'sans-serif'
-            span.style.transformOrigin = '0% 0%'
+              textLayer.appendChild(span)
+            })
+          } else {
+            textContent.items.forEach((item) => {
+              if (!('str' in item) || !item.str) return
+              const tx = pdfjsLib.Util.transform(viewport.transform, item.transform)
+              const fontSize = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3])
+              const span = document.createElement('span')
+              span.textContent = item.str
+              span.style.position = 'absolute'
+              span.style.left = `${tx[4]}px`
+              span.style.top = `${tx[5] - fontSize}px`
+              span.style.fontSize = `${fontSize}px`
+              span.style.fontFamily = 'sans-serif'
+              span.style.transformOrigin = '0% 0%'
 
-            if (searchQuery && item.str.toLowerCase().includes(searchQuery.toLowerCase())) {
-              const highlight = document.createElement('mark')
-              highlight.className = 'pdf-search-highlight'
-              if (searchResults[currentSearchIndex]?.text === item.str) {
-                highlight.classList.add('pdf-search-highlight-current')
+              if (searchQuery && item.str.toLowerCase().includes(searchQuery.toLowerCase())) {
+                const highlight = document.createElement('mark')
+                highlight.className = 'pdf-search-highlight'
+                if (searchResults[currentSearchIndex]?.text === item.str) {
+                  highlight.classList.add('pdf-search-highlight-current')
+                }
+                highlight.textContent = item.str
+                span.textContent = ''
+                span.appendChild(highlight)
               }
-              highlight.textContent = item.str
-              span.textContent = ''
-              span.appendChild(highlight)
-            }
 
-            textLayer.appendChild(span)
-          })
+              textLayer.appendChild(span)
+            })
+          }
+        }
+      } catch (err: any) {
+        if (err?.name !== 'RenderingCancelledException') {
+          console.error('Error rendering page:', err)
+        }
+      } finally {
+        if (reqId === renderRequestIdRef.current) {
+          setIsLoading(false)
         }
       }
-    } catch (err: unknown) {
-      if (err instanceof Error && err.name !== 'RenderingCancelledException') {
-        console.error('Error rendering page:', err)
-      }
-    } finally {
-      setIsLoading(false)
-    }
-  }, [currentPage, scale, searchQuery, searchResults, currentSearchIndex])
+    })()
+
+    renderChainRef.current = promise
+  }, [currentPage, scale, searchQuery, searchResults, currentSearchIndex, ocrText])
 
   useEffect(() => {
     if (pdfDocRef.current) renderPage()
@@ -890,7 +918,7 @@ export function PDFViewer() {
                           width: `${rect.width * scale}px`,
                           height: `${rect.height * scale}px`,
                           backgroundColor: ann.color,
-                          opacity: 0.35,
+                          opacity: 0.85,
                           mixBlendMode: 'multiply',
                         }}
                       />

@@ -10,16 +10,18 @@ import {
   Trash2,
   ChevronLeft,
   ChevronRight,
+  Undo2,
+  Redo2,
 } from 'lucide-react'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
 
 const HIGHLIGHT_COLORS = [
-  { value: 'rgba(254, 240, 138, 0.45)', label: 'Yellow', tailwind: 'bg-yellow-300 border-yellow-400' },
-  { value: 'rgba(187, 247, 208, 0.45)', label: 'Green',  tailwind: 'bg-green-300 border-green-400' },
-  { value: 'rgba(251, 207, 232, 0.45)', label: 'Pink',   tailwind: 'bg-pink-300 border-pink-400' },
-  { value: 'rgba(191, 219, 254, 0.45)', label: 'Blue',   tailwind: 'bg-blue-300 border-blue-400' },
+  { value: 'rgba(253, 224, 71, 0.65)', label: 'Yellow', tailwind: 'bg-yellow-400 border-yellow-500' },
+  { value: 'rgba(74, 222, 128, 0.65)', label: 'Green',  tailwind: 'bg-green-400 border-green-500' },
+  { value: 'rgba(244, 114, 182, 0.65)', label: 'Pink',   tailwind: 'bg-pink-400 border-pink-500' },
+  { value: 'rgba(96, 165, 250, 0.65)', label: 'Blue',   tailwind: 'bg-blue-400 border-blue-500' },
 ]
 
 const PEN_COLORS = [
@@ -44,6 +46,10 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
     penWidth,
     setPenWidth,
     pdfFileName,
+    undo,
+    redo,
+    undoStack,
+    redoStack,
   } = usePDFStore()
 
   const [isMinimized, setIsMinimized] = useState(false)
@@ -215,6 +221,27 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
             >
               <MessageSquarePlus className="h-4 w-4" />
             </ToolBtn>
+
+            <div className="my-0.5 border-t border-border/60" />
+
+            {/* Undo/Redo buttons */}
+            <button
+              onClick={undo}
+              disabled={undoStack.length === 0}
+              title="Undo last annotation"
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90"
+            >
+              <Undo2 className="h-4 w-4" />
+            </button>
+
+            <button
+              onClick={redo}
+              disabled={redoStack.length === 0}
+              title="Redo last annotation"
+              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90"
+            >
+              <Redo2 className="h-4 w-4" />
+            </button>
 
             <div className="my-0.5 border-t border-border/60" />
 

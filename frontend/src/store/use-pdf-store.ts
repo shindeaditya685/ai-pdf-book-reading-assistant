@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { authFetch } from '@/lib/api'
 
 export interface WordExplanation {
   word: string
@@ -113,6 +114,12 @@ export interface Annotation {
   timestamp?: number
 }
 
+export interface AnnotationAction {
+  type: 'add' | 'delete' | 'update'
+  annotation: Annotation
+  prevAnnotation?: Annotation
+}
+
 export interface OcrWord {
   text: string
   x: number
@@ -184,6 +191,8 @@ interface PDFState {
   penColor: string
   penWidth: number
   annotations: Annotation[]
+  undoStack: AnnotationAction[]
+  redoStack: AnnotationAction[]
 
   // OCR state
   ocrEnabled: boolean
@@ -261,6 +270,30 @@ interface PDFState {
   addAnnotation: (annotation: Annotation) => void
   updateAnnotation: (id: string, text: string) => void
   removeAnnotation: (id: string) => void
+  undo: () => Promise<void>
+  redo: () => Promise<void>
+}
+
+const saveAnnotationToDb = async (ann: Annotation) => {
+  try {
+    await authFetch('/api/db/annotations', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(ann),
+    })
+  } catch (err) {
+    console.error('Failed to sync annotation to db:', err)
+  }
+}
+
+const deleteAnnotationFromDb = async (id: string) => {
+  try {
+    await authFetch(`/api/db/annotations?id=${encodeURIComponent(id)}`, {
+      method: 'DELETE',
+    })
+  } catch (err) {
+    console.error('Failed to delete annotation from db:', err)
+  }
 }
 
 export const usePDFStore = create<PDFState>()(
@@ -301,10 +334,12 @@ export const usePDFStore = create<PDFState>()(
       showSearch: false,
 
       annotationMode: 'select',
-      highlightColor: '#FEF08A',
+      highlightColor: 'rgba(253, 224, 71, 0.65)',
       penColor: '#EF4444',
       penWidth: 3,
       annotations: [],
+      undoStack: [],
+      redoStack: [],
 
       setPdfFile: (file) =>
         set({
@@ -381,6 +416,8 @@ export const usePDFStore = create<PDFState>()(
           ocrProgress: 0,
           annotationMode: 'select',
           annotations: [],
+          undoStack: [],
+          redoStack: [],
         }),
 
       addToHistory: (entry) =>
@@ -446,13 +483,90 @@ export const usePDFStore = create<PDFState>()(
       setPenColor: (color) => set({ penColor: color }),
       setPenWidth: (width) => set({ penWidth: width }),
       setAnnotations: (annotations) => set({ annotations }),
-      addAnnotation: (ann) => set((s) => ({ annotations: [...s.annotations, ann] })),
-      updateAnnotation: (id, text) => set((s) => ({
-        annotations: s.annotations.map((a) => a.id === id ? { ...a, noteText: text } : a)
+      addAnnotation: (ann) => set((s) => ({
+        annotations: [...s.annotations, ann],
+        undoStack: [...s.undoStack, { type: 'add', annotation: ann }],
+        redoStack: [],
       })),
-      removeAnnotation: (id) => set((s) => ({
-        annotations: s.annotations.filter((a) => a.id !== id)
-      })),
+      updateAnnotation: (id, text) => set((s) => {
+        const prev = s.annotations.find((a) => a.id === id)
+        if (!prev) return {}
+        const updated = { ...prev, noteText: text }
+        return {
+          annotations: s.annotations.map((a) => a.id === id ? updated : a),
+          undoStack: [...s.undoStack, { type: 'update', annotation: updated, prevAnnotation: prev }],
+          redoStack: [],
+        }
+      }),
+      removeAnnotation: (id) => set((s) => {
+        const prev = s.annotations.find((a) => a.id === id)
+        if (!prev) return {}
+        return {
+          annotations: s.annotations.filter((a) => a.id !== id),
+          undoStack: [...s.undoStack, { type: 'delete', annotation: prev }],
+          redoStack: [],
+        }
+      }),
+      undo: async () => {
+        const { undoStack, redoStack, annotations } = get()
+        if (undoStack.length === 0) return
+
+        const action = undoStack[undoStack.length - 1]
+        const newUndoStack = undoStack.slice(0, -1)
+        const newRedoStack = [...redoStack, action]
+
+        let newAnnotations = [...annotations]
+
+        if (action.type === 'add') {
+          newAnnotations = newAnnotations.filter((a) => a.id !== action.annotation.id)
+          await deleteAnnotationFromDb(action.annotation.id)
+        } else if (action.type === 'delete') {
+          newAnnotations = [...newAnnotations, action.annotation]
+          await saveAnnotationToDb(action.annotation)
+        } else if (action.type === 'update') {
+          if (action.prevAnnotation) {
+            newAnnotations = newAnnotations.map((a) =>
+              a.id === action.annotation.id ? action.prevAnnotation! : a
+            )
+            await saveAnnotationToDb(action.prevAnnotation)
+          }
+        }
+
+        set({
+          annotations: newAnnotations,
+          undoStack: newUndoStack,
+          redoStack: newRedoStack,
+        })
+      },
+      redo: async () => {
+        const { undoStack, redoStack, annotations } = get()
+        if (redoStack.length === 0) return
+
+        const action = redoStack[redoStack.length - 1]
+        const newRedoStack = redoStack.slice(0, -1)
+        const newUndoStack = [...undoStack, action]
+
+        let newAnnotations = [...annotations]
+
+        if (action.type === 'add') {
+          newAnnotations = [...newAnnotations, action.annotation]
+          await saveAnnotationToDb(action.annotation)
+        } else if (action.type === 'delete') {
+          newAnnotations = newAnnotations.filter((a) => a.id !== action.annotation.id)
+          await deleteAnnotationFromDb(action.annotation.id)
+        } else if (action.type === 'update') {
+          newAnnotations = newAnnotations.map((a) =>
+            a.id === action.annotation.id ? action.annotation : a
+          )
+          await saveAnnotationToDb(action.annotation)
+        }
+
+        set({
+          annotations: newAnnotations,
+          undoStack: newUndoStack,
+          redoStack: newRedoStack,
+        })
+      },
 
       setOcrEnabled: (enabled) => set({ ocrEnabled: enabled }),
       setOcrText: (page, data) =>
