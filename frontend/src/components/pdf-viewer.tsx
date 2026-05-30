@@ -21,6 +21,7 @@ import { Progress } from '@/components/ui/progress'
 import { SearchBar } from '@/components/search-bar'
 import { AnnotationToolbar } from '@/components/annotation-toolbar'
 import { StickyNoteItem } from '@/components/sticky-note-item'
+import { WordConfirmTooltip } from '@/components/word-confirm-tooltip'
 
 // Set worker source
 if (typeof window !== 'undefined') {
@@ -81,6 +82,14 @@ export function PDFViewer() {
   const [isLoading, setIsLoading] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null)
+
+  // Pending word confirmation state (shown before firing API)
+  const [pendingWord, setPendingWord] = useState<{
+    word: string
+    sentence: string
+    pageNumber: number
+    position: { x: number; y: number }
+  } | null>(null)
 
   // Drawing and annotation refs/states
   const drawingCanvasRef = useRef<HTMLCanvasElement>(null)
@@ -675,20 +684,12 @@ export function PDFViewer() {
       y: rect.top - 10,
     }
 
-    setSelectedWord(word)
-    setSelectedSentence(sentence)
-    setSelectedPageNumber(currentPage)
-    setPopupPosition(position)
-    fetchExplanation(word, sentence, currentPage)
+    // Show confirm tooltip — do NOT call API yet
+    setPendingWord({ word, sentence, pageNumber: currentPage, position })
   }, [
     currentPage,
     getPageText,
     extractSentence,
-    setSelectedWord,
-    setSelectedSentence,
-    setSelectedPageNumber,
-    setPopupPosition,
-    fetchExplanation,
     annotationMode,
     highlightColor,
     pdfFileName,
@@ -732,21 +733,31 @@ export function PDFViewer() {
         y: rect.top - 10,
       }
 
-      setSelectedWord(word)
-      setSelectedSentence(sentence)
-      setSelectedPageNumber(currentPage)
-      setPopupPosition(position)
-      fetchExplanation(word, sentence, currentPage)
+      // Show confirm tooltip — do NOT call API yet
+      setPendingWord({ word, sentence, pageNumber: currentPage, position })
     },
-    [currentPage, getPageText, extractSentence, setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, fetchExplanation, getWordAtPoint]
+    [currentPage, getPageText, extractSentence, getWordAtPoint, annotationMode]
   )
 
   const handleContainerClick = useCallback((e: React.MouseEvent) => {
     const target = e.target as HTMLElement
     if (!target.closest('[data-popup]') && !target.closest('span')) {
       clearSelection()
+      setPendingWord(null)
     }
   }, [clearSelection])
+
+  // Called when user confirms they want the meaning
+  const handleConfirmMeaning = useCallback(() => {
+    if (!pendingWord) return
+    const { word, sentence, pageNumber, position } = pendingWord
+    setSelectedWord(word)
+    setSelectedSentence(sentence)
+    setSelectedPageNumber(pageNumber)
+    setPopupPosition(position)
+    fetchExplanation(word, sentence, pageNumber)
+    setPendingWord(null)
+  }, [pendingWord, setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, fetchExplanation])
 
   const goToPrevPage = useCallback(() => {
     if (currentPage > 1) { clearSelection(); setCurrentPage(currentPage - 1) }
@@ -959,6 +970,16 @@ export function PDFViewer() {
           </div>
         </div>
       </div>
+
+      {/* Confirm-before-fetch tooltip */}
+      {pendingWord && (
+        <WordConfirmTooltip
+          word={pendingWord.word}
+          position={pendingWord.position}
+          onConfirm={handleConfirmMeaning}
+          onDismiss={() => setPendingWord(null)}
+        />
+      )}
     </div>
   )
 }
