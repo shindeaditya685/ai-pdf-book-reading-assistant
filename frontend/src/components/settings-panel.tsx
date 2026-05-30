@@ -1,6 +1,6 @@
 'use client'
 
-import { Globe, Moon, Sun } from 'lucide-react'
+import { Globe, Moon, Sun, Volume2 } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -8,12 +8,12 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { usePDFStore, LANGUAGE_LABELS, type TranslationLanguage } from '@/store/use-pdf-store'
+import { usePDFStore, LANGUAGE_LABELS, ACCENT_LABELS, type TranslationLanguage, type PronunciationAccent } from '@/store/use-pdf-store'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 
 export function SettingsPanel() {
-  const { translationLanguage, setTranslationLanguage, theme, toggleTheme } = usePDFStore()
+  const { translationLanguage, setTranslationLanguage, accent, setAccent, theme, toggleTheme } = usePDFStore()
 
   return (
     <div className="flex items-center gap-2">
@@ -38,6 +38,29 @@ export function SettingsPanel() {
           </SelectContent>
         </Select>
       </div>
+
+      <div className="flex items-center gap-2 rounded-lg border bg-background px-3 py-1.5">
+        <Volume2 className="h-3.5 w-3.5 text-muted-foreground" />
+        <Label className="text-xs text-muted-foreground whitespace-nowrap">
+          Accent
+        </Label>
+        <Select
+          value={accent}
+          onValueChange={(val) => setAccent(val as PronunciationAccent)}
+        >
+          <SelectTrigger className="h-7 w-[130px] border-0 p-0 text-xs shadow-none focus:ring-0">
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {Object.entries(ACCENT_LABELS).map(([code, label]) => (
+              <SelectItem key={code} value={code} className="text-xs">
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </div>
+
       <Button
         variant="outline"
         size="icon"

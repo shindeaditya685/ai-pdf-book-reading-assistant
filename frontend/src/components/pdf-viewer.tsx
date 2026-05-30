@@ -58,6 +58,7 @@ export function PDFViewer() {
     setIsExplaining,
     clearSelection,
     translationLanguage,
+    accent,
     searchQuery,
     searchResults,
     currentSearchIndex,
@@ -457,7 +458,7 @@ export function PDFViewer() {
         const res = await fetch('/api/explain', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ word, sentence, pageNumber: pageNum, translationLanguage }),
+          body: JSON.stringify({ word, sentence, pageNumber: pageNum, translationLanguage, accent }),
         })
         const data = await res.json()
         if (data.error) {
@@ -471,7 +472,7 @@ export function PDFViewer() {
         setIsExplaining(false)
       }
     },
-    [setExplanation, setIsExplaining, translationLanguage]
+    [setExplanation, setIsExplaining, translationLanguage, accent]
   )
 
   // Load annotations on mount or when PDF filename changes

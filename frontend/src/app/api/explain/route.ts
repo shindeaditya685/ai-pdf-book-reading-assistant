@@ -47,21 +47,31 @@ const LANGUAGE_NAMES: Record<string, string> = {
   uz: 'Uzbek (Latin script)',
 }
 
-function buildPrompt(word: string, sentence: string, pageNumber: number | null, translationLanguage: string) {
+const ACCENT_NAMES: Record<string, string> = {
+  'en-US': 'American English',
+  'en-GB': 'British English',
+  'en-AU': 'Australian English',
+  'en-IN': 'Indian English',
+}
+
+function buildPrompt(word: string, sentence: string, pageNumber: number | null, translationLanguage: string, accent: string) {
   const langInstruction =
     translationLanguage && translationLanguage !== 'none'
       ? `Also provide the translation of the word "${word}" in ${LANGUAGE_NAMES[translationLanguage] || 'English'}.`
       : 'Do NOT provide any translation.'
+
+  const accentName = ACCENT_NAMES[accent] || 'American English'
 
   return `You are an expert English dictionary assistant. A user is reading a PDF and has selected a word they want to understand.
 
 Selected word: "${word}"
 Full sentence context: "${sentence}"
 Page number: ${pageNumber || 'unknown'}
+Accent: ${accentName}
 
 Based on the sentence context, provide:
 1. The contextual meaning of "${word}" as used in this specific sentence (not all possible meanings, just the one that fits the context)
-2. The pronunciation in IPA format and also in a simple phonetic respelling format (like "muh-TIK-yuh-luhs")
+2. The pronunciation in IPA format and also in a simple phonetic respelling format (like "muh-TIK-yuh-luhs") — use the accent (${accentName}) for pronunciation
 ${langInstruction}
 
 IMPORTANT: Respond ONLY with valid JSON in this exact format, no extra text:
@@ -101,13 +111,13 @@ function formatResult(parsed: any, word: string, fallback: string) {
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { word, sentence, pageNumber, translationLanguage } = body
+    const { word, sentence, pageNumber, translationLanguage, accent } = body
 
     if (!word || !sentence) {
       return NextResponse.json({ error: 'Word and sentence context are required' }, { status: 400 })
     }
 
-    const prompt = buildPrompt(word, sentence, pageNumber, translationLanguage)
+    const prompt = buildPrompt(word, sentence, pageNumber, translationLanguage, accent)
 
     let lastError = ''
     let content = ''

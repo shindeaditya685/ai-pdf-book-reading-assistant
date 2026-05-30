@@ -14,6 +14,15 @@ export interface PopupPosition {
   y: number
 }
 
+export type PronunciationAccent = 'en-US' | 'en-GB' | 'en-AU' | 'en-IN'
+
+export const ACCENT_LABELS: Record<PronunciationAccent, string> = {
+  'en-US': 'American English',
+  'en-GB': 'British English',
+  'en-AU': 'Australian English',
+  'en-IN': 'Indian English',
+}
+
 export type TranslationLanguage =
   | 'none'
   | 'hi' | 'mr' | 'bn' | 'or' | 'kn' | 'te' | 'ta' | 'pa' | 'ml' | 'ur' | 'gu'
@@ -174,6 +183,7 @@ interface PDFState {
 
   // Settings
   translationLanguage: TranslationLanguage
+  accent: PronunciationAccent
   theme: 'light' | 'dark'
 
   // Word History
@@ -226,6 +236,7 @@ interface PDFState {
   setExplanation: (explanation: WordExplanation | null) => void
   setIsExplaining: (loading: boolean) => void
   setTranslationLanguage: (lang: TranslationLanguage) => void
+  setAccent: (accent: PronunciationAccent) => void
   setTheme: (theme: 'light' | 'dark') => void
   toggleTheme: () => void
   clearSelection: () => void
@@ -322,6 +333,7 @@ export const usePDFStore = create<PDFState>()(
       isExplaining: false,
 
       translationLanguage: 'hi',
+      accent: 'en-US',
       theme: 'dark',
 
       wordHistory: [],
@@ -370,6 +382,7 @@ export const usePDFStore = create<PDFState>()(
       setExplanation: (explanation) => set({ explanation }),
       setIsExplaining: (loading) => set({ isExplaining: loading }),
       setTranslationLanguage: (lang) => set({ translationLanguage: lang }),
+      setAccent: (accent) => set({ accent }),
       setTheme: (theme) => {
         if (typeof window !== 'undefined') {
           document.documentElement.classList.toggle('dark', theme === 'dark')

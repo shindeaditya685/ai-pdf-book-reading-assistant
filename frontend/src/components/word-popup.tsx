@@ -22,6 +22,7 @@ export function WordPopup() {
     popupPosition,
     clearSelection,
     translationLanguage,
+    accent,
     selectedSentence,
     selectedPageNumber,
     pdfFileName,
@@ -256,7 +257,7 @@ export function WordPopup() {
                   <button
                     onClick={() => {
                       const utterance = new SpeechSynthesisUtterance(selectedWord)
-                      utterance.lang = 'en-US'
+                        utterance.lang = accent
                       utterance.rate = 0.85
                       speechSynthesis.cancel()
                       speechSynthesis.speak(utterance)
