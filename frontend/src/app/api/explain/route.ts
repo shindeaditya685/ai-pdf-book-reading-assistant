@@ -44,6 +44,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   tr: 'Turkish',
   ku: 'Kurdish (Kurmanji)',
   am: 'Amharic (Geʻez script)',
+  uz: 'Uzbek (Latin script)',
 }
 
 function buildPrompt(word: string, sentence: string, pageNumber: number | null, translationLanguage: string) {
