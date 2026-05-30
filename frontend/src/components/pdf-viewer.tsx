@@ -3,6 +3,8 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
 import { createWorker } from 'tesseract.js'
+import { useAuth } from '@/context/auth-context'
+import { setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 import {
@@ -37,6 +39,8 @@ export function PDFViewer() {
   const renderRequestIdRef = useRef<number>(0)
   const pageTextCacheRef = useRef<Map<number, string>>(new Map())
   const ocrCancelledRef = useRef(false)
+  const saveProgressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { user } = useAuth()
 
   const {
     pdfDataUrl,
@@ -75,6 +79,7 @@ export function PDFViewer() {
     penWidth,
     annotations,
     setAnnotations,
+    addRecentPdf,
     addAnnotation,
     updateAnnotation,
     removeAnnotation,
@@ -115,7 +120,17 @@ export function PDFViewer() {
         const pdf = await loadingTask.promise
         pdfDocRef.current = pdf
         setTotalPages(pdf.numPages)
-        setCurrentPage(1)
+        const requestedPage = usePDFStore.getState().currentPage || 1
+        const restoredPage = Math.min(Math.max(1, requestedPage), pdf.numPages)
+        setCurrentPage(restoredPage)
+        if (pdfFileName) {
+          addRecentPdf({
+            fileName: pdfFileName,
+            timestamp: Date.now(),
+            pageCount: pdf.numPages,
+            lastPage: restoredPage,
+          })
+        }
         pageTextCacheRef.current.clear()
         setPdfReady(true)
       } catch (err) {
@@ -126,7 +141,44 @@ export function PDFViewer() {
     }
 
     loadPDF()
-  }, [pdfDataUrl, setCurrentPage, setTotalPages])
+  }, [addRecentPdf, pdfDataUrl, pdfFileName, setCurrentPage, setTotalPages])
+
+  // Persist active book + page progress so refreshes resume in the same place.
+  useEffect(() => {
+    if (!pdfDataUrl || !pdfFileName || totalPages <= 0) return
+
+    const safePage = Math.min(Math.max(1, currentPage), totalPages)
+    setActiveBook(user?.username, pdfFileName)
+    setStoredBookPage(user?.username, pdfFileName, safePage)
+    addRecentPdf({
+      fileName: pdfFileName,
+      timestamp: Date.now(),
+      pageCount: totalPages,
+      lastPage: safePage,
+    })
+
+    if (saveProgressTimerRef.current) {
+      clearTimeout(saveProgressTimerRef.current)
+    }
+
+    saveProgressTimerRef.current = setTimeout(() => {
+      authFetch('/api/db/pdf', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          fileName: pdfFileName,
+          lastPage: safePage,
+          pageCount: totalPages,
+        }),
+      }).catch(() => {})
+    }, 500)
+
+    return () => {
+      if (saveProgressTimerRef.current) {
+        clearTimeout(saveProgressTimerRef.current)
+      }
+    }
+  }, [addRecentPdf, currentPage, pdfDataUrl, pdfFileName, totalPages, user?.username])
 
   // Get full page text for context
   const getPageText = useCallback(async (pageNum: number): Promise<string> => {
@@ -155,31 +207,31 @@ export function PDFViewer() {
   const renderPage = useCallback(async () => {
     const reqId = ++renderRequestIdRef.current
 
-    const promise = (async () => {
-      // 1. Wait for any previous render operation to completely finish/abort
+    if (renderTaskRef.current) {
       try {
-        await renderChainRef.current
+        renderTaskRef.current.cancel()
+      } catch {
+        // ignore
+      }
+    }
+
+    const previousRender = renderChainRef.current
+
+    const promise = (async () => {
+      try {
+        await previousRender
       } catch {
         // ignore
       }
 
-      // 2. If a newer render request has arrived, abort immediately
+      // If a newer render request has arrived, abort immediately.
       if (reqId !== renderRequestIdRef.current) return
 
       const pdf = pdfDocRef.current
       if (!pdf || !canvasRef.current) return
 
-      // 3. Cancel any currently executing render task
-      if (renderTaskRef.current) {
-        try {
-          renderTaskRef.current.cancel()
-        } catch {
-          /* ignore */
-        }
-        renderTaskRef.current = null
-      }
-
       setIsLoading(true)
+      let renderTask: pdfjsLib.RenderTask | null = null
       try {
         const page = await pdf.getPage(currentPage)
         const viewport = page.getViewport({ scale })
@@ -190,10 +242,9 @@ export function PDFViewer() {
         canvas.height = viewport.height
         canvas.width = viewport.width
 
-        const renderTask = page.render({ canvasContext: context, viewport })
+        renderTask = page.render({ canvasContext: context, viewport })
         renderTaskRef.current = renderTask
         await renderTask.promise
-        renderTaskRef.current = null
 
         if (reqId !== renderRequestIdRef.current) return
 
@@ -275,6 +326,9 @@ export function PDFViewer() {
           console.error('Error rendering page:', err)
         }
       } finally {
+        if (renderTaskRef.current === renderTask) {
+          renderTaskRef.current = null
+        }
         if (reqId === renderRequestIdRef.current) {
           setIsLoading(false)
         }

@@ -144,6 +144,10 @@ export interface SearchResult {
 export interface RecentPdf {
   fileName: string
   timestamp: number
+  pageCount?: number
+  lastPage?: number
+  wordCount?: number
+  bookmarkCount?: number
 }
 
 interface PDFState {
@@ -237,6 +241,7 @@ interface PDFState {
 
   // Recent PDF actions
   addRecentPdf: (pdf: RecentPdf) => void
+  removeRecentPdf: (fileName: string) => void
 
   // Search actions
   setSearchQuery: (query: string) => void
@@ -442,7 +447,17 @@ export const usePDFStore = create<PDFState>()(
 
       addRecentPdf: (pdf) =>
         set((s) => ({
-          recentPdfs: [pdf, ...s.recentPdfs.filter((p) => p.fileName !== pdf.fileName)].slice(0, 5),
+          recentPdfs: [
+            {
+              ...s.recentPdfs.find((p) => p.fileName === pdf.fileName),
+              ...pdf,
+            },
+            ...s.recentPdfs.filter((p) => p.fileName !== pdf.fileName),
+          ].slice(0, 10),
+        })),
+      removeRecentPdf: (fileName) =>
+        set((s) => ({
+          recentPdfs: s.recentPdfs.filter((p) => p.fileName !== fileName),
         })),
 
       setSearchQuery: (query) => set({ searchQuery: query }),

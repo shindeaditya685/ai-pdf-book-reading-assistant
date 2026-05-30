@@ -5,11 +5,23 @@ import { Upload, FileText, X, Scan } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Switch } from '@/components/ui/switch'
+import { useAuth } from '@/context/auth-context'
+import { clearActiveBook, setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 
 export function UploadZone() {
-  const { setPdfFile, setPdfDataUrl, pdfFileName, addRecentPdf, ocrEnabled, setOcrEnabled, clearOcrText } = usePDFStore()
+  const {
+    setPdfFile,
+    setPdfDataUrl,
+    setCurrentPage,
+    pdfFileName,
+    addRecentPdf,
+    ocrEnabled,
+    setOcrEnabled,
+    clearOcrText,
+  } = usePDFStore()
+  const { user } = useAuth()
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -49,15 +61,18 @@ export function UploadZone() {
           reader.readAsDataURL(file)
         })
         setProgress(100)
+        setCurrentPage(1)
         setPdfFile(file)
         setPdfDataUrl(dataUrl)
-        addRecentPdf({ fileName: file.name, timestamp: Date.now() })
+        addRecentPdf({ fileName: file.name, timestamp: Date.now(), lastPage: 1, pageCount: 0 })
+        setActiveBook(user?.username, file.name)
+        setStoredBookPage(user?.username, file.name, 1)
         clearOcrText()
         // Save PDF to MongoDB
         authFetch('/api/db/pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: file.name, content: dataUrl, pageCount: 0 }),
+          body: JSON.stringify({ fileName: file.name, content: dataUrl, pageCount: 0, lastPage: 1 }),
         }).catch(() => {})
       } catch (err) {
         console.error('Error reading PDF:', err)
@@ -73,7 +88,7 @@ export function UploadZone() {
         }, 500)
       }
     },
-    [setPdfFile, setPdfDataUrl]
+    [addRecentPdf, clearOcrText, setCurrentPage, setPdfDataUrl, setPdfFile, user?.username]
   )
 
   const handleDrop = useCallback(
@@ -105,8 +120,9 @@ export function UploadZone() {
   )
 
   const handleClear = useCallback(() => {
+    clearActiveBook(user?.username)
     usePDFStore.getState().reset()
-  }, [])
+  }, [user?.username])
 
   if (pdfFileName) {
     return (
