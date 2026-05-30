@@ -289,27 +289,68 @@ export default function Home() {
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [handleKeyDown])
 
+  const recentBookCards = recentPdfs.map((pdf) => {
+    const storedPage = getStoredBookPage(user?.username, pdf.fileName)
+    const lastPage = Math.max(1, Number(pdf.lastPage || storedPage || 1))
+    const pageCount = Math.max(0, Number(pdf.pageCount || 0))
+    const progress = pageCount > 0 ? Math.min(100, Math.round((lastPage / pageCount) * 100)) : 0
+    const wordCount =
+      pdf.wordCount ??
+      wordHistory.filter((w) => w.pdfFileName === pdf.fileName).length
+    const bookmarkCount =
+      pdf.bookmarkCount ??
+      bookmarks.filter((b) => b.pdfFileName === pdf.fileName).length
+
+    return {
+      ...pdf,
+      lastPage,
+      pageCount,
+      progress,
+      wordCount,
+      bookmarkCount,
+      isLoading: recentLoading === pdf.fileName,
+    }
+  })
+
+  const totalWords = recentBookCards.reduce((total, pdf) => total + pdf.wordCount, 0)
+  const totalBookmarks = recentBookCards.reduce((total, pdf) => total + pdf.bookmarkCount, 0)
+  const inProgressBooks = recentBookCards.filter(
+    (pdf) => pdf.pageCount > 0 && pdf.lastPage < pdf.pageCount
+  ).length
+
   return (
     <div className="flex h-screen flex-col bg-background">
-      {/* Header */}
-      <header className="flex items-center justify-between border-b bg-background/80 px-3 py-2 backdrop-blur-md">
-        <div className="flex items-center gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-emerald-500 to-teal-600 shadow-sm">
-            <BookOpen className="h-3.5 w-3.5 text-white" />
+      <header className="flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-md">
+        <div className="flex min-w-0 items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 shadow-sm">
+            <BookOpen className="h-4 w-4 text-white" />
           </div>
-          <span className="text-sm font-bold text-foreground">PDF Reader AI</span>
+          <div className="min-w-0">
+            <p className="truncate text-sm font-bold text-foreground">PDF Reader AI</p>
+            {!pdfDataUrl && (
+              <p className="hidden text-xs text-muted-foreground sm:block">
+                Reading workspace
+              </p>
+            )}
+          </div>
         </div>
 
-        <div className="flex items-center gap-1.5">
-          <UploadZone />
-          <div className="mx-1 h-4 w-px bg-border/50" />
+        <div className="flex min-w-0 items-center gap-2">
+          {pdfFileName && (
+            <>
+              <div className="hidden md:block">
+                <UploadZone />
+              </div>
+              <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
+            </>
+          )}
           <SettingsPanel />
           {user && (
-            <div className="flex items-center gap-1 rounded-md px-1.5 py-1 text-xs text-muted-foreground">
-              <span className="hidden sm:inline max-w-[80px] truncate">{user.username}</span>
+            <div className="flex items-center gap-1 rounded-lg border bg-background px-2 py-1.5 text-xs text-muted-foreground">
+              <span className="hidden max-w-[110px] truncate sm:inline">{user.username}</span>
               <button
                 onClick={logout}
-                className="ml-0.5 rounded p-0.5 text-muted-foreground/60 hover:text-red-500 transition-colors"
+                className="rounded p-0.5 text-muted-foreground/70 transition-colors hover:text-red-500"
                 title="Sign out"
               >
                 <LogOut className="h-3.5 w-3.5" />
@@ -319,156 +360,150 @@ export default function Home() {
         </div>
       </header>
 
-      {/* Main Content */}
-      <main className="relative flex-1 overflow-hidden">
-        <ErrorBoundary>
-          <PDFViewer />
-          <WordPopup />
-        </ErrorBoundary>
-        <HistoryPanel />
-        <BookmarksPanel />
-      </main>
+      {pdfDataUrl ? (
+        <main className="relative flex-1 overflow-hidden">
+          <ErrorBoundary>
+            <PDFViewer />
+            <WordPopup />
+          </ErrorBoundary>
+          <HistoryPanel />
+          <BookmarksPanel />
+        </main>
+      ) : (
+        <main className="flex-1 overflow-auto bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--muted)/0.45)_100%)]">
+          <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+            <section className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+              <div className="min-w-0 pt-2">
+                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-400">
+                  Reading Desk
+                </p>
+                <h1 className="mt-3 max-w-2xl text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                  Pick up your next page
+                </h1>
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                  Recent books, saved words, bookmarks, and reading progress are arranged in one calm workspace.
+                </p>
 
-      {/* Footer - only visible when no PDF */}
-      {!pdfDataUrl && (
-        <footer className="border-t bg-muted/30 px-4 py-6">
-          <div className="mx-auto max-w-3xl">
-            {recentPdfs.length > 0 && (
-              <div className="mb-6">
-                <div className="mb-3 flex items-end justify-between gap-3">
-                  <div>
-                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                      Recent Books
-                    </h3>
-                    <p className="mt-1 text-sm font-medium text-foreground">
-                      Continue where you left off
-                    </p>
+                <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+                  <div className="rounded-lg border bg-background/80 p-4 shadow-sm">
+                    <FileText className="h-4 w-4 text-emerald-500" />
+                    <p className="mt-3 text-2xl font-semibold text-foreground">{recentBookCards.length}</p>
+                    <p className="text-xs text-muted-foreground">Books</p>
                   </div>
-                  <span className="text-xs text-muted-foreground">
-                    {recentPdfs.length} saved
-                  </span>
-                </div>
-                <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                  {recentPdfs.map((pdf) => {
-                    const storedPage = getStoredBookPage(user?.username, pdf.fileName)
-                    const lastPage = Math.max(1, Number(pdf.lastPage || storedPage || 1))
-                    const pageCount = Math.max(0, Number(pdf.pageCount || 0))
-                    const progress = pageCount > 0 ? Math.min(100, Math.round((lastPage / pageCount) * 100)) : 0
-                    const wordCount =
-                      pdf.wordCount ??
-                      wordHistory.filter((w) => w.pdfFileName === pdf.fileName).length
-                    const bmCount =
-                      pdf.bookmarkCount ??
-                      bookmarks.filter((b) => b.pdfFileName === pdf.fileName).length
-                    const isLoadingBook = recentLoading === pdf.fileName
-                    return (
-                      <button
-                        key={pdf.fileName}
-                        onClick={() => handleLoadRecentPdf(pdf.fileName)}
-                        disabled={isLoadingBook}
-                        className="group flex min-h-[142px] flex-col justify-between rounded-lg border bg-background p-3 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md dark:hover:border-emerald-600 disabled:cursor-wait disabled:opacity-60"
-                      >
-                        <div className="flex min-w-0 items-start gap-3">
-                          <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-md bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                            {isLoadingBook ? (
-                              <Loader2 className="h-4 w-4 animate-spin" />
-                            ) : (
-                              <FileText className="h-4 w-4" />
-                            )}
-                          </div>
-                          <div className="min-w-0">
-                            <p className="truncate text-sm font-semibold text-foreground" title={pdf.fileName}>
-                              {pdf.fileName}
-                            </p>
-                            <div className="mt-1 flex items-center gap-1.5 text-[11px] text-muted-foreground">
-                              <Clock className="h-3 w-3" />
-                              <span>{formatRecentDate(pdf.timestamp)}</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="mt-3">
-                          <div className="mb-1.5 flex items-center justify-between text-[11px] text-muted-foreground">
-                            <span>
-                              Page {lastPage}{pageCount > 0 ? ` of ${pageCount}` : ''}
-                            </span>
-                            {pageCount > 0 && <span>{progress}%</span>}
-                          </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                            <div
-                              className="h-full rounded-full bg-emerald-500 transition-all"
-                              style={{ width: `${pageCount > 0 ? progress : 12}%` }}
-                            />
-                          </div>
-                        </div>
-
-                        <div className="mt-3 flex items-center justify-between gap-2 text-[11px] text-muted-foreground">
-                          <div className="flex min-w-0 items-center gap-2">
-                            <span className="inline-flex items-center gap-1">
-                              <BookOpen className="h-3 w-3" />
-                              {wordCount} words
-                            </span>
-                            <span className="inline-flex items-center gap-1">
-                              <Bookmark className="h-3 w-3" />
-                              {bmCount}
-                            </span>
-                          </div>
-                          <ArrowRight className="h-3.5 w-3.5 shrink-0 text-emerald-500 transition-transform group-hover:translate-x-0.5" />
-                        </div>
-                      </button>
-                    )
-                  })}
+                  <div className="rounded-lg border bg-background/80 p-4 shadow-sm">
+                    <Clock className="h-4 w-4 text-sky-500" />
+                    <p className="mt-3 text-2xl font-semibold text-foreground">{inProgressBooks}</p>
+                    <p className="text-xs text-muted-foreground">In progress</p>
+                  </div>
+                  <div className="rounded-lg border bg-background/80 p-4 shadow-sm">
+                    <Brain className="h-4 w-4 text-violet-500" />
+                    <p className="mt-3 text-2xl font-semibold text-foreground">{totalWords}</p>
+                    <p className="text-xs text-muted-foreground">Words</p>
+                  </div>
+                  <div className="rounded-lg border bg-background/80 p-4 shadow-sm">
+                    <Bookmark className="h-4 w-4 text-amber-500" />
+                    <p className="mt-3 text-2xl font-semibold text-foreground">{totalBookmarks}</p>
+                    <p className="text-xs text-muted-foreground">Bookmarks</p>
+                  </div>
                 </div>
               </div>
-            )}
-            <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-              <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                  <Brain className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
+
+              <aside className="rounded-lg border bg-background p-4 shadow-sm">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="text-sm font-semibold text-foreground">Start Reading</h2>
+                    <p className="mt-1 text-xs text-muted-foreground">Upload a PDF to open the reader.</p>
+                  </div>
+                  <Sparkles className="h-4 w-4 text-emerald-500" />
                 </div>
+                <UploadZone variant="panel" />
+              </aside>
+            </section>
+
+            <section>
+              <div className="mb-4 flex items-end justify-between gap-3">
                 <div>
-                  <h3 className="text-sm font-semibold text-foreground">
-                    Context-Aware AI
-                  </h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Understands word meanings based on how they are used in the
-                    sentence, not just dictionary definitions.
+                  <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
+                    Recent Books
+                  </h2>
+                  <p className="mt-1 text-base font-semibold text-foreground">
+                    Continue where you left off
                   </p>
                 </div>
+                <span className="text-xs text-muted-foreground">
+                  {recentBookCards.length} saved
+                </span>
               </div>
 
-              <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-teal-100 dark:bg-teal-900/30">
-                  <Sparkles className="h-4 w-4 text-teal-600 dark:text-teal-400" />
-                </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">
-                    Instant Popups
-                  </h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Click or select any word to get its meaning, pronunciation,
-                    and translation right beside it.
-                  </p>
-                </div>
-              </div>
+              {recentBookCards.length > 0 ? (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {recentBookCards.map((pdf) => (
+                    <button
+                      key={pdf.fileName}
+                      onClick={() => handleLoadRecentPdf(pdf.fileName)}
+                      disabled={pdf.isLoading}
+                      className="group flex min-h-[168px] flex-col justify-between rounded-lg border bg-background p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md dark:hover:border-emerald-600 disabled:cursor-wait disabled:opacity-60"
+                    >
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                          {pdf.isLoading ? (
+                            <Loader2 className="h-4 w-4 animate-spin" />
+                          ) : (
+                            <FileText className="h-4 w-4" />
+                          )}
+                        </div>
+                        <div className="min-w-0">
+                          <p className="truncate text-sm font-semibold text-foreground" title={pdf.fileName}>
+                            {pdf.fileName}
+                          </p>
+                          <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+                            <Clock className="h-3 w-3" />
+                            <span>{formatRecentDate(pdf.timestamp)}</span>
+                          </div>
+                        </div>
+                      </div>
 
-              <div className="flex items-start gap-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-cyan-100 dark:bg-cyan-900/30">
-                  <BookOpen className="h-4 w-4 text-cyan-600 dark:text-cyan-400" />
+                      <div className="mt-4">
+                        <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
+                          <span>
+                            Page {pdf.lastPage}{pdf.pageCount > 0 ? ` of ${pdf.pageCount}` : ''}
+                          </span>
+                          {pdf.pageCount > 0 && <span>{pdf.progress}%</span>}
+                        </div>
+                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                          <div
+                            className="h-full rounded-full bg-emerald-500 transition-all"
+                            style={{ width: `${pdf.pageCount > 0 ? pdf.progress : 12}%` }}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                        <div className="flex min-w-0 items-center gap-3">
+                          <span className="inline-flex items-center gap-1">
+                            <BookOpen className="h-3.5 w-3.5" />
+                            {pdf.wordCount}
+                          </span>
+                          <span className="inline-flex items-center gap-1">
+                            <Bookmark className="h-3.5 w-3.5" />
+                            {pdf.bookmarkCount}
+                          </span>
+                        </div>
+                        <ArrowRight className="h-4 w-4 shrink-0 text-emerald-500 transition-transform group-hover:translate-x-0.5" />
+                      </div>
+                    </button>
+                  ))}
                 </div>
-                <div>
-                  <h3 className="text-sm font-semibold text-foreground">
-                    Multi-Language
-                  </h3>
-                  <p className="mt-0.5 text-xs text-muted-foreground">
-                    Get translations in Hindi, Marathi, Spanish, French, and
-                    many more languages.
-                  </p>
+              ) : (
+                <div className="rounded-lg border border-dashed bg-background/80 p-8 text-center">
+                  <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/50" />
+                  <p className="mt-3 text-sm font-medium text-foreground">No recent books yet</p>
+                  <p className="mt-1 text-sm text-muted-foreground">Your library will appear here after the first upload.</p>
                 </div>
-              </div>
-            </div>
+              )}
+            </section>
           </div>
-        </footer>
+        </main>
       )}
     </div>
   )

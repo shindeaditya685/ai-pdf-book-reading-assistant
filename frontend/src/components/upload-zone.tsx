@@ -10,7 +10,11 @@ import { clearActiveBook, setActiveBook, setStoredBookPage } from '@/lib/reading
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 
-export function UploadZone() {
+type UploadZoneProps = {
+  variant?: 'header' | 'panel'
+}
+
+export function UploadZone({ variant = 'header' }: UploadZoneProps) {
   const {
     setPdfFile,
     setPdfDataUrl,
@@ -146,20 +150,24 @@ export function UploadZone() {
     )
   }
 
+  const isPanel = variant === 'panel'
+
   return (
-    <div className="flex items-center gap-2">
+    <div className={isPanel ? 'flex flex-col gap-4' : 'flex items-center gap-2'}>
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
         onDragLeave={handleDragLeave}
-        className={`relative flex items-center gap-3 rounded-lg border-2 border-dashed px-4 py-2.5 transition-all duration-200 ${
+        className={`relative flex items-center gap-3 border-2 border-dashed transition-all duration-200 ${
+          isPanel ? 'min-h-[172px] rounded-lg px-6 py-6' : 'rounded-lg px-4 py-2.5'
+        } ${
           isDragging
             ? 'border-emerald-500 bg-emerald-50 dark:border-emerald-400 dark:bg-emerald-950/30'
             : 'border-muted-foreground/25 bg-background hover:border-emerald-400 hover:bg-emerald-50/50 dark:hover:border-emerald-600 dark:hover:bg-emerald-950/20'
         }`}
       >
         <Upload
-          className={`h-4 w-4 transition-colors ${
+          className={`${isPanel ? 'h-6 w-6' : 'h-4 w-4'} transition-colors ${
             isDragging
               ? 'text-emerald-600 dark:text-emerald-400'
               : 'text-muted-foreground'
@@ -167,17 +175,33 @@ export function UploadZone() {
         />
         {isLoading ? (
           <div className="flex flex-col gap-1.5">
-            <span className="text-sm text-muted-foreground">Loading...</span>
-            <Progress value={progress} className="h-1.5 w-28" />
+            <span className={isPanel ? 'text-base font-medium text-foreground' : 'text-sm text-muted-foreground'}>
+              Loading...
+            </span>
+            <Progress value={progress} className={isPanel ? 'h-2 w-56' : 'h-1.5 w-28'} />
           </div>
         ) : (
           <label className="cursor-pointer">
-            <span className="text-sm text-muted-foreground">
-              Drop PDF here or{' '}
-              <span className="font-medium text-emerald-600 underline decoration-emerald-300 underline-offset-2 dark:text-emerald-400 dark:decoration-emerald-700">
-                browse
+            {isPanel ? (
+              <span className="flex flex-col gap-1">
+                <span className="text-base font-semibold text-foreground">
+                  Drop PDF here or{' '}
+                  <span className="font-medium text-emerald-600 underline decoration-emerald-300 underline-offset-2 dark:text-emerald-400 dark:decoration-emerald-700">
+                    browse
+                  </span>
+                </span>
+                <span className="max-w-sm text-sm text-muted-foreground">
+                  Your book, notes, and reading progress stay connected to your account.
+                </span>
               </span>
-            </span>
+            ) : (
+              <span className="text-sm text-muted-foreground">
+                Drop PDF here or{' '}
+                <span className="font-medium text-emerald-600 underline decoration-emerald-300 underline-offset-2 dark:text-emerald-400 dark:decoration-emerald-700">
+                  browse
+                </span>
+              </span>
+            )}
             <input
               type="file"
               accept=".pdf,application/pdf"
@@ -188,13 +212,15 @@ export function UploadZone() {
           </label>
         )}
       </div>
-      <div className="flex items-center gap-1.5 rounded-lg border px-2.5 py-2">
+      <div className={`flex items-center gap-1.5 rounded-lg border ${isPanel ? 'justify-between px-3 py-2.5' : 'px-2.5 py-2'}`}>
         <Scan className="h-3.5 w-3.5 text-muted-foreground" />
-        <span className="text-[10px] text-muted-foreground">OCR</span>
+        <span className={isPanel ? 'mr-auto text-sm text-muted-foreground' : 'text-[10px] text-muted-foreground'}>
+          OCR
+        </span>
         <Switch
           checked={ocrEnabled}
           onCheckedChange={setOcrEnabled}
-          className="scale-75"
+          className={isPanel ? '' : 'scale-75'}
         />
       </div>
     </div>
