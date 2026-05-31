@@ -35,7 +35,7 @@ export async function GET(request: Request) {
     const pdfsWithStats = await Promise.all(
       pdfs.map(async (pdf) => {
         const [wordCount, bookmarkCount] = await Promise.all([
-          conn.db.collection('history').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
+          conn.db.collection('wordHistory').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
           conn.db.collection('bookmarks').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
         ])
 
@@ -145,6 +145,7 @@ export async function DELETE(request: Request) {
 
     await conn.db.collection('pdfs').deleteOne({ fileName, username: user.username })
     await conn.db.collection('bookmarks').deleteMany({ pdfFileName: fileName, username: user.username })
+    await conn.db.collection('wordHistory').deleteMany({ pdfFileName: fileName, username: user.username })
     await conn.db.collection('history').deleteMany({ pdfFileName: fileName, username: user.username })
     await conn.db.collection('annotations').deleteMany({ pdfFileName: fileName, username: user.username })
 

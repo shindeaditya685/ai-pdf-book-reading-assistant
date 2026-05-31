@@ -1,0 +1,8 @@
+[browser] Error rendering scroll page: Error: Cannot use the same canvas during multiple render() operations. Use different canvas or ensure previous operations were cancelled or completed.
+    at InternalRenderTask.initializeGraphics (file://C:/Users/91845/Downloads/Book_reading_assistant/frontend/.next/dev/static/chunks/node_modules_0wzk097._.js:14633:23)
+    at <unknown> (file://C:/Users/91845/Downloads/Book_reading_assistant/frontend/.next/dev/static/chunks/node_modules_0wzk097._.js:13493:32) (src/components/pdf-viewer.tsx:1089:17)
+[browser] Error rendering scroll page: Error: Cannot use the same canvas during multiple render() operations. Use different canvas or ensure previous operations were cancelled or completed.
+    at InternalRenderTask.initializeGraphics (file://C:/Users/91845/Downloads/Book_reading_assistant/frontend/.next/dev/static/chunks/node_modules_0wzk097._.js:14633:23)
+    at <unknown> (file://C:/Users/91845/Downloads/Book_reading_assistant/frontend/.next/dev/static/chunks/node_modules_0wzk097._.js:13493:32) (src/components/pdf-viewer.tsx:1089:17)
+(node:17360) [DEP0169] DeprecationWarning: `url.parse()` behavior is not standardized and prone to errors that have security implications. Use the WHATWG URL API instead. CVEs are not issued for `url.parse()` vulnerabilities.
+(Use `node --trace-deprecation ...` to show where the warning was created)

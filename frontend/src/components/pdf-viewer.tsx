@@ -7,6 +7,7 @@ import { useAuth } from '@/context/auth-context'
 import { setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
+import { lookupWord } from '@/lib/dictionary'
 import {
   ChevronLeft,
   ChevronRight,
@@ -56,9 +57,12 @@ export function PDFViewer() {
     setPopupPosition,
     setExplanation,
     setIsExplaining,
+    setIsOfflineResult,
     clearSelection,
     translationLanguage,
     accent,
+    scrollMode,
+    setScrollMode,
     searchQuery,
     searchResults,
     currentSearchIndex,
@@ -454,6 +458,7 @@ export function PDFViewer() {
     async (word: string, sentence: string, pageNum: number) => {
       setIsExplaining(true)
       setExplanation(null)
+      let aiOk = false
       try {
         const res = await fetch('/api/explain', {
           method: 'POST',
@@ -461,18 +466,34 @@ export function PDFViewer() {
           body: JSON.stringify({ word, sentence, pageNumber: pageNum, translationLanguage, accent }),
         })
         const data = await res.json()
-        if (data.error) {
-          setExplanation({ word, meaning: data.error, pronunciation: '', translation: '' })
-        } else {
+        if (!data.error) {
           setExplanation(data)
+          setIsOfflineResult(false)
+          aiOk = true
+        }
+      } catch {}
+      if (aiOk) { setIsExplaining(false); return }
+      // Fallback: AI failed or quota exhausted → use dictionary API
+      try {
+        const dictResult = await lookupWord(word, accent)
+        if (dictResult) {
+          setExplanation({
+            word: dictResult.word,
+            meaning: dictResult.meaning,
+            pronunciation: dictResult.pronunciation,
+            translation: '',
+            example: dictResult.example || undefined,
+          })
+        } else {
+          setExplanation({ word, meaning: 'Word not found.', pronunciation: '', translation: '' })
         }
       } catch {
-        setExplanation({ word, meaning: 'Failed to get explanation. Please try again.', pronunciation: '', translation: '' })
-      } finally {
-        setIsExplaining(false)
+        setExplanation({ word, meaning: 'Failed to get meaning. Please try again.', pronunciation: '', translation: '' })
       }
+      setIsOfflineResult(true)
+      setIsExplaining(false)
     },
-    [setExplanation, setIsExplaining, translationLanguage, accent]
+    [setExplanation, setIsExplaining, setIsOfflineResult, translationLanguage, accent]
   )
 
   // Load annotations on mount or when PDF filename changes

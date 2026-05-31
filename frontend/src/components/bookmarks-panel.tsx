@@ -26,18 +26,29 @@ export function BookmarksPanel() {
 
   const handleExport = useCallback(() => {
     if (bookmarks.length === 0) return
-    const content = bookmarks
-      .map(
-        (bm, i) =>
-          `${i + 1}. Word: ${bm.word}\n   Meaning: ${bm.meaning}\n   Pronunciation: ${bm.pronunciation}\n   Translation: ${bm.translation}\n   Sentence: "${bm.sentence}"\n   Page: ${bm.pageNumber}\n   Date: ${new Date(bm.timestamp).toLocaleString()}\n`
+    const esc = (s: string) => `"${(s || '').replace(/"/g, '""')}"`
+    const csvHeader = 'Front,Back,Meaning,Pronunciation,Translation,Sentence,Page,Tags\n'
+    const csvRows = bookmarks
+      .map((bm) =>
+        [
+          esc(bm.word),
+          esc(`Meaning: ${bm.meaning}\nPronunciation: ${bm.pronunciation || '-'}\nTranslation: ${bm.translation || '-'}\nSentence: ${bm.sentence}`),
+          esc(bm.meaning),
+          esc(bm.pronunciation || ''),
+          esc(bm.translation || ''),
+          esc(bm.sentence),
+          bm.pageNumber,
+          esc(pdfFileName || ''),
+        ].join(',')
       )
-      .join('\n---\n\n')
+      .join('\n')
+    const csvContent = csvHeader + csvRows
 
-    const blob = new Blob([content], { type: 'text/plain' })
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
     const url = URL.createObjectURL(blob)
     const a = document.createElement('a')
     a.href = url
-    a.download = `${pdfFileName || 'bookmarks'}-bookmarks.txt`
+    a.download = `${pdfFileName || 'bookmarks'}-flashcards.csv`
     document.body.appendChild(a)
     a.click()
     document.body.removeChild(a)
@@ -72,7 +83,7 @@ export function BookmarksPanel() {
                 size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-foreground"
                 onClick={handleExport}
-                title="Export as text file"
+                title="Export as Anki CSV"
               >
                 <Download className="h-3.5 w-3.5" />
               </Button>

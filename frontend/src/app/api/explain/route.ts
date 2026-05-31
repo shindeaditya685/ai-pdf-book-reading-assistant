@@ -153,7 +153,7 @@ export async function POST(req: NextRequest) {
     // Fallback to Gemini
     if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_gemini_api_key_here') {
       return NextResponse.json({
-        error: 'No AI service available. GROQ_API_KEY may be invalid: ' + lastError || 'unknown error'
+        error: `No AI service available. GROQ_API_KEY may be invalid: ${lastError || 'unknown error'}`
       }, { status: 500 })
     }
 

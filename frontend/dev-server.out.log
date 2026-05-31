@@ -1,0 +1,62 @@
+
+> pdf-reader-ai@1.0.0 dev
+> next dev
+
+▲ Next.js 16.2.6 (Turbopack)
+- Local:         http://localhost:3000
+- Network:       http://172.20.10.6:3000
+- Environments: .env.local
+✓ Ready in 2.3s
+
+ GET / 200 in 1907ms (next.js: 1074ms, application-code: 833ms)
+ GET /login 200 in 423ms (next.js: 138ms, application-code: 285ms)
+ GET / 200 in 480ms (next.js: 54ms, application-code: 425ms)
+ GET /api/auth/me 200 in 1946ms (next.js: 1872ms, application-code: 75ms)
+[DB] Connecting to MongoDB...
+[DB] Connected to database: pdf-reader-ai
+ GET /api/db/pdf 200 in 1641ms (next.js: 148ms, application-code: 1493ms)
+ GET /api/db/pdf?fileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 2.0s (next.js: 9ms, application-code: 2.0s)
+ GET /api/db/history?pdfFileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 329ms (next.js: 132ms, application-code: 196ms)
+ GET /api/db/bookmarks?pdfFileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 435ms (next.js: 282ms, application-code: 153ms)
+ GET /api/db/annotations?pdfFileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 1307ms (next.js: 382ms, application-code: 925ms)
+ PATCH /api/db/pdf 200 in 1586ms (next.js: 46ms, application-code: 1540ms)
+ PATCH /api/db/pdf 200 in 1824ms (next.js: 7ms, application-code: 1817ms)
+ PATCH /api/db/pdf 200 in 1480ms (next.js: 12ms, application-code: 1469ms)
+ PATCH /api/db/pdf 200 in 1850ms (next.js: 9ms, application-code: 1842ms)
+ PATCH /api/db/pdf 200 in 1823ms (next.js: 6ms, application-code: 1817ms)
+ PATCH /api/db/pdf 200 in 1589ms (next.js: 10ms, application-code: 1579ms)
+ GET / 200 in 271ms (next.js: 15ms, application-code: 256ms)
+ GET /api/auth/me 200 in 48ms (next.js: 17ms, application-code: 32ms)
+ GET /api/db/pdf 200 in 596ms (next.js: 8ms, application-code: 588ms)
+ GET /api/db/pdf?fileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 2.2s (next.js: 15ms, application-code: 2.2s)
+ GET /api/db/bookmarks?pdfFileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 173ms (next.js: 39ms, application-code: 134ms)
+ GET /api/db/history?pdfFileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 292ms (next.js: 67ms, application-code: 225ms)
+ GET /api/db/annotations?pdfFileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 314ms (next.js: 21ms, application-code: 293ms)
+ PATCH /api/db/pdf 200 in 1797ms (next.js: 6ms, application-code: 1791ms)
+✓ Compiled in 1071ms
+ GET /api/db/annotations?pdfFileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 583ms (next.js: 10ms, application-code: 572ms)
+ GET /api/db/annotations?pdfFileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 168ms (next.js: 8ms, application-code: 160ms)
+ GET /api/db/annotations?pdfFileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 175ms (next.js: 7ms, application-code: 168ms)
+ PATCH /api/db/pdf 200 in 1713ms (next.js: 11ms, application-code: 1702ms)
+ PATCH /api/db/pdf 200 in 1880ms (next.js: 8ms, application-code: 1872ms)
+ GET /api/db/pdf?fileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 1651ms (next.js: 8ms, application-code: 1643ms)
+ GET /api/db/annotations?pdfFileName=Energize-Your-Mind-by-Gaur-Gopal-Das.pdf 200 in 192ms (next.js: 8ms, application-code: 185ms)
+ PATCH /api/db/pdf 200 in 1550ms (next.js: 8ms, application-code: 1543ms)
+ PATCH /api/db/pdf 200 in 1567ms (next.js: 7ms, application-code: 1560ms)
+ PATCH /api/db/pdf 200 in 1406ms (next.js: 6ms, application-code: 1400ms)
+ PATCH /api/db/pdf 200 in 1708ms (next.js: 10ms, application-code: 1697ms)
+ PATCH /api/db/pdf 200 in 1445ms (next.js: 11ms, application-code: 1434ms)
+ PATCH /api/db/pdf 200 in 2.4s (next.js: 64ms, application-code: 2.4s)
+ PATCH /api/db/pdf 200 in 2.6s (next.js: 14ms, application-code: 2.6s)
+ PATCH /api/db/pdf 200 in 3.5s (next.js: 8ms, application-code: 3.5s)
+ PATCH /api/db/pdf 200 in 3.6s (next.js: 9ms, application-code: 3.6s)
+ PATCH /api/db/pdf 200 in 3.7s (next.js: 8ms, application-code: 3.7s)
+ PATCH /api/db/pdf 200 in 3.8s (next.js: 6ms, application-code: 3.8s)
+ PATCH /api/db/pdf 200 in 3.0s (next.js: 16ms, application-code: 3.0s)
+ POST /api/explain 200 in 963ms (next.js: 220ms, application-code: 743ms)
+ POST /api/db/history 200 in 153ms (next.js: 9ms, application-code: 144ms)
+ POST /api/explain 200 in 725ms (next.js: 7ms, application-code: 718ms)
+ POST /api/db/history 200 in 150ms (next.js: 14ms, application-code: 136ms)
+ POST /api/explain 200 in 483ms (next.js: 10ms, application-code: 473ms)
+ POST /api/db/history 200 in 100ms (next.js: 8ms, application-code: 91ms)
+[?25h

@@ -7,6 +7,7 @@ export interface WordExplanation {
   pronunciation: string
   translation: string
   simplifiedSentence?: string
+  example?: string
 }
 
 export interface PopupPosition {
@@ -180,10 +181,12 @@ interface PDFState {
   // Explanation state
   explanation: WordExplanation | null
   isExplaining: boolean
+  isOfflineResult: boolean
 
   // Settings
   translationLanguage: TranslationLanguage
   accent: PronunciationAccent
+  scrollMode: boolean
   theme: 'light' | 'dark'
 
   // Word History
@@ -235,8 +238,10 @@ interface PDFState {
   setPopupPosition: (pos: PopupPosition | null) => void
   setExplanation: (explanation: WordExplanation | null) => void
   setIsExplaining: (loading: boolean) => void
+  setIsOfflineResult: (offline: boolean) => void
   setTranslationLanguage: (lang: TranslationLanguage) => void
   setAccent: (accent: PronunciationAccent) => void
+  setScrollMode: (mode: boolean) => void
   setTheme: (theme: 'light' | 'dark') => void
   toggleTheme: () => void
   clearSelection: () => void
@@ -331,9 +336,11 @@ export const usePDFStore = create<PDFState>()(
 
       explanation: null,
       isExplaining: false,
+      isOfflineResult: false,
 
-      translationLanguage: 'hi',
+      translationLanguage: 'none',
       accent: 'en-US',
+      scrollMode: true,
       theme: 'dark',
 
       wordHistory: [],
@@ -381,8 +388,10 @@ export const usePDFStore = create<PDFState>()(
 
       setExplanation: (explanation) => set({ explanation }),
       setIsExplaining: (loading) => set({ isExplaining: loading }),
+      setIsOfflineResult: (offline) => set({ isOfflineResult: offline }),
       setTranslationLanguage: (lang) => set({ translationLanguage: lang }),
       setAccent: (accent) => set({ accent }),
+      setScrollMode: (mode) => set({ scrollMode: mode }),
       setTheme: (theme) => {
         if (typeof window !== 'undefined') {
           document.documentElement.classList.toggle('dark', theme === 'dark')
@@ -408,6 +417,7 @@ export const usePDFStore = create<PDFState>()(
           popupPosition: null,
           explanation: null,
           isExplaining: false,
+          isOfflineResult: false,
         }),
 
       reset: () =>
@@ -425,6 +435,7 @@ export const usePDFStore = create<PDFState>()(
           popupPosition: null,
           explanation: null,
           isExplaining: false,
+          scrollMode: true,
           searchQuery: '',
           searchResults: [],
           currentSearchIndex: -1,

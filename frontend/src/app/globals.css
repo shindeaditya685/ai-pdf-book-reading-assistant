@@ -134,6 +134,10 @@
   padding: 0 1px;
 }
 
+.pdf-text-layer mark {
+  color: transparent;
+}
+
 /* PDF Text Layer Styles */
 .pdf-text-layer {
   position: absolute;

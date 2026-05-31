@@ -19,6 +19,7 @@ export function WordPopup() {
     selectedWord,
     explanation,
     isExplaining,
+    isOfflineResult,
     popupPosition,
     clearSelection,
     translationLanguage,
@@ -30,6 +31,9 @@ export function WordPopup() {
     addBookmark,
     removeBookmark,
     bookmarks,
+    setExplanation,
+    setIsExplaining,
+    setIsOfflineResult,
   } = usePDFStore()
 
   const [simplified, setSimplified] = useState<string | null>(null)
@@ -143,10 +147,13 @@ export function WordPopup() {
   const handleHighlightFromPopup = useCallback((colorValue: string) => {
     const selection = window.getSelection()
     if (!selection || selection.isCollapsed || !selection.toString().trim()) return
-    const textLayer = document.querySelector('.pdf-text-layer')
+    const pageSelector = selectedPageNumber
+      ? `[data-page-number="${selectedPageNumber}"]`
+      : ''
+    const textLayer = document.querySelector(`.pdf-text-layer${pageSelector}`)
     if (!textLayer || !textLayer.contains(selection.anchorNode)) return
 
-    const canvasElement = document.querySelector('canvas')
+    const canvasElement = document.querySelector(`canvas${pageSelector}`)
     if (!canvasElement) return
     const canvasRect = canvasElement.getBoundingClientRect()
     const range = selection.getRangeAt(0)
@@ -187,6 +194,36 @@ export function WordPopup() {
     selection.removeAllRanges()
     clearSelection()
   }, [pdfFileName, selectedPageNumber, clearSelection])
+
+  const handleGetAIContext = useCallback(async () => {
+    if (!selectedWord || !selectedSentence || !selectedPageNumber) return
+    setIsExplaining(true)
+    setIsOfflineResult(false)
+    setExplanation(null)
+    try {
+      const res = await fetch('/api/explain', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          word: selectedWord,
+          sentence: selectedSentence,
+          pageNumber: selectedPageNumber,
+          translationLanguage,
+          accent,
+        }),
+      })
+      const data = await res.json()
+      if (data.error) {
+        setExplanation({ word: selectedWord, meaning: data.error, pronunciation: '', translation: '' })
+      } else {
+        setExplanation(data)
+      }
+    } catch {
+      setExplanation({ word: selectedWord, meaning: 'Failed to get AI context. Please try again.', pronunciation: '', translation: '' })
+    } finally {
+      setIsExplaining(false)
+    }
+  }, [selectedWord, selectedSentence, selectedPageNumber, translationLanguage, accent, setExplanation, setIsExplaining, setIsOfflineResult])
 
   // Reset simplified state when word changes
   if (selectedWord && showSimplified && explanation?.word !== selectedWord) {
@@ -312,11 +349,27 @@ export function WordPopup() {
                 {/* Meaning */}
                 <div>
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                    Contextual Meaning
+                    {isOfflineResult ? 'Dictionary Meaning' : 'Contextual Meaning'}
                   </p>
                   <p className="mt-1 text-sm leading-relaxed text-foreground">
                     {explanation.meaning}
                   </p>
+                  {explanation.example && (
+                    <p className="mt-1.5 text-xs italic text-muted-foreground/80 border-l-2 border-muted-foreground/20 pl-2">
+                      e.g., {explanation.example}
+                    </p>
+                  )}
+                  {isOfflineResult && !explanation.translation && selectedSentence && !isExplaining && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="mt-2 h-7 gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                      onClick={handleGetAIContext}
+                    >
+                      <Sparkles className="h-3 w-3" />
+                      Get AI Context
+                    </Button>
+                  )}
                 </div>
 
                 {/* Translation */}

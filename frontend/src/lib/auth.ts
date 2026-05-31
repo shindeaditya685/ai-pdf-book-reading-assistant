@@ -13,7 +13,7 @@ export interface User {
 
 export async function createUser(username: string, password: string) {
   const conn = await connectToDatabase()
-  if (!conn) return null
+  if (!conn) throw new Error('DATABASE_UNAVAILABLE')
 
   const existing = await conn.db.collection('users').findOne({ username })
   if (existing) return null
@@ -29,7 +29,7 @@ export async function createUser(username: string, password: string) {
 
 export async function authenticateUser(username: string, password: string) {
   const conn = await connectToDatabase()
-  if (!conn) return null
+  if (!conn) throw new Error('DATABASE_UNAVAILABLE')
 
   const user = await conn.db.collection('users').findOne({ username })
   if (!user) return null
