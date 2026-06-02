@@ -8,6 +8,7 @@ import { UploadZone } from '@/components/upload-zone'
 import { WordPopup } from '@/components/word-popup'
 import { SettingsPanel } from '@/components/settings-panel'
 import { HistoryPanel } from '@/components/history-panel'
+import { TtsControls } from '@/components/tts-controls'
 import { BookmarksPanel } from '@/components/bookmarks-panel'
 import { FlashcardReview } from '@/components/flashcard-review'
 import { ReadingStatsPanel } from '@/components/reading-stats-panel'
@@ -385,6 +386,7 @@ export default function Home() {
           <ErrorBoundary>
             <PDFViewer />
             <WordPopup />
+            <TtsControls />
           </ErrorBoundary>
           <HistoryPanel />
           <BookmarksPanel />

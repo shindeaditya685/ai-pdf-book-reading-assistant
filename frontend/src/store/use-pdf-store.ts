@@ -259,6 +259,14 @@ interface PDFState {
   showBookmarks: boolean
   showSearch: boolean
 
+  // TTS state
+  ttsPlaying: boolean
+  ttsPaused: boolean
+  ttsSpeed: number
+  ttsVoiceURI: string | null
+  ttsHighlightIndex: number | null
+  ttsTotalWords: number
+
   // Actions
   setPdfFile: (file: File | null) => void
   setPdfFileName: (name: string | null) => void
@@ -346,6 +354,14 @@ interface PDFState {
   updateFlashcard: (id: string, data: Partial<Flashcard>) => void
   setShowFlashcards: (show: boolean) => void
   toggleFlashcards: () => void
+
+  // TTS actions
+  setTtsPlaying: (playing: boolean) => void
+  setTtsPaused: (paused: boolean) => void
+  setTtsSpeed: (speed: number) => void
+  setTtsVoiceURI: (uri: string | null) => void
+  setTtsHighlightIndex: (index: number | null) => void
+  setTtsTotalWords: (total: number) => void
 }
 
 const saveAnnotationToDb = async (ann: Annotation) => {
@@ -422,6 +438,13 @@ export const usePDFStore = create<PDFState>()(
       showHistory: false,
       showBookmarks: false,
       showSearch: false,
+
+      ttsPlaying: false,
+      ttsPaused: false,
+      ttsSpeed: 1,
+      ttsVoiceURI: null,
+      ttsHighlightIndex: null,
+      ttsTotalWords: 0,
 
       annotationMode: 'select',
       highlightColor: 'rgba(253, 224, 71, 0.65)',
@@ -513,6 +536,12 @@ export const usePDFStore = create<PDFState>()(
           annotations: [],
           undoStack: [],
           redoStack: [],
+          ttsPlaying: false,
+          ttsPaused: false,
+          ttsSpeed: 1,
+          ttsVoiceURI: null,
+          ttsHighlightIndex: null,
+          ttsTotalWords: 0,
         }),
 
       addToHistory: (entry) =>
@@ -607,6 +636,13 @@ export const usePDFStore = create<PDFState>()(
         })),
       setShowFlashcards: (show) => set({ showFlashcards: show }),
       toggleFlashcards: () => set((s) => ({ showFlashcards: !s.showFlashcards })),
+
+      setTtsPlaying: (playing) => set({ ttsPlaying: playing }),
+      setTtsPaused: (paused) => set({ ttsPaused: paused }),
+      setTtsSpeed: (speed) => set({ ttsSpeed: speed }),
+      setTtsVoiceURI: (uri) => set({ ttsVoiceURI: uri }),
+      setTtsHighlightIndex: (index) => set({ ttsHighlightIndex: index }),
+      setTtsTotalWords: (total) => set({ ttsTotalWords: total }),
 
       setAnnotationMode: (mode) => set({ annotationMode: mode }),
       setHighlightColor: (color) => set({ highlightColor: color }),

@@ -20,6 +20,7 @@ import {
   Scan,
   Brain,
   BarChart3,
+  Volume2,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -920,6 +921,19 @@ export function PDFViewer() {
     }
   }, [clearSelection])
 
+  const handleReadAloud = useCallback(async () => {
+    ;(window as any).__ttsStop?.()
+    const sel = window.getSelection()
+    let text = ''
+    if (sel && !sel.isCollapsed && sel.toString().trim()) {
+      text = sel.toString().trim()
+    } else {
+      text = await getPageText(currentPage)
+    }
+    if (!text.trim()) return
+    ;(window as any).__ttsStart?.(text.trim())
+  }, [currentPage, getPageText])
+
   // Called when user confirms they want the meaning
   const handleConfirmMeaning = useCallback(() => {
     if (!pendingWord) return
@@ -1031,6 +1045,15 @@ export function PDFViewer() {
             title="Reading Stats"
           >
             <BarChart3 className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground hover:text-emerald-500"
+            onClick={handleReadAloud}
+            title="Read Aloud (current page or selection)"
+          >
+            <Volume2 className="h-3.5 w-3.5" />
           </Button>
           <div className="mx-1 h-4 w-px bg-border" />
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut} disabled={scale <= 0.5}>
