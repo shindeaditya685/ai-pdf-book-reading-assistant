@@ -18,6 +18,7 @@ import {
   Bookmark,
   Clock,
   Scan,
+  Brain,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -70,6 +71,7 @@ export function PDFViewer() {
     toggleSearch,
     toggleHistory,
     toggleBookmarks,
+    toggleFlashcards,
     ocrEnabled,
     ocrText,
     setOcrText,
@@ -944,6 +946,15 @@ export function PDFViewer() {
             title="Word History (H)"
           >
             <Clock className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground"
+            onClick={toggleFlashcards}
+            title="Flashcards (G)"
+          >
+            <Brain className="h-3.5 w-3.5" />
           </Button>
           <div className="mx-1 h-4 w-px bg-border" />
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut} disabled={scale <= 0.5}>

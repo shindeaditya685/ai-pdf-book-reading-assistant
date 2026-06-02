@@ -9,6 +9,7 @@ import { WordPopup } from '@/components/word-popup'
 import { SettingsPanel } from '@/components/settings-panel'
 import { HistoryPanel } from '@/components/history-panel'
 import { BookmarksPanel } from '@/components/bookmarks-panel'
+import { FlashcardReview } from '@/components/flashcard-review'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
@@ -41,17 +42,18 @@ export default function Home() {
     pdfDataUrl,
     pdfFileName,
     clearSelection,
-    toggleSearch,
-    toggleHistory,
-    toggleBookmarks,
-    goToNextSearchResult,
-    goToPrevSearchResult,
-    showSearch,
-    showHistory,
-    showBookmarks,
-    setShowHistory,
-    setShowBookmarks,
-    setShowSearch,
+        toggleSearch,
+        toggleHistory,
+        toggleBookmarks,
+        toggleFlashcards,
+        goToNextSearchResult,
+        goToPrevSearchResult,
+        showSearch,
+        showHistory,
+        showBookmarks,
+        setShowHistory,
+        setShowBookmarks,
+        setShowSearch,
     recentPdfs,
     wordHistory,
     bookmarks,
@@ -258,6 +260,9 @@ export default function Home() {
         case 'b':
           toggleBookmarks()
           break
+        case 'g':
+          toggleFlashcards()
+          break
         case 'n':
           e.preventDefault()
           goToNextSearchResult()
@@ -273,6 +278,7 @@ export default function Home() {
       toggleSearch,
       toggleHistory,
       toggleBookmarks,
+      toggleFlashcards,
       goToNextSearchResult,
       goToPrevSearchResult,
       showSearch,
@@ -368,6 +374,7 @@ export default function Home() {
           </ErrorBoundary>
           <HistoryPanel />
           <BookmarksPanel />
+          <FlashcardReview />
         </main>
       ) : (
         <main className="flex-1 overflow-auto bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--muted)/0.45)_100%)]">

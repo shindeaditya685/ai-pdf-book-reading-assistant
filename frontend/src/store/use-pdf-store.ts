@@ -153,6 +153,26 @@ export interface SearchResult {
   index: number
 }
 
+export interface Flashcard {
+  _id?: string
+  id?: string
+  bookmarkId: string
+  word: string
+  meaning: string
+  pronunciation: string
+  translation: string
+  sentence: string
+  pageNumber: number
+  pdfFileName: string
+  ef: number
+  interval: number
+  repetitions: number
+  nextReview: string
+  lastReview: string | null
+  totalReviews: number
+  createdAt: string
+}
+
 export interface RecentPdf {
   fileName: string
   timestamp: number
@@ -218,6 +238,11 @@ interface PDFState {
   ocrText: Record<number, OcrPageData>
   isOcrProcessing: boolean
   ocrProgress: number
+
+  // Flashcards
+  flashcards: Flashcard[]
+  showFlashcards: boolean
+  flashcardsLoading: boolean
 
   // UI panels
   showHistory: boolean
@@ -295,6 +320,14 @@ interface PDFState {
   removeAnnotation: (id: string) => void
   undo: () => Promise<void>
   redo: () => Promise<void>
+
+  // Flashcard actions
+  setFlashcards: (flashcards: Flashcard[]) => void
+  addFlashcard: (flashcard: Flashcard) => void
+  removeFlashcard: (id: string) => void
+  updateFlashcard: (id: string, data: Partial<Flashcard>) => void
+  setShowFlashcards: (show: boolean) => void
+  toggleFlashcards: () => void
 }
 
 const saveAnnotationToDb = async (ann: Annotation) => {
@@ -354,6 +387,10 @@ export const usePDFStore = create<PDFState>()(
       ocrText: {},
       isOcrProcessing: false,
       ocrProgress: 0,
+
+      flashcards: [],
+      showFlashcards: false,
+      flashcardsLoading: false,
 
       showHistory: false,
       showBookmarks: false,
@@ -518,6 +555,24 @@ export const usePDFStore = create<PDFState>()(
       toggleBookmarks: () => set((s) => ({ showBookmarks: !s.showBookmarks })),
       setShowSearch: (show) => set({ showSearch: show }),
       toggleSearch: () => set((s) => ({ showSearch: !s.showSearch })),
+
+      setFlashcards: (flashcards) => set({ flashcards }),
+      addFlashcard: (flashcard) =>
+        set((s) => ({
+          flashcards: [...s.flashcards.filter((f) => f.word !== flashcard.word || f.pdfFileName !== flashcard.pdfFileName), flashcard],
+        })),
+      removeFlashcard: (id) =>
+        set((s) => ({
+          flashcards: s.flashcards.filter((f) => (f._id || f.id) !== id),
+        })),
+      updateFlashcard: (id, data) =>
+        set((s) => ({
+          flashcards: s.flashcards.map((f) =>
+            (f._id || f.id) === id ? { ...f, ...data } : f
+          ),
+        })),
+      setShowFlashcards: (show) => set({ showFlashcards: show }),
+      toggleFlashcards: () => set((s) => ({ showFlashcards: !s.showFlashcards })),
 
       setAnnotationMode: (mode) => set({ annotationMode: mode }),
       setHighlightColor: (color) => set({ highlightColor: color }),

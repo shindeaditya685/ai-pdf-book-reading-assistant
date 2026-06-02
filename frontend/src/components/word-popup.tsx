@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Volume2, Loader2, Sparkles, Languages, Bookmark, GripVertical } from 'lucide-react'
+import { X, Volume2, Loader2, Sparkles, Languages, Bookmark, Brain, GripVertical } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePDFStore, LANGUAGE_LABELS } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
@@ -31,6 +31,7 @@ export function WordPopup() {
     addBookmark,
     removeBookmark,
     bookmarks,
+    flashcards,
     setExplanation,
     setIsExplaining,
     setIsOfflineResult,
@@ -40,6 +41,7 @@ export function WordPopup() {
   const [isSimplifying, setIsSimplifying] = useState(false)
   const [showSimplified, setShowSimplified] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [flashcardStatus, setFlashcardStatus] = useState<'idle' | 'creating' | 'created' | 'exists'>('idle')
   const historyAddedRef = useRef(false)
 
   // Save to history when explanation is received
@@ -74,17 +76,52 @@ export function WordPopup() {
     }
   }, [explanation, selectedWord, selectedSentence, selectedPageNumber, isExplaining, addToHistory, pdfFileName])
 
-  // Reset history flag and drag offset when word changes
+  // Reset state and check for existing flashcard when word changes
   useEffect(() => {
     historyAddedRef.current = false
     setDragOffset({ x: 0, y: 0 })
-  }, [selectedWord])
+    if (selectedWord && pdfFileName && flashcards.some((f) => f.word === selectedWord && f.pdfFileName === pdfFileName)) {
+      setFlashcardStatus('exists')
+    } else {
+      setFlashcardStatus('idle')
+    }
+  }, [selectedWord, pdfFileName, flashcards])
 
   const isBookmarked = selectedPageNumber && selectedWord
     ? bookmarks.some(
         (b) => b.pageNumber === selectedPageNumber && b.word === selectedWord
       )
     : false
+
+  const handleCreateFlashcard = useCallback(async () => {
+    if (!selectedWord || !explanation || !pdfFileName) return
+    setFlashcardStatus('creating')
+    try {
+      const res = await authFetch('/api/flashcards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          word: selectedWord,
+          meaning: explanation.meaning,
+          pronunciation: explanation.pronunciation || '',
+          translation: explanation.translation || '',
+          sentence: selectedSentence || '',
+          pageNumber: selectedPageNumber || 1,
+          pdfFileName,
+          bookmarkId: '',
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        setFlashcardStatus('created')
+      } else if (data.error === 'Flashcard already exists') {
+        setFlashcardStatus('exists')
+      }
+    } catch {
+      setFlashcardStatus('idle')
+    }
+  }, [selectedWord, explanation, pdfFileName, selectedSentence, selectedPageNumber])
 
   const handleBookmark = useCallback(() => {
     if (!selectedPageNumber || !explanation) return
@@ -434,6 +471,32 @@ export function WordPopup() {
                         />
                       ))}
                     </div>
+                  </div>
+                )}
+
+                {/* Flashcard */}
+                {selectedPageNumber && explanation && !isExplaining && (
+                  <div className="border-t border-border/80 pt-2.5 mt-2">
+                    <button
+                      onClick={handleCreateFlashcard}
+                      disabled={flashcardStatus === 'creating' || flashcardStatus === 'created' || flashcardStatus === 'exists'}
+                      className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[10px] font-semibold transition-all ${
+                        flashcardStatus === 'created' || flashcardStatus === 'exists'
+                          ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
+                          : 'bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/20 dark:text-violet-300 dark:hover:bg-violet-950/30'
+                      }`}
+                    >
+                      {flashcardStatus === 'creating' ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <Brain className="h-3 w-3" />
+                      )}
+                      {flashcardStatus === 'created'
+                        ? 'Flashcard created!'
+                        : flashcardStatus === 'exists'
+                          ? 'Already a flashcard'
+                          : 'Create Flashcard'}
+                    </button>
                   </div>
                 )}
               </div>
