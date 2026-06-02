@@ -115,8 +115,9 @@ export function TtsControls() {
           range.setEnd(foundNode, foundEnd)
           const wordRect = range.getBoundingClientRect()
 
-          const parentRect = textLayer.parentElement?.getBoundingClientRect()
-          if (parentRect && (wordRect.width > 0 || wordRect.height > 0)) {
+          const parentEl = textLayer.parentElement
+          const parentRect = parentEl?.getBoundingClientRect()
+          if (parentEl && parentRect && (wordRect.width > 0 || wordRect.height > 0)) {
             const overlay = document.createElement('div')
             overlay.className = 'tts-highlight-overlay'
             overlay.style.position = 'absolute'
@@ -130,7 +131,7 @@ export function TtsControls() {
             overlay.style.zIndex = '5'
             overlay.style.boxShadow = '0 0 0 1px rgba(16, 185, 129, 0.4)'
             overlay.style.transition = 'all 0.12s ease'
-            textLayer.parentElement.appendChild(overlay)
+            parentEl.appendChild(overlay)
           }
         }
         break
