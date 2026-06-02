@@ -29,7 +29,7 @@ export type TranslationLanguage =
   | 'hi' | 'mr' | 'bn' | 'or' | 'kn' | 'te' | 'ta' | 'pa' | 'ml' | 'ur' | 'gu'
   | 'es' | 'fr' | 'de' | 'pt'
   | 'ja' | 'zh' | 'ko'
-  | 'ar' | 'ru' | 'tr' | 'ku' | 'am' | 'uz'
+  | 'ar' | 'ru' | 'tr' | 'ku' | 'am' | 'uz' | 'vi'
 
 export const LANGUAGE_LABELS: Record<TranslationLanguage, string> = {
   none: 'No Translation',
@@ -57,6 +57,7 @@ export const LANGUAGE_LABELS: Record<TranslationLanguage, string> = {
   ku: 'Kurdish',
   am: 'Amharic',
   uz: 'Uzbek',
+  vi: 'Vietnamese',
 }
 
 // Used by API routes to tell the AI which language + script to output
@@ -85,6 +86,7 @@ export const LANGUAGE_SCRIPT: Record<string, string> = {
   ku: 'Kurdish (Kurmanji)',
   am: 'Amharic (Geʻez script)',
   uz: 'Uzbek (Latin script)',
+  vi: 'Vietnamese (Latin script)',
 }
 
 export interface WordHistoryEntry {
