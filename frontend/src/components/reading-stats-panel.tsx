@@ -25,6 +25,7 @@ export function ReadingStatsPanel() {
   const {
     showReadingStats,
     setShowReadingStats,
+    setShowReadingAnalytics,
     todayPages,
     todayMinutes,
     streakCount,
@@ -345,6 +346,20 @@ export function ReadingStatsPanel() {
                   </div>
                 </div>
               )}
+
+              {/* Link to full analytics */}
+              <div className="border-t pt-3">
+                <button
+                  onClick={() => {
+                    setShowReadingStats(false)
+                    setShowReadingAnalytics(true)
+                  }}
+                  className="flex w-full items-center justify-center gap-1.5 rounded-lg py-2 text-xs font-semibold text-sky-600 hover:bg-sky-50 dark:text-sky-400 dark:hover:bg-sky-950/20 transition-colors"
+                >
+                  <BarChart3 className="h-3.5 w-3.5" />
+                  View Full Analytics
+                </button>
+              </div>
             </div>
           )}
         </div>

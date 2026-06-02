@@ -252,6 +252,7 @@ interface PDFState {
   dailyGoalPages: number
   dailyGoalMinutes: number
   showReadingStats: boolean
+  showReadingAnalytics: boolean
 
   // UI panels
   showHistory: boolean
@@ -336,6 +337,7 @@ interface PDFState {
   setDailyGoal: (enabled: boolean, pages: number, minutes: number) => void
   setShowReadingStats: (show: boolean) => void
   toggleReadingStats: () => void
+  setShowReadingAnalytics: (show: boolean) => void
 
   // Flashcard actions
   setFlashcards: (flashcards: Flashcard[]) => void
@@ -415,6 +417,7 @@ export const usePDFStore = create<PDFState>()(
       dailyGoalPages: 10,
       dailyGoalMinutes: 30,
       showReadingStats: false,
+      showReadingAnalytics: false,
 
       showHistory: false,
       showBookmarks: false,
@@ -585,6 +588,7 @@ export const usePDFStore = create<PDFState>()(
       setDailyGoal: (enabled, pages, minutes) => set({ dailyGoalEnabled: enabled, dailyGoalPages: pages, dailyGoalMinutes: minutes }),
       setShowReadingStats: (show) => set({ showReadingStats: show }),
       toggleReadingStats: () => set((s) => ({ showReadingStats: !s.showReadingStats })),
+      setShowReadingAnalytics: (show) => set({ showReadingAnalytics: show }),
 
       setFlashcards: (flashcards) => set({ flashcards }),
       addFlashcard: (flashcard) =>

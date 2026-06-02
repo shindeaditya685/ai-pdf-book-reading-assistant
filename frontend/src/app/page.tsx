@@ -11,6 +11,7 @@ import { HistoryPanel } from '@/components/history-panel'
 import { BookmarksPanel } from '@/components/bookmarks-panel'
 import { FlashcardReview } from '@/components/flashcard-review'
 import { ReadingStatsPanel } from '@/components/reading-stats-panel'
+import { ReadingAnalytics } from '@/components/reading-analytics'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
@@ -389,6 +390,7 @@ export default function Home() {
           <BookmarksPanel />
           <FlashcardReview />
           <ReadingStatsPanel />
+          <ReadingAnalytics />
         </main>
       ) : (
         <main className="flex-1 overflow-auto bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--muted)/0.45)_100%)]">

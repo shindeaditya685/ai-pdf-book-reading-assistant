@@ -212,6 +212,7 @@ export function PDFViewer() {
         body: JSON.stringify({
           pagesRead: 1,
           timeSpentMs: Math.min(timeSinceLastPage, 120000),
+          pdfFileName: pdfFileName || undefined,
         }),
       }).catch(() => {})
       // Also refresh today's stats in the store
