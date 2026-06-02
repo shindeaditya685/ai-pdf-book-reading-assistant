@@ -45,6 +45,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ku: 'Kurdish (Kurmanji)',
   am: 'Amharic (Geʻez script)',
   uz: 'Uzbek (Latin script)',
+  vi: 'Vietnamese (Latin script)',
 }
 
 const ACCENT_NAMES: Record<string, string> = {
