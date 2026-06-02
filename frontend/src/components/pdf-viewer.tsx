@@ -879,6 +879,24 @@ export function PDFViewer() {
       const word = getWordAtPoint(target, e.clientX, e.clientY)
       if (!word || word.length < 2) return
 
+      // Programmatically select the word so the highlight option from the popup works
+      const sel = window.getSelection()
+      if (sel && 'caretRangeFromPoint' in document) {
+        const range = (document as any).caretRangeFromPoint(e.clientX, e.clientY)
+        if (range && range.startContainer) {
+          const text = range.startContainer.textContent || ''
+          const offset = range.startOffset
+          const matchBefore = text.slice(0, offset).match(/(\w['\w-]*)$/)
+          const matchAfter = text.slice(offset).match(/^(['\w-]*\w)/)
+          const start = matchBefore ? offset - matchBefore[1].length : offset
+          const end = offset + (matchAfter ? matchAfter[1].length : 0)
+          range.setStart(range.startContainer, start)
+          range.setEnd(range.startContainer, end)
+          sel.removeAllRanges()
+          sel.addRange(range)
+        }
+      }
+
       const pageText = await getPageText(currentPage)
       const sentence = extractSentence(pageText, word)
 

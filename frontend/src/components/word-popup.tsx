@@ -184,13 +184,11 @@ export function WordPopup() {
   const handleHighlightFromPopup = useCallback((colorValue: string) => {
     const selection = window.getSelection()
     if (!selection || selection.isCollapsed || !selection.toString().trim()) return
-    const pageSelector = selectedPageNumber
-      ? `[data-page-number="${selectedPageNumber}"]`
-      : ''
-    const textLayer = document.querySelector(`.pdf-text-layer${pageSelector}`)
+
+    const textLayer = document.querySelector(`.pdf-text-layer`)
     if (!textLayer || !textLayer.contains(selection.anchorNode)) return
 
-    const canvasElement = document.querySelector(`canvas${pageSelector}`)
+    const canvasElement = textLayer.parentElement?.querySelector(`canvas`)
     if (!canvasElement) return
     const canvasRect = canvasElement.getBoundingClientRect()
     const range = selection.getRangeAt(0)
