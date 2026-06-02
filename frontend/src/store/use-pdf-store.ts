@@ -27,7 +27,7 @@ export const ACCENT_LABELS: Record<PronunciationAccent, string> = {
 export type TranslationLanguage =
   | 'none'
   | 'hi' | 'mr' | 'bn' | 'or' | 'kn' | 'te' | 'ta' | 'pa' | 'ml' | 'ur' | 'gu'
-  | 'es' | 'fr' | 'de' | 'pt'
+  | 'es' | 'fr' | 'de' | 'pt' | 'nl'
   | 'ja' | 'zh' | 'ko'
   | 'ar' | 'ru' | 'tr' | 'ku' | 'am' | 'uz' | 'vi' | 'ps' | 'fa'
 
@@ -48,6 +48,7 @@ export const LANGUAGE_LABELS: Record<TranslationLanguage, string> = {
   fr: 'French',
   de: 'German',
   pt: 'Portuguese',
+  nl: 'Dutch',
   ja: 'Japanese',
   zh: 'Chinese',
   ko: 'Korean',
@@ -79,6 +80,7 @@ export const LANGUAGE_SCRIPT: Record<string, string> = {
   fr: 'French',
   de: 'German',
   pt: 'Portuguese',
+  nl: 'Dutch',
   ja: 'Japanese',
   zh: 'Chinese (Simplified)',
   ko: 'Korean',

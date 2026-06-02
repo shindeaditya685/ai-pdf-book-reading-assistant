@@ -36,6 +36,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   fr: 'French',
   de: 'German',
   pt: 'Portuguese',
+  nl: 'Dutch',
   ja: 'Japanese',
   zh: 'Chinese (Simplified)',
   ko: 'Korean',
@@ -46,6 +47,8 @@ const LANGUAGE_NAMES: Record<string, string> = {
   am: 'Amharic (Geʻez script)',
   uz: 'Uzbek (Latin script)',
   vi: 'Vietnamese (Latin script)',
+  ps: 'Pashto (Naskh script)',
+  fa: 'Farsi (Perso-Arabic script)',
 }
 
 const ACCENT_NAMES: Record<string, string> = {

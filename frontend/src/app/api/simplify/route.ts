@@ -36,6 +36,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   fr: 'French',
   de: 'German',
   pt: 'Portuguese',
+  nl: 'Dutch',
   ja: 'Japanese',
   zh: 'Chinese (Simplified)',
   ko: 'Korean',
@@ -45,6 +46,8 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ku: 'Kurdish (Kurmanji)',
   am: 'Amharic (Geʻez script)',
   uz: 'Uzbek (Latin script)',
+  ps: 'Pashto (Naskh script)',
+  fa: 'Farsi (Perso-Arabic script)',
 }
 
 function buildPrompt(sentence: string, translationLanguage: string) {
