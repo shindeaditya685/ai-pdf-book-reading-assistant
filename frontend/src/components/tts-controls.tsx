@@ -71,8 +71,8 @@ export function TtsControls() {
     setTtsHighlightIndex(null)
   }, [setTtsHighlightIndex])
 
-  // Highlight the exact word being spoken by creating a Range for its bounding rect
-  const highlightWord = useCallback((wordIndex: number, scale: number) => {
+  // Highlight the exact word being spoken by walking text nodes and matching words via regex
+  const highlightWord = useCallback((wordIndex: number) => {
     document.querySelectorAll('.tts-highlight-overlay').forEach((el) => el.remove())
 
     const textLayer = document.querySelector('.pdf-text-layer')
@@ -82,37 +82,37 @@ export function TtsControls() {
     let accumulated = 0
 
     for (const span of spans) {
-      const text = span.textContent || ''
-      const parts = text.match(/\S+/g) || []
+      const parts = (span.textContent || '').match(/\S+/g) || []
       if (wordIndex < accumulated + parts.length) {
         const localIdx = wordIndex - accumulated
-        // Find the word's character position within the span's text
-        let charPos = 0
-        for (let i = 0; i < localIdx; i++) {
-          charPos += parts[i].length + 1
-        }
-        const wordLen = parts[localIdx].length
 
-        // Walk text nodes to find the one containing this character position
         const walker = document.createTreeWalker(span, NodeFilter.SHOW_TEXT, null)
         let node: Text | null
-        let seen = 0
-        let textNode: Text | null = null
-        let textNodeOffset = 0
+        let wordCount = 0
+        let foundNode: Text | null = null
+        let foundStart = 0
+        let foundEnd = 0
+
         while ((node = walker.nextNode() as Text | null)) {
-          const len = node.textContent?.length ?? 0
-          if (seen + len > charPos) {
-            textNode = node
-            textNodeOffset = charPos - seen
-            break
+          const text = node.textContent || ''
+          const re = /\S+/g
+          let match: RegExpExecArray | null
+          while ((match = re.exec(text)) !== null) {
+            if (wordCount === localIdx) {
+              foundNode = node
+              foundStart = match.index
+              foundEnd = match.index + match[0].length
+              break
+            }
+            wordCount++
           }
-          seen += len
+          if (foundNode) break
         }
 
-        if (textNode) {
+        if (foundNode) {
           const range = document.createRange()
-          range.setStart(textNode, textNodeOffset)
-          range.setEnd(textNode, textNodeOffset + wordLen)
+          range.setStart(foundNode, foundStart)
+          range.setEnd(foundNode, foundEnd)
           const wordRect = range.getBoundingClientRect()
 
           const parentRect = textLayer.parentElement?.getBoundingClientRect()
@@ -120,10 +120,10 @@ export function TtsControls() {
             const overlay = document.createElement('div')
             overlay.className = 'tts-highlight-overlay'
             overlay.style.position = 'absolute'
-            overlay.style.left = `${(wordRect.left - parentRect.left) / scale}px`
-            overlay.style.top = `${(wordRect.top - parentRect.top) / scale}px`
-            overlay.style.width = `${wordRect.width / scale}px`
-            overlay.style.height = `${wordRect.height / scale}px`
+            overlay.style.left = `${wordRect.left - parentRect.left}px`
+            overlay.style.top = `${wordRect.top - parentRect.top}px`
+            overlay.style.width = `${wordRect.width}px`
+            overlay.style.height = `${wordRect.height}px`
             overlay.style.backgroundColor = 'rgba(16, 185, 129, 0.35)'
             overlay.style.borderRadius = '2px'
             overlay.style.pointerEvents = 'none'
@@ -210,8 +210,7 @@ export function TtsControls() {
 
       if (wordIdx >= 0 && wordIdx !== lastHighlightedIdx && wordIdx < words.length) {
         lastHighlightedIdx = wordIdx
-        const store = usePDFStore.getState()
-        highlightWord(wordOffsetsRef.current[wordIdx] ?? wordIdx, store.scale)
+        highlightWord(wordOffsetsRef.current[wordIdx] ?? wordIdx)
       }
     }
 
