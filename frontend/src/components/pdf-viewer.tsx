@@ -19,6 +19,7 @@ import {
   Clock,
   Scan,
   Brain,
+  BarChart3,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -42,6 +43,9 @@ export function PDFViewer() {
   const pageTextCacheRef = useRef<Map<number, string>>(new Map())
   const ocrCancelledRef = useRef(false)
   const saveProgressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const readingLogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const sessionStartRef = useRef<number>(Date.now())
+  const lastLoggedPageRef = useRef<number>(0)
   const { user } = useAuth()
 
   const {
@@ -72,6 +76,7 @@ export function PDFViewer() {
     toggleHistory,
     toggleBookmarks,
     toggleFlashcards,
+    toggleReadingStats,
     ocrEnabled,
     ocrText,
     setOcrText,
@@ -186,6 +191,49 @@ export function PDFViewer() {
       }
     }
   }, [addRecentPdf, currentPage, pdfDataUrl, pdfFileName, totalPages, user?.username])
+
+  // Log reading activity (debounced — only fires when the user settles on a page)
+  useEffect(() => {
+    if (!pdfDataUrl || !pdfFileName || currentPage <= 0 || currentPage === lastLoggedPageRef.current) return
+
+    const now = Date.now()
+    const timeSinceLastPage = now - sessionStartRef.current
+    sessionStartRef.current = now
+    lastLoggedPageRef.current = currentPage
+
+    if (readingLogTimerRef.current) {
+      clearTimeout(readingLogTimerRef.current)
+    }
+
+    readingLogTimerRef.current = setTimeout(() => {
+      authFetch('/api/reading-stats', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          pagesRead: 1,
+          timeSpentMs: Math.min(timeSinceLastPage, 120000),
+        }),
+      }).catch(() => {})
+      // Also refresh today's stats in the store
+      authFetch('/api/reading-stats?days=1').then((res) => {
+        if (res.ok) res.json().then((data) => {
+          if (data.today) {
+            usePDFStore.getState().setTodayStats(
+              data.today.pagesRead || 0,
+              data.today.timeSpentMs ? Math.round(data.today.timeSpentMs / 60000) : 0
+            )
+            usePDFStore.getState().setStreakCount(data.streak || 0)
+          }
+        })
+      }).catch(() => {})
+    }, 2000)
+
+    return () => {
+      if (readingLogTimerRef.current) {
+        clearTimeout(readingLogTimerRef.current)
+      }
+    }
+  }, [currentPage, pdfDataUrl, pdfFileName])
 
   // Get full page text for context
   const getPageText = useCallback(async (pageNum: number): Promise<string> => {
@@ -955,6 +1003,15 @@ export function PDFViewer() {
             title="Flashcards (G)"
           >
             <Brain className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7 text-muted-foreground"
+            onClick={toggleReadingStats}
+            title="Reading Stats"
+          >
+            <BarChart3 className="h-3.5 w-3.5" />
           </Button>
           <div className="mx-1 h-4 w-px bg-border" />
           <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut} disabled={scale <= 0.5}>

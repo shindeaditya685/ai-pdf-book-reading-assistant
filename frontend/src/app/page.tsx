@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, Brain, Clock, Sparkles, FileText, LogOut, Loader2 } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, Brain, Clock, Sparkles, FileText, LogOut, Loader2, Flame } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
 import { WordPopup } from '@/components/word-popup'
@@ -10,6 +10,7 @@ import { SettingsPanel } from '@/components/settings-panel'
 import { HistoryPanel } from '@/components/history-panel'
 import { BookmarksPanel } from '@/components/bookmarks-panel'
 import { FlashcardReview } from '@/components/flashcard-review'
+import { ReadingStatsPanel } from '@/components/reading-stats-panel'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
@@ -46,6 +47,8 @@ export default function Home() {
         toggleHistory,
         toggleBookmarks,
         toggleFlashcards,
+        toggleReadingStats,
+        streakCount,
         goToNextSearchResult,
         goToPrevSearchResult,
         showSearch,
@@ -350,6 +353,16 @@ export default function Home() {
               <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
             </>
           )}
+          {streakCount > 0 && (
+            <button
+              onClick={toggleReadingStats}
+              className="flex items-center gap-1 rounded-lg border bg-background px-2 py-1.5 text-xs text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors"
+              title={`${streakCount}-day streak!`}
+            >
+              <Flame className="h-3.5 w-3.5" />
+              <span className="font-semibold">{streakCount}</span>
+            </button>
+          )}
           <SettingsPanel />
           {user && (
             <div className="flex items-center gap-1 rounded-lg border bg-background px-2 py-1.5 text-xs text-muted-foreground">
@@ -375,6 +388,7 @@ export default function Home() {
           <HistoryPanel />
           <BookmarksPanel />
           <FlashcardReview />
+          <ReadingStatsPanel />
         </main>
       ) : (
         <main className="flex-1 overflow-auto bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--muted)/0.45)_100%)]">

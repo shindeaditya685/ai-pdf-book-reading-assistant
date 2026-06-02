@@ -244,6 +244,15 @@ interface PDFState {
   showFlashcards: boolean
   flashcardsLoading: boolean
 
+  // Reading stats
+  todayPages: number
+  todayMinutes: number
+  streakCount: number
+  dailyGoalEnabled: boolean
+  dailyGoalPages: number
+  dailyGoalMinutes: number
+  showReadingStats: boolean
+
   // UI panels
   showHistory: boolean
   showBookmarks: boolean
@@ -321,6 +330,13 @@ interface PDFState {
   undo: () => Promise<void>
   redo: () => Promise<void>
 
+  // Reading stats actions
+  setTodayStats: (pages: number, minutes: number) => void
+  setStreakCount: (count: number) => void
+  setDailyGoal: (enabled: boolean, pages: number, minutes: number) => void
+  setShowReadingStats: (show: boolean) => void
+  toggleReadingStats: () => void
+
   // Flashcard actions
   setFlashcards: (flashcards: Flashcard[]) => void
   addFlashcard: (flashcard: Flashcard) => void
@@ -391,6 +407,14 @@ export const usePDFStore = create<PDFState>()(
       flashcards: [],
       showFlashcards: false,
       flashcardsLoading: false,
+
+      todayPages: 0,
+      todayMinutes: 0,
+      streakCount: 0,
+      dailyGoalEnabled: false,
+      dailyGoalPages: 10,
+      dailyGoalMinutes: 30,
+      showReadingStats: false,
 
       showHistory: false,
       showBookmarks: false,
@@ -555,6 +579,12 @@ export const usePDFStore = create<PDFState>()(
       toggleBookmarks: () => set((s) => ({ showBookmarks: !s.showBookmarks })),
       setShowSearch: (show) => set({ showSearch: show }),
       toggleSearch: () => set((s) => ({ showSearch: !s.showSearch })),
+
+      setTodayStats: (pages, minutes) => set({ todayPages: pages, todayMinutes: minutes }),
+      setStreakCount: (count) => set({ streakCount: count }),
+      setDailyGoal: (enabled, pages, minutes) => set({ dailyGoalEnabled: enabled, dailyGoalPages: pages, dailyGoalMinutes: minutes }),
+      setShowReadingStats: (show) => set({ showReadingStats: show }),
+      toggleReadingStats: () => set((s) => ({ showReadingStats: !s.showReadingStats })),
 
       setFlashcards: (flashcards) => set({ flashcards }),
       addFlashcard: (flashcard) =>
