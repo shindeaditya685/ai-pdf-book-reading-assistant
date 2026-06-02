@@ -74,6 +74,7 @@ export default function Home() {
 
   const { user, logout } = useAuth()
   const [recentLoading, setRecentLoading] = useState<string | null>(null)
+  const [recentPdfsLoading, setRecentPdfsLoading] = useState(true)
 
   const dataLoadedRef = useRef<string | null>(null)
   const recentLoadedRef = useRef<string | null>(null)
@@ -143,6 +144,7 @@ export default function Home() {
     recentLoadedRef.current = user.username
 
     const loadRecentPdfs = async () => {
+      setRecentPdfsLoading(true)
       try {
         const res = await authFetch('/api/db/pdf')
         const pdfs: any[] = await res.json()
@@ -170,6 +172,8 @@ export default function Home() {
         }
       } catch {
         // Recent books are a convenience layer; the reader still works without them.
+      } finally {
+        setRecentPdfsLoading(false)
       }
     }
 
@@ -460,7 +464,28 @@ export default function Home() {
                 </span>
               </div>
 
-              {recentBookCards.length > 0 ? (
+              {recentPdfsLoading ? (
+                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+                  {[1, 2, 3].map((i) => (
+                    <div
+                      key={i}
+                      className="flex min-h-[168px] animate-pulse flex-col justify-between rounded-lg border bg-background p-4"
+                    >
+                      <div className="flex min-w-0 items-start gap-3">
+                        <div className="h-10 w-10 shrink-0 rounded-lg bg-muted" />
+                        <div className="min-w-0 flex-1 space-y-2">
+                          <div className="h-3 w-3/4 rounded bg-muted" />
+                          <div className="h-2 w-1/2 rounded bg-muted" />
+                        </div>
+                      </div>
+                      <div className="mt-4 space-y-2">
+                        <div className="h-2 w-full rounded bg-muted" />
+                        <div className="h-4 w-full rounded bg-muted" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : recentBookCards.length > 0 ? (
                 <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
                   {recentBookCards.map((pdf) => (
                     <button

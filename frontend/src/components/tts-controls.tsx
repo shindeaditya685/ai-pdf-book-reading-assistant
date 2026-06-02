@@ -301,77 +301,81 @@ export function TtsControls() {
               <Square className="h-3.5 w-3.5 fill-current" />
             </Button>
 
-            <div className="mx-1 h-5 w-px bg-border/60" />
+            {!minimized && <div className="mx-1 h-5 w-px bg-border/60" />}
 
-            {/* Speed */}
-            <div className="flex items-center gap-1.5">
-              <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
-              <input
-                type="range"
-                min={0.5}
-                max={2}
-                step={0.1}
-                value={ttsSpeed}
-                onChange={(e) => {
-                  const speed = Number(e.target.value)
-                  setTtsSpeed(speed)
-                  if (utteranceRef.current) {
-                    utteranceRef.current.rate = speed
-                  }
-                }}
-                className="h-1 w-16 appearance-none rounded-full bg-muted accent-emerald-500 cursor-pointer"
-                title={`Speed: ${ttsSpeed}x`}
-              />
-              <span className="min-w-[2.2rem] text-[10px] font-semibold text-muted-foreground">
-                {ttsSpeed}x
-              </span>
-            </div>
+            {!minimized && (
+              <>
+                {/* Speed */}
+                <div className="flex items-center gap-1.5">
+                  <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
+                  <input
+                    type="range"
+                    min={0.5}
+                    max={2}
+                    step={0.1}
+                    value={ttsSpeed}
+                    onChange={(e) => {
+                      const speed = Number(e.target.value)
+                      setTtsSpeed(speed)
+                      if (utteranceRef.current) {
+                        utteranceRef.current.rate = speed
+                      }
+                    }}
+                    className="h-1 w-16 appearance-none rounded-full bg-muted accent-emerald-500 cursor-pointer"
+                    title={`Speed: ${ttsSpeed}x`}
+                  />
+                  <span className="min-w-[2.2rem] text-[10px] font-semibold text-muted-foreground">
+                    {ttsSpeed}x
+                  </span>
+                </div>
 
-            <div className="mx-1 h-5 w-px bg-border/60" />
+                <div className="mx-1 h-5 w-px bg-border/60" />
 
-            {/* Voice selector */}
-            <div className="flex items-center gap-1.5">
-              <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-              <select
-                value={ttsVoiceURI || ''}
-                onChange={(e) => setTtsVoiceURI(e.target.value || null)}
-                className="max-w-[140px] truncate rounded-lg border border-border bg-background px-1.5 py-1 text-[10px] font-medium text-foreground outline-none focus:border-emerald-500"
-                title="Voice"
-              >
-                {voices.map((v) => (
-                  <option key={v.voiceURI} value={v.voiceURI}>
-                    {v.name} ({v.lang})
-                  </option>
-                ))}
-              </select>
-            </div>
+                {/* Voice selector */}
+                <div className="flex items-center gap-1.5">
+                  <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                  <select
+                    value={ttsVoiceURI || ''}
+                    onChange={(e) => setTtsVoiceURI(e.target.value || null)}
+                    className="max-w-[140px] truncate rounded-lg border border-border bg-background px-1.5 py-1 text-[10px] font-medium text-foreground outline-none focus:border-emerald-500"
+                    title="Voice"
+                  >
+                    {voices.map((v) => (
+                      <option key={v.voiceURI} value={v.voiceURI}>
+                        {v.name} ({v.lang})
+                      </option>
+                    ))}
+                  </select>
+                </div>
 
-            <div className="mx-1 h-5 w-px bg-border/60" />
+                <div className="mx-1 h-5 w-px bg-border/60" />
 
-            {/* Progress */}
-            <div className="flex items-center gap-2 min-w-[80px]">
-              <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
-                <div
-                  className="h-full rounded-full bg-emerald-500 transition-all duration-200"
-                  style={{
-                    width: ttsTotalWords > 0
-                      ? `${Math.min(100, ((ttsHighlightIndex ?? 0) + 1) / ttsTotalWords * 100)}%`
-                      : '0%',
-                  }}
-                />
-              </div>
-              <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
-                {ttsHighlightIndex !== null ? ttsHighlightIndex + 1 : 0}/{ttsTotalWords}
-              </span>
-            </div>
+                {/* Progress */}
+                <div className="flex items-center gap-2 min-w-[80px]">
+                  <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+                    <div
+                      className="h-full rounded-full bg-emerald-500 transition-all duration-200"
+                      style={{
+                        width: ttsTotalWords > 0
+                          ? `${Math.min(100, ((ttsHighlightIndex ?? 0) + 1) / ttsTotalWords * 100)}%`
+                          : '0%',
+                      }}
+                    />
+                  </div>
+                  <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+                    {ttsHighlightIndex !== null ? ttsHighlightIndex + 1 : 0}/{ttsTotalWords}
+                  </span>
+                </div>
+              </>
+            )}
 
-            {/* Minimize */}
+            {/* Minimize / Expand */}
             <Button
               variant="ghost"
               size="icon"
               className="h-6 w-6 text-muted-foreground hover:text-foreground"
               onClick={() => setMinimized(!minimized)}
-              title={minimized ? 'Show' : 'Hide details'}
+              title={minimized ? 'Show details' : 'Hide details'}
             >
               {minimized ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
             </Button>

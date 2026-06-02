@@ -76,19 +76,21 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
   return (
     <div
       ref={toolbarRef}
-      className="absolute left-3 top-1/2 z-40 -translate-y-1/2 flex items-start gap-2 pointer-events-auto select-none"
+      className="absolute left-3 top-1/2 z-40 -translate-y-1/2 flex items-start pointer-events-auto select-none"
     >
-      {/* Collapse Toggle */}
-      <div className="flex flex-col items-center gap-1 mt-1">
-        <Button
-          variant="outline"
-          size="icon"
-          className="h-6 w-6 rounded-full bg-background/95 shadow-md border hover:bg-muted"
-          onClick={() => { setIsMinimized(!isMinimized); setOpenPanel(null) }}
-          title={isMinimized ? 'Show Toolbar' : 'Hide Toolbar'}
-        >
-          {isMinimized ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
-        </Button>
+      {/* Collapse Toggle — absolutely positioned so toolbar show/hide doesn't shift it */}
+      <div className="relative flex items-start" style={{ minWidth: 28 }}>
+        <div className="flex flex-col items-center gap-1 mt-1 absolute left-0 top-0">
+          <Button
+            variant="outline"
+            size="icon"
+            className="h-6 w-6 rounded-full bg-background/95 shadow-md border hover:bg-muted"
+            onClick={() => { setIsMinimized(!isMinimized); setOpenPanel(null) }}
+            title={isMinimized ? 'Show Toolbar' : 'Hide Toolbar'}
+          >
+            {isMinimized ? <ChevronRight className="h-3 w-3" /> : <ChevronLeft className="h-3 w-3" />}
+          </Button>
+        </div>
       </div>
 
       <AnimatePresence>
@@ -98,7 +100,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: -16, scale: 0.95 }}
             transition={{ duration: 0.18 }}
-            className="flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md"
+            className="flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md ml-2"
           >
             {/* ── 1. SELECT ── */}
             <ToolBtn
