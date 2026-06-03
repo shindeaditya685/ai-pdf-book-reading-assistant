@@ -21,6 +21,7 @@ import {
   Brain,
   BarChart3,
   Volume2,
+  Users,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -78,6 +79,7 @@ export function PDFViewer() {
     toggleBookmarks,
     toggleFlashcards,
     toggleReadingStats,
+    toggleSharePanel,
     ocrEnabled,
     ocrText,
     setOcrText,
@@ -97,7 +99,33 @@ export function PDFViewer() {
     updateAnnotation,
     removeAnnotation,
     pdfFileName,
+    focusMode,
+    shareSession,
+    sharedAnnotations,
+    addSharedAnnotation,
   } = usePDFStore()
+
+    // Poll shared annotations when in a session
+  useEffect(() => {
+    if (!shareSession) return
+    const poll = async () => {
+      try {
+        const res = await authFetch(`/api/share/annotations?sessionId=${encodeURIComponent(shareSession._id)}`)
+        const data = await res.json()
+        if (Array.isArray(data)) {
+          data.forEach((ann: any) => {
+            const store = usePDFStore.getState()
+            if (!store.sharedAnnotations.find((a) => a.annotationId === ann.annotationId)) {
+              store.addSharedAnnotation(ann)
+            }
+          })
+        }
+      } catch { /* ignore */ }
+    }
+    poll()
+    const interval = setInterval(poll, 4000)
+    return () => clearInterval(interval)
+  }, [shareSession?._id])
 
   const [isLoading, setIsLoading] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
@@ -595,11 +623,26 @@ export function PDFViewer() {
   // Save annotation to MongoDB helper
   const saveAnnotationToDb = useCallback(async (ann: any) => {
     try {
-      await authFetch('/api/db/annotations', {
+      const personalRes = await authFetch('/api/db/annotations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(ann),
       })
+      if (!personalRes.ok) console.error('[Sync] Personal annotation save failed:', await personalRes.text())
+      const session = usePDFStore.getState().shareSession
+      if (session) {
+        const sharedRes = await authFetch('/api/share/annotations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ ...ann, sessionId: session._id }),
+        })
+        if (sharedRes.ok) {
+          const sharedAnn = await sharedRes.json()
+          usePDFStore.getState().addSharedAnnotation(sharedAnn)
+        } else {
+          console.error('[Sync] Shared annotation save failed:', await sharedRes.text())
+        }
+      }
     } catch (err) {
       console.error('Failed to sync annotation to db:', err)
     }
@@ -611,6 +654,13 @@ export function PDFViewer() {
       await authFetch(`/api/db/annotations?id=${encodeURIComponent(id)}`, {
         method: 'DELETE',
       })
+      const session = usePDFStore.getState().shareSession
+      if (session) {
+        await authFetch(`/api/share/annotations?id=${encodeURIComponent(id)}&sessionId=${encodeURIComponent(session._id)}`, {
+          method: 'DELETE',
+        })
+        usePDFStore.getState().removeSharedAnnotation(id)
+      }
     } catch (err) {
       console.error('Failed to delete annotation from db:', err)
     }
@@ -1040,6 +1090,15 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
+            className={`h-7 w-7 ${shareSession ? 'text-emerald-500' : 'text-muted-foreground'}`}
+            onClick={toggleSharePanel}
+            title={shareSession ? `Session: ${shareSession.name}` : 'Collaborative Reading'}
+          >
+            <Users className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             className="h-7 w-7 text-muted-foreground"
             onClick={toggleReadingStats}
             title="Reading Stats"
@@ -1109,6 +1168,29 @@ export function PDFViewer() {
                         }}
                       />
                     ))
+                  )}
+                {/* Shared annotations from other users */}
+                {shareSession && sharedAnnotations
+                  .filter((ann) => ann.pageNumber === currentPage && ann.type === 'highlight' && ann.rects && ann.author !== user?.username)
+                  .map((ann) =>
+                    ann.rects!.map((rect, idx) => {
+                      const member = shareSession.members.find((m) => m.username === ann.author)
+                      return (
+                        <div
+                          key={`shared-${ann.annotationId}-${idx}`}
+                          style={{
+                            position: 'absolute',
+                            left: `${rect.left * scale}px`,
+                            top: `${rect.top * scale}px`,
+                            width: `${rect.width * scale}px`,
+                            height: `${rect.height * scale}px`,
+                            backgroundColor: member?.color || ann.color,
+                            opacity: 0.55,
+                          }}
+                          title={`${ann.author}'s highlight`}
+                        />
+                      )
+                    })
                   )}
               </div>
 

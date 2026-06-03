@@ -2,7 +2,8 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, Brain, Clock, Sparkles, FileText, LogOut, Loader2, Flame } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, Brain, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users } from 'lucide-react'
+import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
 import { WordPopup } from '@/components/word-popup'
@@ -14,6 +15,7 @@ import { BookmarksPanel } from '@/components/bookmarks-panel'
 import { FlashcardReview } from '@/components/flashcard-review'
 import { ReadingStatsPanel } from '@/components/reading-stats-panel'
 import { ReadingAnalytics } from '@/components/reading-analytics'
+import { ShareSessionPanel } from '@/components/share-session-panel'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
@@ -70,6 +72,10 @@ export default function Home() {
     setPdfFileName,
     setCurrentPage,
     focusMode,
+    toggleFocusMode,
+    setFocusMode,
+    shareSession,
+    toggleSharePanel,
     setOcrText,
     clearOcrText,
   } = usePDFStore()
@@ -375,6 +381,20 @@ export default function Home() {
               <span className="font-semibold">{streakCount}</span>
             </button>
           )}
+          <button
+            onClick={toggleSharePanel}
+            className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs transition-colors ${
+              shareSession
+                ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
+                : 'border-border bg-background text-muted-foreground hover:text-foreground'
+            }`}
+            title="Collaborative Reading Groups"
+          >
+            <Users className="h-3.5 w-3.5" />
+            <span className="hidden sm:inline font-semibold">
+              {shareSession ? shareSession.name : 'Collaborate'}
+            </span>
+          </button>
           <SettingsPanel />
           {user && (
             <div className="flex items-center gap-1 rounded-lg border bg-background px-2 py-1.5 text-xs text-muted-foreground">
@@ -564,6 +584,7 @@ export default function Home() {
           </div>
         </main>
       )}
+      <ShareSessionPanel />
     </div>
   )
 }

@@ -35,6 +35,8 @@ export function WordPopup() {
     setExplanation,
     setIsExplaining,
     setIsOfflineResult,
+    addSharedBookmark,
+    addSharedFlashcard,
   } = usePDFStore()
 
   const [simplified, setSimplified] = useState<string | null>(null)
@@ -115,6 +117,30 @@ export function WordPopup() {
       const data = await res.json()
       if (data.success) {
         setFlashcardStatus('created')
+        // Sync to shared flashcards if in a session
+        const session = usePDFStore.getState().shareSession
+        if (session) {
+          authFetch('/api/share/flashcards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: data.id,
+              sessionId: session._id,
+              word: selectedWord,
+              meaning: explanation.meaning,
+              pronunciation: explanation.pronunciation || '',
+              translation: explanation.translation || '',
+              sentence: selectedSentence || '',
+              pageNumber: selectedPageNumber || 1,
+              pdfFileName,
+            }),
+          }).then(async (r) => {
+            if (r.ok) {
+              const shared = await r.json()
+              usePDFStore.getState().addSharedFlashcard(shared)
+            }
+          }).catch(() => {})
+        }
       } else if (data.error === 'Flashcard already exists') {
         setFlashcardStatus('exists')
       }
@@ -149,12 +175,26 @@ export function WordPopup() {
       pdfFileName: pdfFileName || 'unknown',
     }
     addBookmark(bookmark)
-    // Sync to MongoDB
     authFetch('/api/db/bookmarks', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(bookmark),
     }).catch(() => {})
+
+    // Sync to shared bookmarks if in a session
+    const session = usePDFStore.getState().shareSession
+    if (session) {
+      authFetch('/api/share/bookmarks', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...bookmark, sessionId: session._id }),
+      }).then(async (res) => {
+        if (res.ok) {
+          const shared = await res.json()
+          usePDFStore.getState().addSharedBookmark(shared)
+        }
+      }).catch(() => {})
+    }
   }, [selectedPageNumber, explanation, selectedWord, selectedSentence, addBookmark, removeBookmark, bookmarks, isBookmarked, pdfFileName])
 
   const handleSimplify = useCallback(async () => {

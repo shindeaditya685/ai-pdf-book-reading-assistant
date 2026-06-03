@@ -14,11 +14,24 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const fileName = searchParams.get('fileName')
+  const sessionId = searchParams.get('sessionId')
 
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json([])
 
   try {
+    if (sessionId) {
+      const { ObjectId } = await import('mongodb')
+      const session = await conn.db.collection('shareSessions').findOne({ _id: new ObjectId(sessionId) })
+      if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
+      if (!session.members.some((m: any) => m.username === user.username)) {
+        return NextResponse.json({ error: 'Not a session member' }, { status: 403 })
+      }
+      const pdf = await conn.db.collection('pdfs').findOne({ fileName: session.pdfFileName })
+      if (!pdf) return NextResponse.json(null)
+      return NextResponse.json(pdf)
+    }
+
     if (fileName) {
       const pdf = await conn.db.collection('pdfs').findOne({ fileName, username: user.username })
       if (!pdf) return NextResponse.json(null)

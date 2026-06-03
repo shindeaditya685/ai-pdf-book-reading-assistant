@@ -190,6 +190,77 @@ export interface RecentPdf {
   bookmarkCount?: number
 }
 
+export interface SessionMember {
+  username: string
+  color: string
+  joinedAt: string
+}
+
+export interface ShareSession {
+  _id: string
+  name: string
+  inviteCode: string
+  pdfFileName: string
+  createdBy: string
+  members: SessionMember[]
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SharedComment {
+  id: string
+  author: string
+  text: string
+  mentions: string[]
+  createdAt: string
+}
+
+export interface SharedAnnotation {
+  annotationId: string
+  sessionId: string
+  pdfFileName: string
+  pageNumber: number
+  type: 'highlight' | 'drawing' | 'note'
+  author: string
+  color: string
+  rects?: { left: number; top: number; width: number; height: number }[]
+  points?: { x: number; y: number }[]
+  thickness?: number
+  noteText?: string
+  comments: SharedComment[]
+  resolved: boolean
+  createdAt: string
+  updatedAt: string
+}
+
+export interface SharedBookmark {
+  bookmarkId: string
+  sessionId: string
+  word: string
+  meaning: string
+  pronunciation: string
+  translation: string
+  sentence: string
+  pageNumber: number
+  pdfFileName: string
+  author: string
+  timestamp: string
+}
+
+export interface SharedFlashcard {
+  flashcardId: string
+  sessionId: string
+  word: string
+  meaning: string
+  pronunciation: string
+  translation: string
+  sentence: string
+  pageNumber: number
+  pdfFileName: string
+  author: string
+  createdAt: string
+}
+
 interface PDFState {
   // PDF file state
   pdfFile: File | null
@@ -267,6 +338,14 @@ interface PDFState {
   showBookmarks: boolean
   showSearch: boolean
   focusMode: boolean
+
+  // Share session state
+  showSharePanel: boolean
+  shareSession: ShareSession | null
+  sharedAnnotations: SharedAnnotation[]
+  sharedBookmarks: SharedBookmark[]
+  sharedFlashcards: SharedFlashcard[]
+  shareSessions: ShareSession[]
 
   // TTS state
   ttsPlaying: boolean
@@ -368,6 +447,22 @@ interface PDFState {
   setFocusMode: (mode: boolean) => void
   toggleFocusMode: () => void
 
+  // Share session actions
+  setShowSharePanel: (show: boolean) => void
+  toggleSharePanel: () => void
+  setShareSession: (session: ShareSession | null) => void
+  setSharedAnnotations: (annotations: SharedAnnotation[]) => void
+  addSharedAnnotation: (annotation: SharedAnnotation) => void
+  removeSharedAnnotation: (annotationId: string) => void
+  addSharedComment: (annotationId: string, comment: SharedComment) => void
+  setSharedBookmarks: (bookmarks: SharedBookmark[]) => void
+  addSharedBookmark: (bookmark: SharedBookmark) => void
+  removeSharedBookmark: (bookmarkId: string) => void
+  setSharedFlashcards: (flashcards: SharedFlashcard[]) => void
+  addSharedFlashcard: (flashcard: SharedFlashcard) => void
+  setShareSessions: (sessions: ShareSession[]) => void
+  clearShareState: () => void
+
   // TTS actions
   setTtsPlaying: (playing: boolean) => void
   setTtsPaused: (paused: boolean) => void
@@ -452,6 +547,13 @@ export const usePDFStore = create<PDFState>()(
       showBookmarks: false,
       showSearch: false,
       focusMode: false,
+
+      showSharePanel: false,
+      shareSession: null,
+      sharedAnnotations: [],
+      sharedBookmarks: [],
+      sharedFlashcards: [],
+      shareSessions: [],
 
       ttsPlaying: false,
       ttsPaused: false,
@@ -654,6 +756,60 @@ export const usePDFStore = create<PDFState>()(
 
       setFocusMode: (mode) => set({ focusMode: mode }),
       toggleFocusMode: () => set((s) => ({ focusMode: !s.focusMode })),
+
+      setShowSharePanel: (show) => set({ showSharePanel: show }),
+      toggleSharePanel: () => set((s) => ({ showSharePanel: !s.showSharePanel })),
+      setShareSession: (session) => set({ shareSession: session }),
+      setSharedAnnotations: (annotations) => set({ sharedAnnotations: annotations }),
+      addSharedAnnotation: (annotation) =>
+        set((s) => ({
+          sharedAnnotations: [
+            annotation,
+            ...s.sharedAnnotations.filter((a) => a.annotationId !== annotation.annotationId),
+          ],
+        })),
+      removeSharedAnnotation: (annotationId) =>
+        set((s) => ({
+          sharedAnnotations: s.sharedAnnotations.filter((a) => a.annotationId !== annotationId),
+        })),
+      addSharedComment: (annotationId, comment) =>
+        set((s) => ({
+          sharedAnnotations: s.sharedAnnotations.map((a) =>
+            a.annotationId === annotationId
+              ? { ...a, comments: [...a.comments, comment], updatedAt: comment.createdAt }
+              : a
+          ),
+        })),
+      setSharedBookmarks: (bookmarks) => set({ sharedBookmarks: bookmarks }),
+      addSharedBookmark: (bookmark) =>
+        set((s) => ({
+          sharedBookmarks: [
+            bookmark,
+            ...s.sharedBookmarks.filter((b) => b.bookmarkId !== bookmark.bookmarkId),
+          ],
+        })),
+      removeSharedBookmark: (bookmarkId) =>
+        set((s) => ({
+          sharedBookmarks: s.sharedBookmarks.filter((b) => b.bookmarkId !== bookmarkId),
+        })),
+      setSharedFlashcards: (flashcards) => set({ sharedFlashcards: flashcards }),
+      addSharedFlashcard: (flashcard) =>
+        set((s) => ({
+          sharedFlashcards: [
+            flashcard,
+            ...s.sharedFlashcards.filter((f) => f.flashcardId !== flashcard.flashcardId),
+          ],
+        })),
+      setShareSessions: (sessions) => set({ shareSessions: sessions }),
+      clearShareState: () =>
+        set({
+          showSharePanel: false,
+          shareSession: null,
+          sharedAnnotations: [],
+          sharedBookmarks: [],
+          sharedFlashcards: [],
+          shareSessions: [],
+        }),
 
       setTtsPlaying: (playing) => set({ ttsPlaying: playing }),
       setTtsPaused: (paused) => set({ ttsPaused: paused }),
