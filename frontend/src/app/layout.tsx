@@ -15,9 +15,12 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "PDF Reader AI - Interactive PDF Reading Assistant",
+  title: {
+    default: "PDFMindAI - AI PDF Reading Assistant",
+    template: "%s | PDFMindAI",
+  },
   description:
-    "Read PDFs interactively and understand difficult words instantly. Click any word to get AI-powered contextual meanings, pronunciation, and translations.",
+    "Upload PDFs and read interactively with AI. Click any word for instant contextual meanings, pronunciation, translations, and summaries. The smart PDF reading assistant.",
   keywords: [
     "PDF Reader",
     "AI Dictionary",
@@ -25,10 +28,23 @@ export const metadata: Metadata = {
     "Context-Aware",
     "Pronunciation",
     "Translation",
+    "PDFMindAI",
+    "AI PDF Reader",
   ],
-  authors: [{ name: "PDF Reader AI" }],
+  authors: [{ name: "PDFMindAI" }],
   icons: {
     icon: "/favicon.svg",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: "PDFMindAI - AI PDF Reading Assistant",
+    description: "Upload PDFs and read interactively with AI. Click any word for instant contextual meanings.",
+    url: "https://pdfmindai.dpdns.org",
+    siteName: "PDFMindAI",
+    type: "website",
   },
 };
 
