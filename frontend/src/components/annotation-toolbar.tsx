@@ -12,10 +12,14 @@ import {
   ChevronRight,
   Undo2,
   Redo2,
+  Sparkles,
+  X,
+  Loader2,
 } from 'lucide-react'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
+import { authFetch } from '@/lib/api'
 
 const HIGHLIGHT_COLORS = [
   { value: 'rgba(253, 224, 71, 0.65)', label: 'Yellow', tailwind: 'bg-yellow-400 border-yellow-500' },
@@ -50,10 +54,15 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
     redo,
     undoStack,
     redoStack,
+    ocrText,
+    currentPage,
   } = usePDFStore()
 
   const [isMinimized, setIsMinimized] = useState(false)
   const [openPanel, setOpenPanel] = useState<OpenPanel>(null)
+  const [showSummarizer, setShowSummarizer] = useState(false)
+  const [summary, setSummary] = useState('')
+  const [summarizing, setSummarizing] = useState(false)
   const toolbarRef = useRef<HTMLDivElement>(null)
 
   // Close panel when clicking outside the toolbar
@@ -123,6 +132,16 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                 title="Highlight (click for colours)"
               >
                 <Highlighter className="h-4 w-4" />
+              </ToolBtn>
+
+              {/* ── 7. SUMMARIZE PAGE ── */}
+              <ToolBtn
+                active={false}
+                panelOpen={false}
+                onClick={() => setShowSummarizer(true)}
+                title="Summarize Page"
+              >
+                <Sparkles className="h-4 w-4" />
               </ToolBtn>
 
               <AnimatePresence>
@@ -255,6 +274,88 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
             >
               <Trash2 className="h-4 w-4" />
             </button>
+
+            {/* ── 7. SUMMARIZE PANEL ── */}
+            <AnimatePresence>
+              {showSummarizer && (
+                <motion.div
+                  initial={{ opacity: 0, x: -12, scale: 0.96 }}
+                  animate={{ opacity: 1, x: 0, scale: 1 }}
+                  exit={{ opacity: 0, x: -12, scale: 0.96 }}
+                  transition={{ duration: 0.14 }}
+                  className="absolute left-[calc(100%+10px)] top-0 z-50 w-72 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md"
+                  onMouseDown={(e) => e.stopPropagation()}
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  <div className="flex items-center justify-between mb-2">
+                    <p className="text-xs font-bold text-foreground">Summarize Page</p>
+                    <button
+                      onClick={() => { setShowSummarizer(false); setSummary('') }}
+                      className="text-muted-foreground hover:text-foreground transition-colors"
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </div>
+
+                  {!summary && !summarizing && (
+                    <button
+                      onClick={async () => {
+                        setSummarizing(true)
+                        const pageData = ocrText[currentPage]
+                        const text = pageData?.text || ''
+                        // Fall back to pageText if available
+                        const pageText = text || (globalThis as any).__pageText?.[currentPage] || ''
+                        if (!pageText) {
+                          setSummary('No text available for this page. Enable OCR or load a text-based PDF.')
+                          setSummarizing(false)
+                          return
+                        }
+                        try {
+                          const res = await authFetch('/api/simplify', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({
+                              text: pageText.slice(0, 3000),
+                              action: 'summarize',
+                            }),
+                          })
+                          if (res.ok) {
+                            const data = await res.json()
+                            setSummary(data.simplified || data.summary || 'No summary returned.')
+                          } else {
+                            setSummary('Failed to generate summary.')
+                          }
+                        } catch {
+                          setSummary('An error occurred.')
+                        }
+                        setSummarizing(false)
+                      }}
+                      className="w-full rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors"
+                    >
+                      Generate Summary
+                    </button>
+                  )}
+
+                  {summarizing && (
+                    <div className="flex items-center justify-center py-4">
+                      <Loader2 className="h-5 w-5 animate-spin text-muted-foreground/50" />
+                    </div>
+                  )}
+
+                  {summary && !summarizing && (
+                    <div>
+                      <p className="text-[11px] text-muted-foreground leading-relaxed">{summary}</p>
+                      <button
+                        onClick={() => { setSummary(''); setShowSummarizer(false) }}
+                        className="mt-2 text-[10px] text-muted-foreground/50 hover:text-foreground transition-colors"
+                      >
+                        Close
+                      </button>
+                    </div>
+                  )}
+                </motion.div>
+              )}
+            </AnimatePresence>
           </motion.div>
         )}
       </AnimatePresence>

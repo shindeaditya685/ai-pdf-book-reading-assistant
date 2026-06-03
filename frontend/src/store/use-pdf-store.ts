@@ -338,7 +338,14 @@ interface PDFState {
   showBookmarks: boolean
   showSearch: boolean
   showQuestionGenerator: boolean
+  showSummarizer: boolean
   focusMode: boolean
+
+  // New summary state
+  summaryLoading: boolean
+  summaryContent: string | null
+  summaryError: string | null
+  savedSummaries: { content: string; timestamp: number }[]
 
   // Share session state
   showSharePanel: boolean
@@ -417,6 +424,15 @@ interface PDFState {
   toggleSearch: () => void
   setShowQuestionGenerator: (show: boolean) => void
   toggleQuestionGenerator: () => void
+  setShowSummarizer: (show: boolean) => void
+  toggleSummarizer: () => void
+
+  // New summary actions
+  generateSummaryStart: () => void
+  generateSummarySuccess: (content: string) => void
+  generateSummaryError: (error: string) => void
+  addSavedSummary: (content: string) => void
+  clearSummary: () => void
 
   // Annotation actions
   setAnnotationMode: (mode: 'select' | 'highlight' | 'pen' | 'eraser' | 'note') => void
@@ -551,6 +567,11 @@ export const usePDFStore = create<PDFState>()(
       showBookmarks: false,
       showSearch: false,
       showQuestionGenerator: false,
+      showSummarizer: false,
+      summaryLoading: false,
+      summaryContent: null,
+      summaryError: null,
+      savedSummaries: [],
       focusMode: false,
 
       showSharePanel: false,
@@ -650,6 +671,7 @@ export const usePDFStore = create<PDFState>()(
           isSearching: false,
           showSearch: false,
           showQuestionGenerator: false,
+          showSummarizer: false,
           focusMode: false,
           ocrEnabled: false,
           ocrText: {},
@@ -738,12 +760,33 @@ export const usePDFStore = create<PDFState>()(
       toggleQuestionGenerator: () =>
         set((s) => ({
           showQuestionGenerator: !s.showQuestionGenerator,
+          showSummarizer: false,
           showBookmarks: false,
           showHistory: false,
           showSharePanel: false,
           showReadingStats: false,
           showFlashcards: false,
         })),
+      setShowSummarizer: (show) => set({ showSummarizer: show }),
+      toggleSummarizer: () =>
+        set((s) => ({
+          showSummarizer: !s.showSummarizer,
+          showQuestionGenerator: false,
+          showBookmarks: false,
+          showHistory: false,
+          showSharePanel: false,
+          showReadingStats: false,
+          showFlashcards: false,
+        })),
+
+      generateSummaryStart: () => set({ summaryLoading: true, summaryContent: null, summaryError: null }),
+      generateSummarySuccess: (content) => set({ summaryLoading: false, summaryContent: content, summaryError: null }),
+      generateSummaryError: (error) => set({ summaryLoading: false, summaryContent: null, summaryError: error }),
+      addSavedSummary: (content) =>
+        set((s) => ({
+          savedSummaries: [{ content, timestamp: Date.now() }, ...s.savedSummaries].slice(0, 50),
+        })),
+      clearSummary: () => set({ summaryLoading: false, summaryContent: null, summaryError: null }),
 
       setTodayStats: (pages, minutes) => set({ todayPages: pages, todayMinutes: minutes }),
       setStreakCount: (count) => set({ streakCount: count }),

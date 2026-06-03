@@ -23,6 +23,7 @@ import {
   Volume2,
   Users,
   HelpCircle,
+  Sparkles,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -88,6 +89,8 @@ export function PDFViewer() {
     toggleSharePanel,
     showQuestionGenerator,
     toggleQuestionGenerator,
+    showSummarizer,
+    toggleSummarizer,
     ocrEnabled,
     ocrText,
     setOcrText,
@@ -1115,6 +1118,15 @@ export function PDFViewer() {
             title="AI Question Generator"
           >
             <HelpCircle className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-7 ${showSummarizer ? 'text-emerald-500 font-semibold' : 'text-muted-foreground'}`}
+            onClick={toggleSummarizer}
+            title="AI Summarizer"
+          >
+            <Sparkles className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
