@@ -16,6 +16,7 @@ import { FlashcardReview } from '@/components/flashcard-review'
 import { ReadingStatsPanel } from '@/components/reading-stats-panel'
 import { ReadingAnalytics } from '@/components/reading-analytics'
 import { ShareSessionPanel } from '@/components/share-session-panel'
+import { QuestionGeneratorPanel } from '@/components/question-generator-panel'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
@@ -425,6 +426,7 @@ export default function Home() {
             <FlashcardReview />
             <ReadingStatsPanel />
             <ReadingAnalytics />
+            <QuestionGeneratorPanel />
           </div>
         </main>
       ) : (

@@ -22,6 +22,7 @@ import {
   BarChart3,
   Volume2,
   Users,
+  HelpCircle,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -85,6 +86,8 @@ export function PDFViewer() {
     toggleFlashcards,
     toggleReadingStats,
     toggleSharePanel,
+    showQuestionGenerator,
+    toggleQuestionGenerator,
     ocrEnabled,
     ocrText,
     setOcrText,
@@ -1103,6 +1106,15 @@ export function PDFViewer() {
             title="Flashcards (G)"
           >
             <Brain className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={`h-7 w-7 ${showQuestionGenerator ? 'text-emerald-500 font-semibold' : 'text-muted-foreground'}`}
+            onClick={toggleQuestionGenerator}
+            title="AI Question Generator"
+          >
+            <HelpCircle className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"

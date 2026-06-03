@@ -337,6 +337,7 @@ interface PDFState {
   showHistory: boolean
   showBookmarks: boolean
   showSearch: boolean
+  showQuestionGenerator: boolean
   focusMode: boolean
 
   // Share session state
@@ -414,6 +415,8 @@ interface PDFState {
   toggleBookmarks: () => void
   setShowSearch: (show: boolean) => void
   toggleSearch: () => void
+  setShowQuestionGenerator: (show: boolean) => void
+  toggleQuestionGenerator: () => void
 
   // Annotation actions
   setAnnotationMode: (mode: 'select' | 'highlight' | 'pen' | 'eraser' | 'note') => void
@@ -547,6 +550,7 @@ export const usePDFStore = create<PDFState>()(
       showHistory: false,
       showBookmarks: false,
       showSearch: false,
+      showQuestionGenerator: false,
       focusMode: false,
 
       showSharePanel: false,
@@ -645,6 +649,7 @@ export const usePDFStore = create<PDFState>()(
           currentSearchIndex: -1,
           isSearching: false,
           showSearch: false,
+          showQuestionGenerator: false,
           focusMode: false,
           ocrEnabled: false,
           ocrText: {},
@@ -729,6 +734,16 @@ export const usePDFStore = create<PDFState>()(
       toggleBookmarks: () => set((s) => ({ showBookmarks: !s.showBookmarks })),
       setShowSearch: (show) => set({ showSearch: show }),
       toggleSearch: () => set((s) => ({ showSearch: !s.showSearch })),
+      setShowQuestionGenerator: (show) => set({ showQuestionGenerator: show }),
+      toggleQuestionGenerator: () =>
+        set((s) => ({
+          showQuestionGenerator: !s.showQuestionGenerator,
+          showBookmarks: false,
+          showHistory: false,
+          showSharePanel: false,
+          showReadingStats: false,
+          showFlashcards: false,
+        })),
 
       setTodayStats: (pages, minutes) => set({ todayPages: pages, todayMinutes: minutes }),
       setStreakCount: (count) => set({ streakCount: count }),
