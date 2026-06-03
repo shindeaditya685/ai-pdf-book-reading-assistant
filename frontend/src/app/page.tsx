@@ -9,6 +9,7 @@ import { WordPopup } from '@/components/word-popup'
 import { SettingsPanel } from '@/components/settings-panel'
 import { HistoryPanel } from '@/components/history-panel'
 import { TtsControls } from '@/components/tts-controls'
+import { ReadingTimer } from '@/components/reading-timer'
 import { BookmarksPanel } from '@/components/bookmarks-panel'
 import { FlashcardReview } from '@/components/flashcard-review'
 import { ReadingStatsPanel } from '@/components/reading-stats-panel'
@@ -68,6 +69,7 @@ export default function Home() {
     setPdfDataUrl,
     setPdfFileName,
     setCurrentPage,
+    focusMode,
     setOcrText,
     clearOcrText,
   } = usePDFStore()
@@ -142,6 +144,7 @@ export default function Home() {
   useEffect(() => {
     if (!user?.username || recentLoadedRef.current === user.username) return
     recentLoadedRef.current = user.username
+    usePDFStore.setState({ recentPdfs: [] })
 
     const loadRecentPdfs = async () => {
       setRecentPdfsLoading(true)
@@ -335,7 +338,10 @@ export default function Home() {
 
   return (
     <div className="flex h-screen flex-col bg-background">
-      <header className="flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-md">
+      {focusMode && (
+        <div className="fixed inset-0 z-40 bg-background" />
+      )}
+      <header className={`flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-md transition-opacity duration-300 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
         <div className="flex min-w-0 items-center gap-3">
           <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 shadow-sm">
             <BookOpen className="h-4 w-4 text-white" />
@@ -391,12 +397,15 @@ export default function Home() {
             <PDFViewer />
             <WordPopup />
             <TtsControls />
+            <ReadingTimer />
           </ErrorBoundary>
-          <HistoryPanel />
-          <BookmarksPanel />
-          <FlashcardReview />
-          <ReadingStatsPanel />
-          <ReadingAnalytics />
+          <div className={`transition-opacity duration-300 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
+            <HistoryPanel />
+            <BookmarksPanel />
+            <FlashcardReview />
+            <ReadingStatsPanel />
+            <ReadingAnalytics />
+          </div>
         </main>
       ) : (
         <main className="flex-1 overflow-auto bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--muted)/0.45)_100%)]">

@@ -266,6 +266,7 @@ interface PDFState {
   showHistory: boolean
   showBookmarks: boolean
   showSearch: boolean
+  focusMode: boolean
 
   // TTS state
   ttsPlaying: boolean
@@ -363,6 +364,10 @@ interface PDFState {
   setShowFlashcards: (show: boolean) => void
   toggleFlashcards: () => void
 
+  // Focus mode
+  setFocusMode: (mode: boolean) => void
+  toggleFocusMode: () => void
+
   // TTS actions
   setTtsPlaying: (playing: boolean) => void
   setTtsPaused: (paused: boolean) => void
@@ -446,6 +451,7 @@ export const usePDFStore = create<PDFState>()(
       showHistory: false,
       showBookmarks: false,
       showSearch: false,
+      focusMode: false,
 
       ttsPlaying: false,
       ttsPaused: false,
@@ -536,6 +542,7 @@ export const usePDFStore = create<PDFState>()(
           currentSearchIndex: -1,
           isSearching: false,
           showSearch: false,
+          focusMode: false,
           ocrEnabled: false,
           ocrText: {},
           isOcrProcessing: false,
@@ -644,6 +651,9 @@ export const usePDFStore = create<PDFState>()(
         })),
       setShowFlashcards: (show) => set({ showFlashcards: show }),
       toggleFlashcards: () => set((s) => ({ showFlashcards: !s.showFlashcards })),
+
+      setFocusMode: (mode) => set({ focusMode: mode }),
+      toggleFocusMode: () => set((s) => ({ focusMode: !s.focusMode })),
 
       setTtsPlaying: (playing) => set({ ttsPlaying: playing }),
       setTtsPaused: (paused) => set({ ttsPaused: paused }),
