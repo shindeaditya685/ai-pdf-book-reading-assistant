@@ -265,6 +265,21 @@ export function WordPopup() {
       body: JSON.stringify(newHighlight),
     }).catch(() => {})
 
+    // Sync to shared annotations if in a session
+    const session = store.shareSession
+    if (session) {
+      authFetch('/api/share/annotations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...newHighlight, sessionId: session._id }),
+      }).then(async (res) => {
+        if (res.ok) {
+          const sharedAnn = await res.json()
+          store.addSharedAnnotation(sharedAnn)
+        }
+      }).catch(() => {})
+    }
+
     // Clear selection
     selection.removeAllRanges()
     clearSelection()

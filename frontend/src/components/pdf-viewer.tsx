@@ -30,6 +30,7 @@ import { AnnotationToolbar } from '@/components/annotation-toolbar'
 import { StickyNoteItem } from '@/components/sticky-note-item'
 import { WordConfirmTooltip } from '@/components/word-confirm-tooltip'
 
+
 // Set worker source
 if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.min.mjs'
@@ -49,6 +50,10 @@ export function PDFViewer() {
   const sessionStartRef = useRef<number>(Date.now())
   const lastLoggedPageRef = useRef<number>(0)
   const { user } = useAuth()
+
+  const [isLoading, setIsLoading] = useState(false)
+  const [pdfReady, setPdfReady] = useState(false)
+  const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null)
 
   const {
     pdfDataUrl,
@@ -105,31 +110,43 @@ export function PDFViewer() {
     addSharedAnnotation,
   } = usePDFStore()
 
-    // Poll shared annotations when in a session
+  // Poll shared resources (annotations, bookmarks, flashcards) when in a session
   useEffect(() => {
     if (!shareSession) return
     const poll = async () => {
       try {
-        const res = await authFetch(`/api/share/annotations?sessionId=${encodeURIComponent(shareSession._id)}`)
-        const data = await res.json()
-        if (Array.isArray(data)) {
-          data.forEach((ann: any) => {
-            const store = usePDFStore.getState()
-            if (!store.sharedAnnotations.find((a) => a.annotationId === ann.annotationId)) {
-              store.addSharedAnnotation(ann)
-            }
-          })
+        const [annRes, bmRes, fcRes] = await Promise.all([
+          authFetch(`/api/share/annotations?sessionId=${encodeURIComponent(shareSession._id)}`),
+          authFetch(`/api/share/bookmarks?sessionId=${encodeURIComponent(shareSession._id)}`),
+          authFetch(`/api/share/flashcards?sessionId=${encodeURIComponent(shareSession._id)}`)
+        ])
+        
+        if (annRes.ok) {
+          const data = await annRes.json()
+          if (Array.isArray(data)) {
+            usePDFStore.getState().setSharedAnnotations(data)
+          }
         }
-      } catch { /* ignore */ }
+        if (bmRes.ok) {
+          const data = await bmRes.json()
+          if (Array.isArray(data)) {
+            usePDFStore.getState().setSharedBookmarks(data)
+          }
+        }
+        if (fcRes.ok) {
+          const data = await fcRes.json()
+          if (Array.isArray(data)) {
+            usePDFStore.getState().setSharedFlashcards(data)
+          }
+        }
+      } catch (err) {
+        console.error('[Session Poll] Error:', err)
+      }
     }
     poll()
     const interval = setInterval(poll, 4000)
     return () => clearInterval(interval)
   }, [shareSession?._id])
-
-  const [isLoading, setIsLoading] = useState(false)
-  const [pdfReady, setPdfReady] = useState(false)
-  const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null)
 
   // Pending word confirmation state (shown before firing API)
   const [pendingWord, setPendingWord] = useState<{
@@ -1220,6 +1237,26 @@ export function PDFViewer() {
                       />
                     )
                   })}
+                {/* Shared Drawing Paths Overlay Layer */}
+                {shareSession && sharedAnnotations
+                  .filter((ann) => ann.pageNumber === currentPage && ann.type === 'drawing' && ann.points && ann.author !== user?.username)
+                  .map((ann) => {
+                    const member = shareSession.members.find((m) => m.username === ann.author)
+                    const pathData = ann.points!
+                      .map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x * scale} ${p.y * scale}`)
+                      .join(' ')
+                    return (
+                      <path
+                        key={`shared-${ann.annotationId}`}
+                        d={pathData}
+                        stroke={member?.color || ann.color}
+                        strokeWidth={(ann.thickness || 3) * scale}
+                        fill="none"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                      />
+                    )
+                  })}
               </svg>
 
               {/* Sticky Notes Pin Layer */}
@@ -1241,6 +1278,22 @@ export function PDFViewer() {
                       }}
                     />
                   ))}
+                {/* Shared Sticky Notes Pin Layer */}
+                {shareSession && sharedAnnotations
+                  .filter((ann) => ann.pageNumber === currentPage && ann.type === 'note' && ann.author !== user?.username)
+                  .map((ann) => {
+                    const member = shareSession.members.find((m) => m.username === ann.author)
+                    return (
+                      <StickyNoteItem
+                        key={`shared-${ann.annotationId}`}
+                        annotation={{ ...ann, id: ann.annotationId }}
+                        scale={scale}
+                        readOnly={true}
+                        authorName={ann.author}
+                        authorColor={member?.color || ann.color}
+                      />
+                    )
+                  })}
               </div>
 
               {/* Interactive Drawing Layer (only visible/active in Pen/Eraser modes) */}

@@ -68,3 +68,33 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: 'Failed to save bookmark' }, { status: 500 })
   }
 }
+
+export async function DELETE(request: Request) {
+  const user = getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const conn = await connectToDatabase()
+  if (!conn) return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    const sessionId = searchParams.get('sessionId')
+    if (!id || !sessionId) {
+      return NextResponse.json({ error: 'id and sessionId required' }, { status: 400 })
+    }
+
+    const bm = await conn.db.collection('sharedBookmarks').findOne({ bookmarkId: id, sessionId })
+    if (!bm) return NextResponse.json({ error: 'Not found' }, { status: 404 })
+    if (bm.author !== user.username) {
+      return NextResponse.json({ error: 'Only the author can delete' }, { status: 403 })
+    }
+
+    await conn.db.collection('sharedBookmarks').deleteOne({ bookmarkId: id, sessionId })
+    return NextResponse.json({ success: true })
+  } catch (error) {
+    console.error('[API Shared Bookmarks Delete] Error:', error)
+    return NextResponse.json({ error: 'Failed to delete' }, { status: 500 })
+  }
+}
+

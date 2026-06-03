@@ -44,7 +44,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { id, sessionId, pdfFileName, pageNumber, type, color, rects, points, thickness, noteText } = body
+    const { id, sessionId, pdfFileName, pageNumber, type, color, rects, points, thickness, noteText, x, y } = body
 
     if (!sessionId || !id) {
       return NextResponse.json({ error: 'sessionId and id required' }, { status: 400 })
@@ -62,6 +62,8 @@ export async function POST(request: Request) {
       points: points || [],
       thickness: Number(thickness) || 3,
       noteText: noteText || '',
+      x: x !== undefined ? Number(x) : undefined,
+      y: y !== undefined ? Number(y) : undefined,
       comments: [],
       resolved: false,
       createdAt: new Date().toISOString(),

@@ -460,6 +460,7 @@ interface PDFState {
   removeSharedBookmark: (bookmarkId: string) => void
   setSharedFlashcards: (flashcards: SharedFlashcard[]) => void
   addSharedFlashcard: (flashcard: SharedFlashcard) => void
+  removeSharedFlashcard: (flashcardId: string) => void
   setShareSessions: (sessions: ShareSession[]) => void
   clearShareState: () => void
 
@@ -799,6 +800,10 @@ export const usePDFStore = create<PDFState>()(
             flashcard,
             ...s.sharedFlashcards.filter((f) => f.flashcardId !== flashcard.flashcardId),
           ],
+        })),
+      removeSharedFlashcard: (flashcardId) =>
+        set((s) => ({
+          sharedFlashcards: s.sharedFlashcards.filter((f) => f.flashcardId !== flashcardId),
         })),
       setShareSessions: (sessions) => set({ shareSessions: sessions }),
       clearShareState: () =>

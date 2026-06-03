@@ -7,11 +7,22 @@ import { Button } from '@/components/ui/button'
 interface StickyNoteItemProps {
   annotation: any
   scale: number
-  onUpdate: (text: string) => void
-  onDelete: () => void
+  onUpdate?: (text: string) => void
+  onDelete?: () => void
+  readOnly?: boolean
+  authorName?: string
+  authorColor?: string
 }
 
-export function StickyNoteItem({ annotation, scale, onUpdate, onDelete }: StickyNoteItemProps) {
+export function StickyNoteItem({
+  annotation,
+  scale,
+  onUpdate,
+  onDelete,
+  readOnly = false,
+  authorName,
+  authorColor,
+}: StickyNoteItemProps) {
   const [isOpen, setIsOpen] = useState(false)
   const [text, setText] = useState(annotation.noteText || '')
   const popoverRef = useRef<HTMLDivElement>(null)
@@ -33,7 +44,7 @@ export function StickyNoteItem({ annotation, scale, onUpdate, onDelete }: Sticky
   }, [isOpen])
 
   const handleSave = () => {
-    onUpdate(text)
+    if (onUpdate) onUpdate(text)
     setIsOpen(false)
   }
 
@@ -57,8 +68,8 @@ export function StickyNoteItem({ annotation, scale, onUpdate, onDelete }: Sticky
           setIsOpen(!isOpen)
         }}
         className="flex h-7 w-7 items-center justify-center rounded-full text-white shadow-md hover:bg-amber-600 transition-all hover:scale-110 active:scale-95 border border-white/20"
-        style={{ backgroundColor: annotation.color || '#F59E0B' }}
-        title="View sticky note"
+        style={{ backgroundColor: authorColor || annotation.color || '#F59E0B' }}
+        title={readOnly ? `${authorName}'s sticky note` : "View sticky note"}
       >
         <MessageSquare className="h-3.5 w-3.5 fill-white/20" />
       </button>
@@ -71,20 +82,24 @@ export function StickyNoteItem({ annotation, scale, onUpdate, onDelete }: Sticky
           className="absolute left-1/2 bottom-8 z-40 w-64 -translate-x-1/2 rounded-xl border border-border bg-background/95 p-3 shadow-2xl backdrop-blur-md animate-in fade-in slide-in-from-bottom-2 duration-150"
         >
           <div className="flex items-center justify-between border-b pb-2 mb-2">
-            <span className="text-xs font-bold text-muted-foreground">Sticky Note</span>
+            <span className="text-xs font-bold text-muted-foreground">
+              {readOnly ? `Note by ${authorName}` : "Sticky Note"}
+            </span>
             <div className="flex items-center gap-1">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-5 w-5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600"
-                onClick={(e) => {
-                  e.stopPropagation()
-                  onDelete()
-                }}
-                title="Delete note"
-              >
-                <Trash2 className="h-3 w-3" />
-              </Button>
+              {!readOnly && onDelete && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-5 w-5 text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-600"
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    onDelete()
+                  }}
+                  title="Delete note"
+                >
+                  <Trash2 className="h-3 w-3" />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
@@ -95,31 +110,40 @@ export function StickyNoteItem({ annotation, scale, onUpdate, onDelete }: Sticky
               </Button>
             </div>
           </div>
-          <textarea
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className="w-full h-20 resize-none rounded-lg border border-border bg-background/50 px-2 py-1.5 text-xs outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
-            placeholder="Type comment here..."
-            autoFocus
-          />
-          <div className="flex justify-end gap-1.5 mt-2">
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-6 px-2 text-[10px]"
-              onClick={() => setIsOpen(false)}
-            >
-              Cancel
-            </Button>
-            <Button
-              size="sm"
-              className="h-6 px-2 text-[10px] bg-amber-500 hover:bg-amber-600 text-white"
-              onClick={handleSave}
-            >
-              <Check className="h-2.5 w-2.5 mr-1" />
-              Save
-            </Button>
-          </div>
+          
+          {readOnly ? (
+            <div className="w-full min-h-[60px] max-h-40 overflow-y-auto rounded-lg border border-border/40 bg-muted/20 px-2.5 py-2 text-xs text-foreground select-text whitespace-pre-wrap leading-relaxed">
+              {text || "No note text content"}
+            </div>
+          ) : (
+            <>
+              <textarea
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                className="w-full h-20 resize-none rounded-lg border border-border bg-background/50 px-2 py-1.5 text-xs outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-colors"
+                placeholder="Type comment here..."
+                autoFocus
+              />
+              <div className="flex justify-end gap-1.5 mt-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-6 px-2 text-[10px]"
+                  onClick={() => setIsOpen(false)}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  size="sm"
+                  className="h-6 px-2 text-[10px] bg-amber-500 hover:bg-amber-600 text-white"
+                  onClick={handleSave}
+                >
+                  <Check className="h-2.5 w-2.5 mr-1" />
+                  Save
+                </Button>
+              </div>
+            </>
+          )}
         </div>
       )}
     </div>
