@@ -256,6 +256,7 @@ export default function DashboardPage() {
         target.isContentEditable
 
       if (e.key === 'Escape') {
+        if (focusMode) { setFocusMode(false); return }
         if (showSearch) setShowSearch(false)
         else if (showHistory) setShowHistory(false)
         else if (showBookmarks) setShowBookmarks(false)
@@ -267,8 +268,13 @@ export default function DashboardPage() {
       if (isInput) return
 
       switch (e.key.toLowerCase()) {
-        case '/':
         case 'f':
+          if (!e.ctrlKey && !e.metaKey) {
+            e.preventDefault()
+            toggleFocusMode()
+          }
+          break
+        case '/':
           if (!e.ctrlKey && !e.metaKey) {
             e.preventDefault()
             toggleSearch()
@@ -307,6 +313,9 @@ export default function DashboardPage() {
       setShowSearch,
       setShowHistory,
       setShowBookmarks,
+      focusMode,
+      toggleFocusMode,
+      setFocusMode,
     ]
   )
 
@@ -340,8 +349,15 @@ export default function DashboardPage() {
 
   return (
     <div className="flex h-screen flex-col bg-background">
+      {focusMode && <div className="fixed inset-0 z-30 bg-background" />}
       {focusMode && (
-        <div className="fixed inset-0 z-40 bg-background" />
+        <button
+          onClick={() => setFocusMode(false)}
+          className="fixed left-1/2 top-3 z-50 -translate-x-1/2 flex items-center gap-2 rounded-xl border border-violet-200/50 bg-gradient-to-r from-violet-50 to-fuchsia-50 px-4 py-2 text-xs font-semibold text-violet-700 shadow-lg shadow-violet-200/30 backdrop-blur-sm transition-all hover:shadow-xl hover:shadow-violet-200/40 active:scale-[0.97] dark:border-violet-800/20 dark:from-violet-950/30 dark:to-fuchsia-950/30 dark:text-violet-400 dark:shadow-violet-900/10"
+        >
+          <span>Exit focus mode</span>
+          <kbd className="rounded-md border border-violet-200/50 bg-white/60 px-1.5 py-0.5 text-[10px] font-mono font-bold dark:border-violet-800/30 dark:bg-violet-950/50">Esc</kbd>
+        </button>
       )}
       <header className={`flex h-16 items-center justify-between border-b border-emerald-500/10 bg-background/60 px-4 shadow-[0_1px_0_0_rgba(16,185,129,0.05)] backdrop-blur-xl transition-opacity duration-300 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
         <div className="flex min-w-0 items-center gap-3">
@@ -414,7 +430,7 @@ export default function DashboardPage() {
       </header>
 
       {pdfDataUrl ? (
-        <main className="relative flex-1 overflow-hidden">
+        <main className={`relative flex-1 overflow-hidden ${focusMode ? 'fixed inset-0 z-40' : ''}`}>
           <ErrorBoundary>
             <PDFViewer />
             <WordPopup />
