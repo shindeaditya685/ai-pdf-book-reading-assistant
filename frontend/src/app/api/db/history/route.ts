@@ -8,17 +8,18 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const pdfFileName = searchParams.get('pdfFileName')
-  if (!pdfFileName) return NextResponse.json([])
 
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json([])
 
   try {
+    const filter: any = { username: user.username }
+    if (pdfFileName) filter.pdfFileName = pdfFileName
     const history = await conn.db
       .collection('wordHistory')
-      .find({ pdfFileName, username: user.username })
+      .find(filter)
       .sort({ timestamp: -1 })
-      .limit(100)
+      .limit(pdfFileName ? 100 : 10000)
       .toArray()
     return NextResponse.json(history)
   } catch {

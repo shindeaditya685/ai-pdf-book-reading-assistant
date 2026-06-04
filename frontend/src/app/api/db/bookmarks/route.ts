@@ -8,17 +8,16 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const pdfFileName = searchParams.get('pdfFileName')
-  if (!pdfFileName) {
-    return NextResponse.json([])
-  }
 
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json([])
 
   try {
+    const filter: any = { username: user.username }
+    if (pdfFileName) filter.pdfFileName = pdfFileName
     const bookmarks = await conn.db
       .collection('bookmarks')
-      .find({ pdfFileName, username: user.username })
+      .find(filter)
       .sort({ timestamp: -1 })
       .toArray()
     return NextResponse.json(bookmarks)
