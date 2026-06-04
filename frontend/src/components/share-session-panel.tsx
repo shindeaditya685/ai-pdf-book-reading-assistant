@@ -31,6 +31,8 @@ export function ShareSessionPanel() {
     setPdfFileName,
     setCurrentPage,
     clearOcrText,
+    bookmarks,
+    flashcards,
   } = usePDFStore()
 
   const { user } = useAuth()
@@ -54,6 +56,52 @@ export function ShareSessionPanel() {
     setLoading(false)
   }, [setShareSessions])
 
+  const syncExistingDataToSession = async (sessionId: string) => {
+    const promises: Promise<void>[] = []
+
+    for (const bm of bookmarks) {
+      promises.push(
+        authFetch('/api/share/bookmarks', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: bm.id,
+            sessionId,
+            word: bm.word,
+            meaning: bm.meaning,
+            pronunciation: bm.pronunciation,
+            translation: bm.translation,
+            sentence: bm.sentence,
+            pageNumber: bm.pageNumber,
+            pdfFileName: bm.pdfFileName,
+          }),
+        }).then(() => {}),
+      )
+    }
+
+    for (const fc of flashcards) {
+      promises.push(
+        authFetch('/api/share/flashcards', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: fc._id || fc.id,
+            sessionId,
+            word: fc.word,
+            meaning: fc.meaning,
+            pronunciation: fc.pronunciation,
+            translation: fc.translation,
+            sentence: fc.sentence,
+            pageNumber: fc.pageNumber,
+            pdfFileName: fc.pdfFileName,
+          }),
+        }).then(() => {}),
+      )
+    }
+
+    await Promise.allSettled(promises)
+  }
+
   useEffect(() => {
     if (showSharePanel) loadSessions()
   }, [showSharePanel, loadSessions])
@@ -73,6 +121,7 @@ export function ShareSessionPanel() {
         setTab('session')
         setSessionName('')
         loadSessions()
+        syncExistingDataToSession(session._id)
       }
     } catch { /* ignore */ }
     setCreating(false)
@@ -97,6 +146,7 @@ export function ShareSessionPanel() {
             setTab('session')
             setInviteCode('')
             loadSessions()
+            syncExistingDataToSession(updated._id)
           }
         }
       }
