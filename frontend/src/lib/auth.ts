@@ -8,6 +8,7 @@ export interface User {
   _id?: string
   username: string
   password: string
+  isAdmin?: boolean
   createdAt: Date
 }
 
@@ -22,9 +23,10 @@ export async function createUser(username: string, password: string) {
   const result = await conn.db.collection('users').insertOne({
     username,
     password: hashed,
+    isAdmin: false,
     createdAt: new Date(),
   })
-  return { id: result.insertedId.toString(), username }
+  return { id: result.insertedId.toString(), username, isAdmin: false }
 }
 
 export async function authenticateUser(username: string, password: string) {
@@ -37,16 +39,16 @@ export async function authenticateUser(username: string, password: string) {
   const match = await bcrypt.compare(password, user.password)
   if (!match) return null
 
-  return { id: user._id.toString(), username: user.username }
+  return { id: user._id.toString(), username: user.username, isAdmin: !!user.isAdmin }
 }
 
-export function generateToken(user: { id: string; username: string }) {
-  return jwt.sign({ id: user.id, username: user.username }, JWT_SECRET, { expiresIn: '7d' })
+export function generateToken(user: { id: string; username: string; isAdmin?: boolean }) {
+  return jwt.sign({ id: user.id, username: user.username, isAdmin: !!user.isAdmin }, JWT_SECRET, { expiresIn: '7d' })
 }
 
 export function verifyToken(token: string) {
   try {
-    return jwt.verify(token, JWT_SECRET) as { id: string; username: string }
+    return jwt.verify(token, JWT_SECRET) as { id: string; username: string; isAdmin: boolean }
   } catch {
     return null
   }

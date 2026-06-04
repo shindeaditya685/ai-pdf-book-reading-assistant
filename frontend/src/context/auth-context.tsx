@@ -5,6 +5,7 @@ import { createContext, useContext, useEffect, useState, useCallback, type React
 interface User {
   id: string
   username: string
+  isAdmin?: boolean
 }
 
 interface AuthContextValue {
