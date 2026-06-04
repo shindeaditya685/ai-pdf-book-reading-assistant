@@ -45,6 +45,8 @@ export function WordPopup() {
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
   const [flashcardStatus, setFlashcardStatus] = useState<'idle' | 'creating' | 'created' | 'exists'>('idle')
   const historyAddedRef = useRef(false)
+  const prevLanguageRef = useRef(translationLanguage)
+  const prevAccentRef = useRef(accent)
 
   // Save to history when explanation is received
   useEffect(() => {
@@ -314,6 +316,16 @@ export function WordPopup() {
       setIsExplaining(false)
     }
   }, [selectedWord, selectedSentence, selectedPageNumber, translationLanguage, accent, setExplanation, setIsExplaining, setIsOfflineResult])
+
+  // Re-fetch explanation when translation language or accent changes (without closing the popup)
+  useEffect(() => {
+    if (prevLanguageRef.current === translationLanguage && prevAccentRef.current === accent) return
+    prevLanguageRef.current = translationLanguage
+    prevAccentRef.current = accent
+    if (!selectedWord || !selectedSentence || !selectedPageNumber) return
+    if (!explanation || isExplaining) return
+    handleGetAIContext()
+  }, [translationLanguage, accent, selectedWord, selectedSentence, selectedPageNumber, explanation, isExplaining, handleGetAIContext])
 
   // Reset simplified state when word changes
   if (selectedWord && showSimplified && explanation?.word !== selectedWord) {
