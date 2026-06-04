@@ -80,6 +80,7 @@ export default function DashboardPage() {
     toggleSharePanel,
     setOcrText,
     clearOcrText,
+    setStreakCount,
   } = usePDFStore()
 
   const { user, logout } = useAuth()
@@ -245,6 +246,21 @@ export default function DashboardPage() {
 
     loadData()
   }, [pdfFileName, addBookmark, addToHistory])
+
+  // Fetch streak count on mount (always, even without PDF loaded)
+  useEffect(() => {
+    authFetch('/api/reading-stats?days=1').then((res) => {
+      if (res.ok) res.json().then((data) => {
+        setStreakCount(data.streak || 0)
+        if (data.today) {
+          usePDFStore.getState().setTodayStats(
+            data.today.pagesRead || 0,
+            data.today.timeSpentMs ? Math.round(data.today.timeSpentMs / 60000) : 0
+          )
+        }
+      })
+    }).catch(() => {})
+  }, [setStreakCount])
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback(
