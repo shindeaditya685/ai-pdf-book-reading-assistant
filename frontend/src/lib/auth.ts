@@ -1,8 +1,10 @@
+import crypto from 'crypto'
 import { connectToDatabase } from './db'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 
-const JWT_SECRET = process.env.JWT_SECRET || 'fallback-secret'
+const JWT_SECRET =
+  process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex')
 
 export interface User {
   _id?: string
@@ -10,6 +12,29 @@ export interface User {
   password: string
   isAdmin?: boolean
   createdAt: Date
+}
+
+const PASSWORD_RULES = {
+  minLength: 8,
+  requireUppercase: true,
+  requireLowercase: true,
+  requireDigit: true,
+}
+
+export function validatePassword(password: string): string | null {
+  if (password.length < PASSWORD_RULES.minLength) {
+    return `Password must be at least ${PASSWORD_RULES.minLength} characters`
+  }
+  if (PASSWORD_RULES.requireUppercase && !/[A-Z]/.test(password)) {
+    return 'Password must contain at least one uppercase letter'
+  }
+  if (PASSWORD_RULES.requireLowercase && !/[a-z]/.test(password)) {
+    return 'Password must contain at least one lowercase letter'
+  }
+  if (PASSWORD_RULES.requireDigit && !/\d/.test(password)) {
+    return 'Password must contain at least one digit'
+  }
+  return null
 }
 
 export async function createUser(username: string, password: string) {
@@ -54,8 +79,31 @@ export function verifyToken(token: string) {
   }
 }
 
+export async function getUserFromDb(payload: { id: string; username: string }) {
+  const conn = await connectToDatabase()
+  if (!conn) return null
+
+  const { ObjectId } = await import('mongodb')
+  let objectId
+  try { objectId = new ObjectId(payload.id) } catch { return null }
+
+  const user = await conn.db.collection('users').findOne(
+    { _id: objectId },
+    { projection: { password: 0 } }
+  )
+  if (!user) return null
+
+  return {
+    id: user._id.toString(),
+    username: user.username,
+    isAdmin: !!user.isAdmin,
+  }
+}
+
 export function getUserFromRequest(request: Request) {
   const auth = request.headers.get('authorization')
   if (!auth?.startsWith('Bearer ')) return null
   return verifyToken(auth.slice(7))
 }
+
+export { PASSWORD_RULES }

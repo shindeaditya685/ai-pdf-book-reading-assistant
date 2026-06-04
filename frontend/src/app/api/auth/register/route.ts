@@ -1,8 +1,18 @@
 import { NextResponse } from 'next/server'
-import { createUser, generateToken } from '@/lib/auth'
+import { createUser, generateToken, validatePassword } from '@/lib/auth'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
   try {
+    const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
+    const rateCheck = checkRateLimit(`register:${ip}`, 3, 60000)
+    if (!rateCheck.allowed) {
+      return NextResponse.json(
+        { error: `Too many attempts. Try again in ${Math.ceil(rateCheck.resetIn / 1000)}s` },
+        { status: 429 }
+      )
+    }
+
     const { username: rawUsername, password } = await request.json()
     const username = typeof rawUsername === 'string' ? rawUsername.trim() : ''
     if (!username || !password) {
@@ -11,8 +21,10 @@ export async function POST(request: Request) {
     if (username.length < 3) {
       return NextResponse.json({ error: 'Username must be at least 3 characters' }, { status: 400 })
     }
-    if (password.length < 6) {
-      return NextResponse.json({ error: 'Password must be at least 6 characters' }, { status: 400 })
+
+    const passwordError = validatePassword(password)
+    if (passwordError) {
+      return NextResponse.json({ error: passwordError }, { status: 400 })
     }
 
     const user = await createUser(username, password)

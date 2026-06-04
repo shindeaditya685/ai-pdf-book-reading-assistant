@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { verifyToken } from '@/lib/auth'
+import { verifyToken, getUserFromDb } from '@/lib/auth'
 
 export async function GET(request: Request) {
   const auth = request.headers.get('authorization')
@@ -12,5 +12,11 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Invalid token' }, { status: 401 })
   }
 
-  return NextResponse.json({ user: payload })
+  // Re-fetch from DB to get current isAdmin status (in case user was promoted after token was issued)
+  const user = await getUserFromDb(payload)
+  if (!user) {
+    return NextResponse.json({ error: 'User not found' }, { status: 401 })
+  }
+
+  return NextResponse.json({ user })
 }
