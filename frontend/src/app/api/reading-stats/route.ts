@@ -19,24 +19,32 @@ export async function GET(request: Request) {
     const days = Math.min(parseInt(searchParams.get('days') || '30'), 365)
     const mode = searchParams.get('mode') || 'stats'
 
+    // Always fetch enough data for streak (365 days), regardless of the `days` parameter
+    const streakSince = new Date()
+    streakSince.setDate(streakSince.getDate() - 365)
+    streakSince.setHours(0, 0, 0, 0)
+
+    const streakRecords = await conn.db
+      .collection('readingStats')
+      .find({ username: user.username, date: { $gte: streakSince.toISOString().slice(0, 10) } })
+      .sort({ date: -1 })
+      .toArray()
+
+    // Also fetch the requested window for history display
     const since = new Date()
     since.setDate(since.getDate() - days)
     since.setHours(0, 0, 0, 0)
 
-    const records = await conn.db
-      .collection('readingStats')
-      .find({ username: user.username, date: { $gte: since.toISOString().slice(0, 10) } })
-      .sort({ date: -1 })
-      .toArray()
+    const records = streakRecords.filter((r) => r.date >= since.toISOString().slice(0, 10))
 
-    const today = records.find((r) => r.date === todayStr()) || null
+    const today = streakRecords.find((r) => r.date === todayStr()) || null
 
-    // Compute streak
+    // Compute streak from the full 365-day record set
     let streak = 0
     const checkDate = new Date()
     while (true) {
       const ds = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`
-      const found = records.some((r) => r.date === ds)
+      const found = streakRecords.some((r) => r.date === ds)
       if (!found && streak === 0) {
         checkDate.setDate(checkDate.getDate() - 1)
         continue
