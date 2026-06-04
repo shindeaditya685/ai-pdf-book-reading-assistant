@@ -22,7 +22,7 @@ export default function LoginPage() {
     const err = await login(username, password)
     setLoading(false)
     if (err) { setError(err); return }
-    router.push('/')
+    router.push('/dashboard')
   }
 
   return (

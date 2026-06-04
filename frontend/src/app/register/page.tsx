@@ -24,7 +24,7 @@ export default function RegisterPage() {
     const err = await register(username, password)
     setLoading(false)
     if (err) { setError(err); return }
-    router.push('/')
+    router.push('/dashboard')
   }
 
   return (

@@ -1,594 +1,267 @@
-'use client'
+import Link from 'next/link'
+import { BookOpen, Sparkles, Brain, Users, Bookmark, Clock, Languages, Volume2, Search, ArrowRight, Zap, Shield, BarChart3, GraduationCap, Globe, MessageSquare, Layers, SunMoon, ChevronRight } from 'lucide-react'
+import { LandingNav } from '@/components/landing-nav'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
-import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, Brain, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users } from 'lucide-react'
-import { motion } from 'framer-motion'
-import { useAuth } from '@/context/auth-context'
-import { UploadZone } from '@/components/upload-zone'
-import { WordPopup } from '@/components/word-popup'
-import { SettingsPanel } from '@/components/settings-panel'
-import { HistoryPanel } from '@/components/history-panel'
-import { TtsControls } from '@/components/tts-controls'
-import { ReadingTimer } from '@/components/reading-timer'
-import { BookmarksPanel } from '@/components/bookmarks-panel'
-import { FlashcardReview } from '@/components/flashcard-review'
-import { ReadingStatsPanel } from '@/components/reading-stats-panel'
-import { ReadingAnalytics } from '@/components/reading-analytics'
-import { ShareSessionPanel } from '@/components/share-session-panel'
-import { QuestionGeneratorPanel } from '@/components/question-generator-panel'
-import { SummarizerPanel } from '@/components/summarizer-panel'
-import { ErrorBoundary } from '@/components/error-boundary'
-import { usePDFStore } from '@/store/use-pdf-store'
-import { authFetch } from '@/lib/api'
-import { getActiveBook, getStoredBookPage, setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
-
-// Dynamically import PDFViewer to avoid loading pdfjs-dist in the initial bundle
-const PDFViewer = dynamic(
-  () => import('@/components/pdf-viewer').then((mod) => mod.PDFViewer),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="flex h-full items-center justify-center">
-        <div className="text-center">
-          <div className="mx-auto mb-3 h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-emerald-500" />
-          <p className="text-sm text-muted-foreground">Loading PDF engine...</p>
-        </div>
-      </div>
-    ),
-  }
-)
-
-const formatRecentDate = (timestamp: number) =>
-  new Intl.DateTimeFormat(undefined, {
-    month: 'short',
-    day: 'numeric',
-  }).format(new Date(timestamp))
-
-export default function Home() {
-  const {
-    pdfDataUrl,
-    pdfFileName,
-    clearSelection,
-        toggleSearch,
-        toggleHistory,
-        toggleBookmarks,
-        toggleFlashcards,
-        toggleReadingStats,
-        streakCount,
-        goToNextSearchResult,
-        goToPrevSearchResult,
-        showSearch,
-        showHistory,
-        showBookmarks,
-        setShowHistory,
-        setShowBookmarks,
-        setShowSearch,
-    recentPdfs,
-    wordHistory,
-    bookmarks,
-    addToHistory,
-    addBookmark,
-    addRecentPdf,
-    setPdfDataUrl,
-    setPdfFileName,
-    setCurrentPage,
-    focusMode,
-    toggleFocusMode,
-    setFocusMode,
-    shareSession,
-    toggleSharePanel,
-    setOcrText,
-    clearOcrText,
-  } = usePDFStore()
-
-  const { user, logout } = useAuth()
-  const [recentLoading, setRecentLoading] = useState<string | null>(null)
-  const [recentPdfsLoading, setRecentPdfsLoading] = useState(true)
-
-  const dataLoadedRef = useRef<string | null>(null)
-  const recentLoadedRef = useRef<string | null>(null)
-
-  // Load a recent PDF from MongoDB
-  const handleLoadRecentPdf = useCallback(
-    async (fileName: string, preferredPage?: number | null) => {
-      setRecentLoading(fileName)
-      try {
-        const res = await authFetch(`/api/db/pdf?fileName=${encodeURIComponent(fileName)}`)
-        if (!res.ok) return
-
-        const pdf = await res.json()
-        if (pdf?.content) {
-          const existingMeta = usePDFStore
-            .getState()
-            .recentPdfs.find((item) => item.fileName === fileName)
-          const restoredPage =
-            preferredPage ||
-            pdf.lastPage ||
-            existingMeta?.lastPage ||
-            getStoredBookPage(user?.username, fileName) ||
-            1
-
-          clearOcrText()
-          setCurrentPage(Math.max(1, Number(restoredPage) || 1))
-          setPdfFileName(fileName)
-          setPdfDataUrl(pdf.content)
-          addRecentPdf({
-            fileName,
-            timestamp: Date.now(),
-            pageCount: pdf.pageCount || existingMeta?.pageCount || 0,
-            lastPage: Math.max(1, Number(restoredPage) || 1),
-            wordCount: existingMeta?.wordCount,
-            bookmarkCount: existingMeta?.bookmarkCount,
-          })
-          setActiveBook(user?.username, fileName)
-          setStoredBookPage(user?.username, fileName, Math.max(1, Number(restoredPage) || 1))
-
-          // Restore OCR data if available
-          if (pdf.ocrText) {
-            for (const [page, data] of Object.entries(pdf.ocrText)) {
-              setOcrText(Number(page), data as any)
-            }
-          }
-        }
-      } catch {
-        // Not available
-      } finally {
-        setRecentLoading(null)
-      }
-    },
-    [
-      addRecentPdf,
-      clearOcrText,
-      setCurrentPage,
-      setPdfDataUrl,
-      setPdfFileName,
-      setOcrText,
-      user?.username,
-    ]
-  )
-
-  // Load recent PDFs from MongoDB on mount
-  useEffect(() => {
-    if (!user?.username || recentLoadedRef.current === user.username) return
-    recentLoadedRef.current = user.username
-    usePDFStore.setState({ recentPdfs: [] })
-
-    const loadRecentPdfs = async () => {
-      setRecentPdfsLoading(true)
-      try {
-        const res = await authFetch('/api/db/pdf')
-        const pdfs: any[] = await res.json()
-        if (Array.isArray(pdfs)) {
-          pdfs.forEach((p) => {
-            const lastPage = p.lastPage || getStoredBookPage(user.username, p.fileName) || 1
-            addRecentPdf({
-              fileName: p.fileName,
-              timestamp: new Date(p.updatedAt || p.createdAt).getTime(),
-              pageCount: p.pageCount || 0,
-              lastPage,
-              wordCount: p.wordCount || 0,
-              bookmarkCount: p.bookmarkCount || 0,
-            })
-          })
-
-          const activeBook = getActiveBook(user.username)
-          if (!pdfDataUrl && activeBook && pdfs.some((p) => p.fileName === activeBook)) {
-            const activeMeta = pdfs.find((p) => p.fileName === activeBook)
-            await handleLoadRecentPdf(
-              activeBook,
-              activeMeta?.lastPage || getStoredBookPage(user.username, activeBook)
-            )
-          }
-        }
-      } catch {
-        // Recent books are a convenience layer; the reader still works without them.
-      } finally {
-        setRecentPdfsLoading(false)
-      }
-    }
-
-    loadRecentPdfs()
-  }, [addRecentPdf, handleLoadRecentPdf, pdfDataUrl, user?.username])
-
-  // Load bookmarks and history from MongoDB when PDF loads
-  useEffect(() => {
-    if (!pdfFileName || dataLoadedRef.current === pdfFileName) return
-    dataLoadedRef.current = pdfFileName
-
-    const loadData = async () => {
-      try {
-        usePDFStore.setState({ wordHistory: [], bookmarks: [] })
-
-        const [bookmarksRes, historyRes] = await Promise.all([
-          authFetch(`/api/db/bookmarks?pdfFileName=${encodeURIComponent(pdfFileName)}`),
-          authFetch(`/api/db/history?pdfFileName=${encodeURIComponent(pdfFileName)}`),
-        ])
-
-        if (bookmarksRes.ok) {
-          const bmData = await bookmarksRes.json()
-          bmData.forEach((bm: any) => {
-            addBookmark({
-              id: bm._id?.toString() || `bm-${Date.now()}-${Math.random()}`,
-              pageNumber: bm.pageNumber,
-              word: bm.word,
-              meaning: bm.meaning,
-              pronunciation: bm.pronunciation,
-              translation: bm.translation,
-              sentence: bm.sentence,
-              timestamp: new Date(bm.timestamp).getTime(),
-              pdfFileName: bm.pdfFileName,
-            })
-          })
-        }
-
-        if (historyRes.ok) {
-          const histData = await historyRes.json()
-          histData.forEach((h: any) => {
-            addToHistory({
-              id: h._id?.toString() || `hist-${Date.now()}-${Math.random()}`,
-              word: h.word,
-              meaning: h.meaning,
-              pronunciation: h.pronunciation,
-              translation: h.translation,
-              sentence: h.sentence,
-              pageNumber: h.pageNumber,
-              timestamp: new Date(h.timestamp).getTime(),
-              pdfFileName: h.pdfFileName,
-            })
-          })
-        }
-      } catch (e) {
-        console.error('Failed to load data from MongoDB:', e)
-      }
-    }
-
-    loadData()
-  }, [pdfFileName, addBookmark, addToHistory])
-
-  // Keyboard shortcuts
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement
-      const isInput =
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
-
-      if (e.key === 'Escape') {
-        if (showSearch) setShowSearch(false)
-        else if (showHistory) setShowHistory(false)
-        else if (showBookmarks) setShowBookmarks(false)
-        else clearSelection()
-        return
-      }
-
-      // Don't trigger shortcuts when typing in inputs
-      if (isInput) return
-
-      switch (e.key.toLowerCase()) {
-        case '/':
-        case 'f':
-          if (!e.ctrlKey && !e.metaKey) {
-            e.preventDefault()
-            toggleSearch()
-          }
-          break
-        case 'h':
-          toggleHistory()
-          break
-        case 'b':
-          toggleBookmarks()
-          break
-        case 'g':
-          toggleFlashcards()
-          break
-        case 'n':
-          e.preventDefault()
-          goToNextSearchResult()
-          break
-        case 'p':
-          e.preventDefault()
-          goToPrevSearchResult()
-          break
-      }
-    },
-    [
-      clearSelection,
-      toggleSearch,
-      toggleHistory,
-      toggleBookmarks,
-      toggleFlashcards,
-      goToNextSearchResult,
-      goToPrevSearchResult,
-      showSearch,
-      showHistory,
-      showBookmarks,
-      setShowSearch,
-      setShowHistory,
-      setShowBookmarks,
-    ]
-  )
-
-  useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [handleKeyDown])
-
-  const recentBookCards = recentPdfs.map((pdf) => {
-    const storedPage = getStoredBookPage(user?.username, pdf.fileName)
-    const lastPage = Math.max(1, Number(pdf.lastPage || storedPage || 1))
-    const pageCount = Math.max(0, Number(pdf.pageCount || 0))
-    const progress = pageCount > 0 ? Math.min(100, Math.round((lastPage / pageCount) * 100)) : 0
-    const wordCount =
-      pdf.wordCount ??
-      wordHistory.filter((w) => w.pdfFileName === pdf.fileName).length
-    const bookmarkCount =
-      pdf.bookmarkCount ??
-      bookmarks.filter((b) => b.pdfFileName === pdf.fileName).length
-
-    return {
-      ...pdf,
-      lastPage,
-      pageCount,
-      progress,
-      wordCount,
-      bookmarkCount,
-      isLoading: recentLoading === pdf.fileName,
-    }
-  })
-
-  const totalWords = recentBookCards.reduce((total, pdf) => total + pdf.wordCount, 0)
-  const totalBookmarks = recentBookCards.reduce((total, pdf) => total + pdf.bookmarkCount, 0)
-  const inProgressBooks = recentBookCards.filter(
-    (pdf) => pdf.pageCount > 0 && pdf.lastPage < pdf.pageCount
-  ).length
-
+export default function LandingPage() {
   return (
-    <div className="flex h-screen flex-col bg-background">
-      {focusMode && (
-        <div className="fixed inset-0 z-40 bg-background" />
-      )}
-      <header className={`flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-md transition-opacity duration-300 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 shadow-sm">
-            <BookOpen className="h-4 w-4 text-white" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-foreground">PDF Reader AI</p>
-            {!pdfDataUrl && (
-              <p className="hidden text-xs text-muted-foreground sm:block">
-                Reading workspace
-              </p>
-            )}
-          </div>
-        </div>
-
-        <div className="flex min-w-0 items-center gap-2">
-          {pdfFileName && (
-            <>
-              <div className="hidden md:block">
-                <UploadZone />
-              </div>
-              <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
-            </>
-          )}
-          {streakCount > 0 && (
-            <button
-              onClick={toggleReadingStats}
-              className="flex items-center gap-1 rounded-lg border bg-background px-2 py-1.5 text-xs text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors"
-              title={`${streakCount}-day streak!`}
-            >
-              <Flame className="h-3.5 w-3.5" />
-              <span className="font-semibold">{streakCount}</span>
-            </button>
-          )}
-          <button
-            onClick={toggleSharePanel}
-            className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs transition-colors ${
-              shareSession
-                ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
-                : 'border-border bg-background text-muted-foreground hover:text-foreground'
-            }`}
-            title="Collaborative Reading Groups"
-          >
-            <Users className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline font-semibold">
-              {shareSession ? shareSession.name : 'Collaborate'}
-            </span>
-          </button>
-          <SettingsPanel />
-          {user && (
-            <div className="flex items-center gap-1 rounded-lg border bg-background px-2 py-1.5 text-xs text-muted-foreground">
-              <span className="hidden max-w-[110px] truncate sm:inline">{user.username}</span>
-              <button
-                onClick={logout}
-                className="rounded p-0.5 text-muted-foreground/70 transition-colors hover:text-red-500"
-                title="Sign out"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-              </button>
+    <div className="min-h-screen bg-background">
+      {/* ── NAVBAR ── */}
+      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg">
+        <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 shadow-sm">
+              <BookOpen className="h-4 w-4 text-white" />
             </div>
-          )}
+            <span className="text-lg font-bold tracking-tight">PDFMind<span className="text-emerald-500">AI</span></span>
+          </div>
+          <div className="flex items-center gap-3">
+            <LandingNav />
+          </div>
         </div>
       </header>
 
-      {pdfDataUrl ? (
-        <main className="relative flex-1 overflow-hidden">
-          <ErrorBoundary>
-            <PDFViewer />
-            <WordPopup />
-            <TtsControls />
-            <ReadingTimer />
-          </ErrorBoundary>
-          <div className={`transition-opacity duration-300 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
-            <HistoryPanel />
-            <BookmarksPanel />
-            <FlashcardReview />
-            <ReadingStatsPanel />
-            <ReadingAnalytics />
-            <QuestionGeneratorPanel />
-            <SummarizerPanel />
+      {/* ── HERO ── */}
+      <section className="relative overflow-hidden border-b">
+        <div className="absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--emerald-500)/0.08)_0%,transparent_50%,hsl(var(--emerald-500)/0.03)_100%)]" />
+        <div className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-3xl text-center">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border bg-muted/50 px-4 py-1.5 text-xs font-semibold text-muted-foreground">
+              <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
+              AI-Powered PDF Reading Assistant
+            </div>
+            <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-5xl lg:text-6xl">
+              Read Smarter, Not Harder
+            </h1>
+            <p className="mt-6 text-lg leading-7 text-muted-foreground sm:text-xl">
+              Upload any PDF and unlock AI-powered word explanations, instant translations, text-to-speech, flashcards, collaborative reading groups, and detailed reading analytics — all in one beautiful workspace.
+            </p>
+            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+              <Link
+                href="/register"
+                className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-600 hover:shadow-xl hover:shadow-emerald-500/30 active:scale-[0.97]"
+              >
+                Start Reading Free
+                <ArrowRight className="h-4 w-4" />
+              </Link>
+              <Link
+                href="/login"
+                className="inline-flex items-center gap-2 rounded-xl border bg-background px-8 py-3.5 text-base font-semibold text-foreground shadow-sm transition-all hover:bg-muted active:scale-[0.97]"
+              >
+                Sign In
+              </Link>
+            </div>
+            <p className="mt-6 text-xs text-muted-foreground/60">
+              No credit card required · Free to use · 100+ languages supported
+            </p>
           </div>
-        </main>
-      ) : (
-        <main className="flex-1 overflow-auto bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--muted)/0.45)_100%)]">
-          <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
-            <section className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-              <div className="min-w-0 pt-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-400">
-                  Reading Desk
-                </p>
-                <h1 className="mt-3 max-w-2xl text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-                  Pick up your next page
-                </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
-                  Recent books, saved words, bookmarks, and reading progress are arranged in one calm workspace.
-                </p>
 
-                <div className="mt-6 grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
-                  <div className="rounded-lg border bg-background/80 p-4 shadow-sm">
-                    <FileText className="h-4 w-4 text-emerald-500" />
-                    <p className="mt-3 text-2xl font-semibold text-foreground">{recentBookCards.length}</p>
-                    <p className="text-xs text-muted-foreground">Books</p>
-                  </div>
-                  <div className="rounded-lg border bg-background/80 p-4 shadow-sm">
-                    <Clock className="h-4 w-4 text-sky-500" />
-                    <p className="mt-3 text-2xl font-semibold text-foreground">{inProgressBooks}</p>
-                    <p className="text-xs text-muted-foreground">In progress</p>
-                  </div>
-                  <div className="rounded-lg border bg-background/80 p-4 shadow-sm">
-                    <Brain className="h-4 w-4 text-violet-500" />
-                    <p className="mt-3 text-2xl font-semibold text-foreground">{totalWords}</p>
-                    <p className="text-xs text-muted-foreground">Words</p>
-                  </div>
-                  <div className="rounded-lg border bg-background/80 p-4 shadow-sm">
-                    <Bookmark className="h-4 w-4 text-amber-500" />
-                    <p className="mt-3 text-2xl font-semibold text-foreground">{totalBookmarks}</p>
-                    <p className="text-xs text-muted-foreground">Bookmarks</p>
-                  </div>
+          {/* ── HERO FEATURES GRID ── */}
+          <div className="mt-20 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {[
+              { icon: Brain, label: 'AI Word Explanations', desc: 'Click any word for instant contextual meaning, pronunciation, and translation.' },
+              { icon: Languages, label: 'Multi-Language', desc: 'Translate words into 100+ languages. Pashto, Farsi, Dutch, and more.' },
+              { icon: Volume2, label: 'Text-to-Speech', desc: 'Listen to any text with natural voices. Adjust speed and accent.' },
+              { icon: Users, label: 'Collaborative Groups', desc: 'Read together in real-time. Share highlights, notes, and comments.' },
+            ].map(({ icon: Icon, label, desc }) => (
+              <div key={label} className="group rounded-xl border bg-background/60 p-5 shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-400/50 hover:shadow-md">
+                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                  <Icon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
+                <p className="mt-4 text-sm font-bold text-foreground">{label}</p>
+                <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{desc}</p>
               </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-              <aside className="rounded-lg border bg-background p-4 shadow-sm">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="text-sm font-semibold text-foreground">Start Reading</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">Upload a PDF to open the reader.</p>
-                  </div>
-                  <Sparkles className="h-4 w-4 text-emerald-500" />
+      {/* ── HOW IT WORKS ── */}
+      <section className="border-b py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">How It Works</h2>
+            <p className="mt-4 text-muted-foreground">Three simple steps to transform your reading experience.</p>
+          </div>
+          <div className="mt-16 grid gap-8 md:grid-cols-3">
+            {[
+              { step: '01', icon: BookOpen, title: 'Upload Your PDF', desc: 'Drag and drop any PDF document. Your reading progress, bookmarks, and highlights are saved automatically.' },
+              { step: '02', icon: Sparkles, title: 'Read with AI', desc: 'Click any word to get an AI-powered explanation. Hear pronunciation, see translations, and save flashcards.' },
+              { step: '03', icon: BarChart3, title: 'Track & Collaborate', desc: 'Monitor your reading stats, join collaborative sessions, and review flashcards to reinforce learning.' },
+            ].map(({ step, icon: Icon, title, desc }) => (
+              <div key={step} className="relative rounded-xl border bg-background/60 p-6 shadow-sm">
+                <span className="text-4xl font-black text-emerald-500/20">{step}</span>
+                <div className="mt-2 flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                  <Icon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                 </div>
-                <UploadZone variant="panel" />
-              </aside>
-            </section>
+                <h3 className="mt-4 text-lg font-bold text-foreground">{title}</h3>
+                <p className="mt-2 text-sm leading-6 text-muted-foreground">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
 
-            <section>
-              <div className="mb-4 flex items-end justify-between gap-3">
-                <div>
-                  <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                    Recent Books
-                  </h2>
-                  <p className="mt-1 text-base font-semibold text-foreground">
-                    Continue where you left off
+      {/* ── FEATURES GRID ── */}
+      <section className="border-b py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">Everything You Need</h2>
+            <p className="mt-4 text-muted-foreground">Powerful features designed for deep reading and language learning.</p>
+          </div>
+          <div className="mt-16 grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            {[
+              { icon: Brain, title: 'AI Word Lookup', desc: 'Select any word and get contextual meanings powered by Groq AI with Gemini fallback. No more context switching to a dictionary.' },
+              { icon: Globe, title: '100+ Languages', desc: 'Translate words and sentences into any language. Perfect for language learners reading foreign texts.' },
+              { icon: Volume2, title: 'Text-to-Speech', desc: 'Full-page TTS with adjustable speed and multiple accent options. Great for auditory learning and pronunciation.' },
+              { icon: Bookmark, title: 'Smart Bookmarks', desc: 'Save words with their meanings, pronunciations, and example sentences. Revisit them anytime.' },
+              { icon: GraduationCap, title: 'Flashcards', desc: 'Automatically create flashcards from words you lookup. Spaced repetition for effective vocabulary building.' },
+              { icon: Users, title: 'Collaborative Reading', desc: 'Create reading groups with invite codes. Share highlights, annotations, and comments in real-time.' },
+              { icon: Search, title: 'Full-Text Search', desc: 'Search within any PDF document with highlighted results and quick navigation between matches.' },
+              { icon: MessageSquare, title: 'Question Generator', desc: 'AI generates comprehension questions from your PDF to test understanding and retention.' },
+              { icon: Clock, title: 'Pomodoro Timer', desc: 'Built-in focus timer with customizable durations. Stay in the zone while you read.' },
+              { icon: Layers, title: 'Annotations', desc: 'Highlight text, draw freehand, add sticky notes. Undo/redo support and color-coded highlights.' },
+              { icon: SunMoon, title: 'Dark & Light Mode', desc: 'Beautiful theme support for comfortable reading day or night.' },
+              { icon: BarChart3, title: 'Reading Analytics', desc: 'Track pages read, time spent, words looked up, and maintain your reading streak.' },
+            ].map(({ icon: Icon, title, desc }) => (
+              <div key={title} className="group rounded-xl border bg-background/60 p-5 shadow-sm transition-all hover:border-emerald-400/50 hover:shadow-md">
+                <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                  <Icon className="h-4.5 w-4.5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <p className="mt-3 text-sm font-bold text-foreground">{title}</p>
+                <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── COLLABORATIVE SECTION ── */}
+      <section className="border-b py-24">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid items-center gap-12 lg:grid-cols-2">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border bg-muted/50 px-3 py-1 text-xs font-semibold text-emerald-500">
+                <Users className="h-3.5 w-3.5" />
+                New Feature
+              </div>
+              <h2 className="mt-6 text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                Read Together, <span className="text-emerald-500">Anywhere</span>
+              </h2>
+              <p className="mt-4 text-muted-foreground leading-7">
+                Create a reading group, share an invite code, and read the same PDF with friends or classmates. See each other&apos;s highlights and annotations in real-time with color-coded authors. Discuss passages with threaded comments and @mentions.
+              </p>
+              <ul className="mt-6 space-y-3">
+                {[
+                  'Real-time highlight synchronization',
+                  'Color-coded per-user annotations',
+                  'Threaded comments with @mentions',
+                  'Shared PDF loading for all members',
+                ].map((item) => (
+                  <li key={item} className="flex items-start gap-3 text-sm text-muted-foreground">
+                    <ChevronRight className="mt-0.5 h-4 w-4 shrink-0 text-emerald-500" />
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <div className="rounded-xl border bg-gradient-to-br from-emerald-50/50 to-transparent dark:from-emerald-950/10 p-8 shadow-sm">
+              <div className="space-y-4">
+                <div className="rounded-lg border bg-background p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-full bg-emerald-500" />
+                    <span className="text-xs font-semibold text-emerald-600 dark:text-emerald-400">alice</span>
+                    <span className="text-[10px] text-muted-foreground/50 ml-auto">Page 12 · highlight</span>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground bg-muted/30 rounded-lg px-2 py-1">
+                    The mitochondria is the powerhouse of the cell.
+                  </p>
+                  <div className="mt-2 border-t border-border/40 pt-2">
+                    <div className="text-xs">
+                      <span className="font-semibold text-violet-500">bob</span>
+                      <span className="text-foreground ml-1">Great point! This relates to what we discussed in Chapter 3.</span>
+                    </div>
+                  </div>
+                </div>
+                <div className="rounded-lg border bg-background p-4 shadow-sm">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2.5 w-2.5 rounded-full bg-violet-500" />
+                    <span className="text-xs font-semibold text-violet-600 dark:text-violet-400">bob</span>
+                    <span className="text-[10px] text-muted-foreground/50 ml-auto">Page 15 · note</span>
+                  </div>
+                  <p className="mt-2 text-xs text-muted-foreground bg-muted/30 rounded-lg px-2 py-1">
+                    Need to review this section again. @alice what do you think?
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {recentBookCards.length} saved
-                </span>
               </div>
-
-              {recentPdfsLoading ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="flex min-h-[168px] animate-pulse flex-col justify-between rounded-lg border bg-background p-4"
-                    >
-                      <div className="flex min-w-0 items-start gap-3">
-                        <div className="h-10 w-10 shrink-0 rounded-lg bg-muted" />
-                        <div className="min-w-0 flex-1 space-y-2">
-                          <div className="h-3 w-3/4 rounded bg-muted" />
-                          <div className="h-2 w-1/2 rounded bg-muted" />
-                        </div>
-                      </div>
-                      <div className="mt-4 space-y-2">
-                        <div className="h-2 w-full rounded bg-muted" />
-                        <div className="h-4 w-full rounded bg-muted" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : recentBookCards.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {recentBookCards.map((pdf) => (
-                    <button
-                      key={pdf.fileName}
-                      onClick={() => handleLoadRecentPdf(pdf.fileName)}
-                      disabled={pdf.isLoading}
-                      className="group flex min-h-[168px] flex-col justify-between rounded-lg border bg-background p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md dark:hover:border-emerald-600 disabled:cursor-wait disabled:opacity-60"
-                    >
-                      <div className="flex min-w-0 items-start gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
-                          {pdf.isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <FileText className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-foreground" title={pdf.fileName}>
-                            {pdf.fileName}
-                          </p>
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>{formatRecentDate(pdf.timestamp)}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4">
-                        <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                          <span>
-                            Page {pdf.lastPage}{pdf.pageCount > 0 ? ` of ${pdf.pageCount}` : ''}
-                          </span>
-                          {pdf.pageCount > 0 && <span>{pdf.progress}%</span>}
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-muted">
-                          <div
-                            className="h-full rounded-full bg-emerald-500 transition-all"
-                            style={{ width: `${pdf.pageCount > 0 ? pdf.progress : 12}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <span className="inline-flex items-center gap-1">
-                            <BookOpen className="h-3.5 w-3.5" />
-                            {pdf.wordCount}
-                          </span>
-                          <span className="inline-flex items-center gap-1">
-                            <Bookmark className="h-3.5 w-3.5" />
-                            {pdf.bookmarkCount}
-                          </span>
-                        </div>
-                        <ArrowRight className="h-4 w-4 shrink-0 text-emerald-500 transition-transform group-hover:translate-x-0.5" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="rounded-lg border border-dashed bg-background/80 p-8 text-center">
-                  <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/50" />
-                  <p className="mt-3 text-sm font-medium text-foreground">No recent books yet</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Your library will appear here after the first upload.</p>
-                </div>
-              )}
-            </section>
+            </div>
           </div>
-        </main>
-      )}
-      <ShareSessionPanel />
+        </div>
+      </section>
+
+      {/* ── STATS / TRUST ── */}
+      <section className="border-b py-20">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="grid gap-8 text-center sm:grid-cols-3">
+            {[
+              { icon: Zap, value: 'AI-Powered', label: 'Groq + Gemini AI for instant word explanations and translations' },
+              { icon: Shield, value: 'Secure', label: 'JWT authentication with encrypted credentials. Your data stays private.' },
+              { icon: Globe, value: '100+ Languages', label: 'Word translations, TTS accents, and multi-language flashcards.' },
+            ].map(({ icon: Icon, value, label }) => (
+              <div key={value} className="rounded-xl border bg-background/60 p-6 shadow-sm">
+                <div className="mx-auto flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
+                  <Icon className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
+                </div>
+                <p className="mt-4 text-lg font-bold text-foreground">{value}</p>
+                <p className="mt-1.5 text-xs text-muted-foreground">{label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ── CTA ── */}
+      <section className="py-24">
+        <div className="mx-auto max-w-3xl px-4 text-center sm:px-6 lg:px-8">
+          <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+            Ready to Transform Your Reading?
+          </h2>
+          <p className="mt-4 text-lg text-muted-foreground">
+            Join thousands of readers who use PDFMindAI to read faster, understand deeper, and learn better.
+          </p>
+          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
+            <Link
+              href="/register"
+              className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-600 hover:shadow-xl active:scale-[0.97]"
+            >
+              Get Started Free
+              <ArrowRight className="h-4 w-4" />
+            </Link>
+            <Link
+              href="/login"
+              className="inline-flex items-center gap-2 rounded-xl border bg-background px-8 py-3.5 text-base font-semibold text-foreground shadow-sm transition-all hover:bg-muted active:scale-[0.97]"
+            >
+              Sign In
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* ── FOOTER ── */}
+      <footer className="border-t py-12">
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-between gap-4 sm:flex-row">
+            <div className="flex items-center gap-3">
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-emerald-500">
+                <BookOpen className="h-3.5 w-3.5 text-white" />
+              </div>
+              <span className="text-sm font-bold">PDFMind<span className="text-emerald-500">AI</span></span>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              &copy; {new Date().getFullYear()} PDFMindAI. All rights reserved.
+            </p>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
