@@ -153,10 +153,6 @@ export default function AboutPage() {
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">
                   If you&apos;re from Free4Talk, you might know me as{" "}
                   <span className="font-semibold text-foreground">
-                    VibeCoder
-                  </span>
-                  ,{" "}
-                  <span className="font-semibold text-foreground">
                     only for Study
                   </span>{" "}
                   or <span className="font-semibold text-foreground">Zx</span>.
