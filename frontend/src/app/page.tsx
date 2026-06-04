@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { BookOpen, Sparkles, Brain, Users, Bookmark, Clock, Languages, Volume2, Search, ArrowRight, Zap, Shield, BarChart3, GraduationCap, Globe, MessageSquare, Layers, SunMoon, ChevronRight } from 'lucide-react'
 import { LandingNav } from '@/components/landing-nav'
+import { AuthCTA } from '@/components/auth-cta'
 
 export default function LandingPage() {
   return (
@@ -44,21 +45,7 @@ export default function LandingPage() {
             <p className="mt-6 text-lg leading-7 text-muted-foreground sm:text-xl">
               Upload any PDF and unlock AI-powered word explanations, instant translations, text-to-speech, flashcards, collaborative reading groups, and detailed reading analytics — all in one beautiful workspace.
             </p>
-            <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <Link
-                href="/register"
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-600 hover:shadow-xl hover:shadow-emerald-500/30 active:scale-[0.97]"
-              >
-                Start Reading Free
-                <ArrowRight className="h-4 w-4" />
-              </Link>
-              <Link
-                href="/login"
-                className="inline-flex items-center gap-2 rounded-xl border bg-background px-8 py-3.5 text-base font-semibold text-foreground shadow-sm transition-all hover:bg-muted active:scale-[0.97]"
-              >
-                Sign In
-              </Link>
-            </div>
+            <AuthCTA />
             <p className="mt-6 text-xs text-muted-foreground/60">
               No credit card required · Free to use · 100+ languages supported
             </p>
@@ -237,21 +224,7 @@ export default function LandingPage() {
           <p className="mt-4 text-lg text-muted-foreground">
             Join thousands of readers who use PDFMindAI to read faster, understand deeper, and learn better.
           </p>
-          <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-            <Link
-              href="/register"
-              className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-8 py-3.5 text-base font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-600 hover:shadow-xl active:scale-[0.97]"
-            >
-              Get Started Free
-              <ArrowRight className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/login"
-              className="inline-flex items-center gap-2 rounded-xl border bg-background px-8 py-3.5 text-base font-semibold text-foreground shadow-sm transition-all hover:bg-muted active:scale-[0.97]"
-            >
-              Sign In
-            </Link>
-          </div>
+          <AuthCTA primaryLabel="Get Started Free" className="mt-8" />
         </div>
       </section>
 
