@@ -17,7 +17,13 @@ export default function LandingPage() {
               <span className="ml-2 inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">v2.0</span>
             </div>
           </div>
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-1">
+            <Link
+              href="/about"
+              className="rounded-lg px-3 py-2 text-sm font-semibold text-muted-foreground/70 transition-colors hover:text-foreground"
+            >
+              About
+            </Link>
             <LandingNav />
           </div>
         </div>
@@ -25,7 +31,7 @@ export default function LandingPage() {
 
       {/* ── HERO ── */}
       <section className="relative overflow-hidden border-b">
-        <div className="absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--emerald-500)/0.08)_0%,transparent_50%,hsl(var(--emerald-500)/0.03)_100%)]" />
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(135deg,hsl(var(--emerald-500)/0.08)_0%,transparent_50%,hsl(var(--emerald-500)/0.03)_100%)]" />
         <div className="mx-auto max-w-7xl px-4 pb-24 pt-16 sm:px-6 lg:px-8">
           <div className="mx-auto max-w-3xl text-center">
             <div className="mb-6 inline-flex items-center gap-2 rounded-full border bg-muted/50 px-4 py-1.5 text-xs font-semibold text-muted-foreground">
@@ -259,9 +265,10 @@ export default function LandingPage() {
               </div>
               <span className="text-sm font-bold">PDFMind<span className="text-emerald-500">AI</span></span>
             </div>
-            <p className="text-xs text-muted-foreground">
-              &copy; {new Date().getFullYear()} PDFMindAI. All rights reserved.
-            </p>
+            <div className="flex items-center gap-6 text-xs text-muted-foreground">
+              <Link href="/about" className="transition-colors hover:text-foreground">About</Link>
+              <span>&copy; {new Date().getFullYear()} PDFMindAI</span>
+            </div>
           </div>
         </div>
       </footer>
