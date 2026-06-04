@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, Brain, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, User } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, Brain, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
@@ -343,64 +343,67 @@ export default function DashboardPage() {
       {focusMode && (
         <div className="fixed inset-0 z-40 bg-background" />
       )}
-      <header className={`flex h-16 items-center justify-between border-b bg-background/95 px-4 backdrop-blur-md transition-opacity duration-300 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
+      <header className={`flex h-16 items-center justify-between border-b border-emerald-500/10 bg-background/60 px-4 shadow-[0_1px_0_0_rgba(16,185,129,0.05)] backdrop-blur-xl transition-opacity duration-300 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
         <div className="flex min-w-0 items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 shadow-sm">
+          <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-500/20">
             <BookOpen className="h-4 w-4 text-white" />
           </div>
           <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-foreground">PDF Reader AI</p>
+            <p className="truncate text-sm font-bold text-foreground">PDFMind<span className="text-emerald-500">AI</span></p>
             {!pdfDataUrl && (
-              <p className="hidden text-xs text-muted-foreground sm:block">
+              <p className="hidden text-xs text-muted-foreground/60 sm:block">
                 Reading workspace
               </p>
             )}
           </div>
         </div>
 
-        <div className="flex min-w-0 items-center gap-2">
+        <div className="flex min-w-0 items-center gap-1.5">
           {pdfFileName && (
             <>
               <div className="hidden md:block">
                 <UploadZone />
               </div>
-              <div className="mx-1 hidden h-5 w-px bg-border/60 md:block" />
+              <div className="mx-1 hidden h-5 w-px bg-emerald-500/10 md:block" />
             </>
           )}
           {streakCount > 0 && (
             <Link
               href="/profile"
-              className="flex items-center gap-1 rounded-lg border bg-background px-2 py-1.5 text-xs text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-950/20 transition-colors"
+              className="flex items-center gap-1.5 rounded-xl border border-orange-200/30 bg-gradient-to-r from-orange-50 to-amber-50 px-3 py-1.5 text-xs font-semibold text-orange-600 shadow-sm shadow-orange-200/20 transition-all hover:shadow-md hover:shadow-orange-200/30 dark:border-orange-800/15 dark:from-orange-950/15 dark:to-amber-950/15 dark:text-orange-400 dark:shadow-orange-900/10"
               title={`${streakCount}-day streak!`}
             >
               <Flame className="h-3.5 w-3.5" />
-              <span className="font-semibold">{streakCount}</span>
+              <span>{streakCount}</span>
             </Link>
           )}
           <button
             onClick={toggleSharePanel}
-            className={`flex items-center gap-1.5 rounded-lg border px-2 py-1.5 text-xs transition-colors ${
+            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
               shareSession
-                ? 'border-emerald-400 bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
-                : 'border-border bg-background text-muted-foreground hover:text-foreground'
+                ? 'border-emerald-400/50 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-200/30 dark:bg-emerald-950/20 dark:text-emerald-400'
+                : 'border-border/60 bg-background/80 text-muted-foreground hover:border-muted-foreground/20 hover:text-foreground hover:shadow-sm'
             }`}
             title="Collaborative Reading Groups"
           >
             <Users className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline font-semibold">
+            <span className="hidden sm:inline">
               {shareSession ? shareSession.name : 'Collaborate'}
             </span>
           </button>
           <SettingsPanel />
           {user && (
-            <div className="flex items-center gap-1 rounded-lg border bg-background px-2 py-1.5 text-xs text-muted-foreground">
-              <Link href="/profile" className="flex items-center gap-1 hover:text-foreground transition-colors">
-                <User className="h-3.5 w-3.5" />
-                <span className="hidden max-w-[110px] truncate sm:inline">{user.username}</span>
+            <div className="flex items-center gap-1 rounded-xl border border-border/60 bg-background/80 px-1.5 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
+              <Link href="/profile" className="flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 transition-colors hover:bg-muted/50">
+                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm">
+                  <span className="text-[10px] font-bold text-white">{user.username.charAt(0).toUpperCase()}</span>
+                </div>
+                <span className="hidden max-w-[100px] truncate sm:inline font-medium">{user.username}</span>
               </Link>
+              <div className="h-4 w-px bg-border/40" />
               <button
                 onClick={logout}
-                className="rounded p-0.5 text-muted-foreground/70 transition-colors hover:text-red-500"
+                className="rounded-md p-1 text-muted-foreground/40 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/20"
                 title="Sign out"
               >
                 <LogOut className="h-3.5 w-3.5" />
@@ -428,45 +431,51 @@ export default function DashboardPage() {
           </div>
         </main>
       ) : (
-        <main className="flex-1 overflow-auto bg-[linear-gradient(180deg,hsl(var(--background))_0%,hsl(var(--muted)/0.45)_100%)]">
-          <div className="mx-auto flex min-h-full w-full max-w-6xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
+        <main className="flex-1 overflow-auto relative">
+          <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--emerald-500)/0.05)_0%,transparent_40%,hsl(var(--background))_100%)]" />
+          <div className="relative mx-auto flex min-h-full w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
             <section className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
               <div className="min-w-0 pt-2">
-                <p className="text-xs font-semibold uppercase tracking-[0.22em] text-emerald-600 dark:text-emerald-400">
+                <div className="inline-flex items-center gap-2 rounded-full border bg-emerald-50/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">
+                  <Sparkles className="h-3 w-3" />
                   Reading Desk
-                </p>
-                <h1 className="mt-3 max-w-2xl text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                </div>
+                <h1 className="mt-4 max-w-2xl text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
                   Pick up your next page
                 </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground">
+                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground/80">
                   Recent books, saved words, bookmarks, and reading progress are arranged in one calm workspace.
                 </p>
               </div>
 
-              <aside className="rounded-lg border bg-background p-4 shadow-sm">
-                <div className="mb-4 flex items-center justify-between gap-3">
+              <aside className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-background to-emerald-50/30 p-5 shadow-sm dark:to-emerald-950/10">
+                <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-emerald-500/10 blur-xl" />
+                <div className="relative mb-3 flex items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-sm font-semibold text-foreground">Start Reading</h2>
-                    <p className="mt-1 text-xs text-muted-foreground">Upload a PDF to open the reader.</p>
+                    <h2 className="text-sm font-bold text-foreground">Start Reading</h2>
+                    <p className="mt-0.5 text-xs text-muted-foreground">Upload a PDF to open the reader.</p>
                   </div>
-                  <Sparkles className="h-4 w-4 text-emerald-500" />
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm">
+                    <Sparkles className="h-4 w-4 text-white" />
+                  </div>
                 </div>
                 <UploadZone variant="panel" />
               </aside>
             </section>
 
             <section>
-              <div className="mb-4 flex items-end justify-between gap-3">
+              <div className="mb-5 flex items-end justify-between gap-3">
                 <div>
-                  <h2 className="text-xs font-semibold uppercase tracking-[0.22em] text-muted-foreground">
-                    Recent Books
-                  </h2>
-                  <p className="mt-1 text-base font-semibold text-foreground">
+                  <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
+                    <BookOpen className="h-3 w-3" />
+                    Library
+                  </div>
+                  <p className="mt-1.5 text-lg font-bold text-foreground">
                     Continue where you left off
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground">
-                  {recentBookCards.length} saved
+                <span className="text-xs text-muted-foreground/50">
+                  {recentBookCards.length} book{recentBookCards.length !== 1 ? 's' : ''}
                 </span>
               </div>
 
@@ -475,18 +484,18 @@ export default function DashboardPage() {
                   {[1, 2, 3].map((i) => (
                     <div
                       key={i}
-                      className="flex min-h-[168px] animate-pulse flex-col justify-between rounded-lg border bg-background p-4"
+                      className="flex min-h-[180px] animate-pulse flex-col justify-between rounded-xl border bg-background/60 p-5"
                     >
                       <div className="flex min-w-0 items-start gap-3">
-                        <div className="h-10 w-10 shrink-0 rounded-lg bg-muted" />
+                        <div className="h-10 w-10 shrink-0 rounded-lg bg-muted/70" />
                         <div className="min-w-0 flex-1 space-y-2">
-                          <div className="h-3 w-3/4 rounded bg-muted" />
-                          <div className="h-2 w-1/2 rounded bg-muted" />
+                          <div className="h-3 w-3/4 rounded bg-muted/70" />
+                          <div className="h-2 w-1/2 rounded bg-muted/70" />
                         </div>
                       </div>
                       <div className="mt-4 space-y-2">
-                        <div className="h-2 w-full rounded bg-muted" />
-                        <div className="h-4 w-full rounded bg-muted" />
+                        <div className="h-2 w-full rounded bg-muted/70" />
+                        <div className="h-4 w-full rounded bg-muted/70" />
                       </div>
                     </div>
                   ))}
@@ -498,10 +507,11 @@ export default function DashboardPage() {
                       key={pdf.fileName}
                       onClick={() => handleLoadRecentPdf(pdf.fileName)}
                       disabled={pdf.isLoading}
-                      className="group flex min-h-[168px] flex-col justify-between rounded-lg border bg-background p-4 text-left shadow-sm transition-all hover:-translate-y-0.5 hover:border-emerald-400 hover:shadow-md dark:hover:border-emerald-600 disabled:cursor-wait disabled:opacity-60"
+                      className="group relative flex min-h-[180px] flex-col justify-between overflow-hidden rounded-xl border bg-background/60 p-5 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-500/5 disabled:cursor-wait disabled:opacity-60"
                     >
-                      <div className="flex min-w-0 items-start gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300">
+                      <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-emerald-500/5 transition-all group-hover:bg-emerald-500/10" />
+                      <div className="relative flex min-w-0 items-start gap-3">
+                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm">
                           {pdf.isLoading ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
@@ -509,7 +519,7 @@ export default function DashboardPage() {
                           )}
                         </div>
                         <div className="min-w-0">
-                          <p className="truncate text-sm font-semibold text-foreground" title={pdf.fileName}>
+                          <p className="truncate text-sm font-bold text-foreground" title={pdf.fileName}>
                             {pdf.fileName}
                           </p>
                           <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
@@ -519,42 +529,45 @@ export default function DashboardPage() {
                         </div>
                       </div>
 
-                      <div className="mt-4">
+                      <div className="relative mt-4">
                         <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
                           <span>
                             Page {pdf.lastPage}{pdf.pageCount > 0 ? ` of ${pdf.pageCount}` : ''}
                           </span>
-                          {pdf.pageCount > 0 && <span>{pdf.progress}%</span>}
+                          {pdf.pageCount > 0 && <span className="font-medium text-foreground">{pdf.progress}%</span>}
                         </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-muted">
+                        <div className="h-2 overflow-hidden rounded-full bg-muted/70">
                           <div
-                            className="h-full rounded-full bg-emerald-500 transition-all"
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
                             style={{ width: `${pdf.pageCount > 0 ? pdf.progress : 12}%` }}
                           />
                         </div>
                       </div>
 
-                      <div className="mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground">
+                      <div className="relative mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground">
                         <div className="flex min-w-0 items-center gap-3">
-                          <span className="inline-flex items-center gap-1">
-                            <BookOpen className="h-3.5 w-3.5" />
+                          <span className="inline-flex items-center gap-1.5">
+                            <BookOpen className="h-3.5 w-3.5 text-emerald-500" />
                             {pdf.wordCount}
                           </span>
-                          <span className="inline-flex items-center gap-1">
-                            <Bookmark className="h-3.5 w-3.5" />
+                          <span className="inline-flex items-center gap-1.5">
+                            <Bookmark className="h-3.5 w-3.5 text-amber-500" />
                             {pdf.bookmarkCount}
                           </span>
                         </div>
-                        <ArrowRight className="h-4 w-4 shrink-0 text-emerald-500 transition-transform group-hover:translate-x-0.5" />
+                        <ArrowRight className="h-4 w-4 shrink-0 text-emerald-500 transition-all group-hover:translate-x-1" />
                       </div>
                     </button>
                   ))}
                 </div>
               ) : (
-                <div className="rounded-lg border border-dashed bg-background/80 p-8 text-center">
-                  <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/50" />
-                  <p className="mt-3 text-sm font-medium text-foreground">No recent books yet</p>
-                  <p className="mt-1 text-sm text-muted-foreground">Your library will appear here after the first upload.</p>
+                <div className="relative overflow-hidden rounded-xl border border-dashed bg-gradient-to-br from-background to-muted/30 p-10 text-center">
+                  <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-emerald-500/5 blur-2xl" />
+                  <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50">
+                    <BookOpen className="h-7 w-7 text-muted-foreground/40" />
+                  </div>
+                  <h3 className="mt-4 text-base font-bold text-foreground">No recent books yet</h3>
+                  <p className="mt-1 text-sm text-muted-foreground/60">Upload a PDF above and your library will appear here.</p>
                 </div>
               )}
             </section>

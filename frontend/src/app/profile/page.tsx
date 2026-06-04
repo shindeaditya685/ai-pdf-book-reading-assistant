@@ -141,19 +141,19 @@ export default function ProfilePage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       {/* ── HEADER ── */}
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b bg-background/80 px-4 backdrop-blur-lg">
+      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-emerald-500/10 bg-background/60 px-4 shadow-[0_1px_0_0_rgba(16,185,129,0.05)] backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="rounded-lg p-2 text-muted-foreground hover:text-foreground transition-colors">
+          <Link href="/dashboard" className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-all hover:border-muted-foreground/20 hover:bg-muted/50 hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm">
+          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-500/20">
             <User className="h-4 w-4 text-white" />
           </div>
           <span className="text-sm font-bold text-foreground">Profile</span>
         </div>
         <button
           onClick={handleLogout}
-          className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-red-500 hover:border-red-200 dark:hover:border-red-900 transition-colors"
+          className="flex items-center gap-1.5 rounded-xl border border-border/60 bg-background/80 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500 dark:hover:border-red-900 dark:hover:bg-red-950/20"
         >
           <LogOut className="h-3.5 w-3.5" />
           Sign Out

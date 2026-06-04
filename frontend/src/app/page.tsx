@@ -6,13 +6,16 @@ export default function LandingPage() {
   return (
     <div className="min-h-screen bg-background">
       {/* ── NAVBAR ── */}
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-lg">
+      <header className="sticky top-0 z-50 border-b border-emerald-500/10 bg-background/60 shadow-[0_1px_0_0_rgba(16,185,129,0.05)] backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-3">
-            <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-emerald-500 shadow-sm">
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-500/20">
               <BookOpen className="h-4 w-4 text-white" />
             </div>
-            <span className="text-lg font-bold tracking-tight">PDFMind<span className="text-emerald-500">AI</span></span>
+            <div>
+              <span className="text-lg font-bold tracking-tight">PDFMind<span className="text-emerald-500">AI</span></span>
+              <span className="ml-2 inline-flex items-center rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">v2.0</span>
+            </div>
           </div>
           <div className="flex items-center gap-3">
             <LandingNav />

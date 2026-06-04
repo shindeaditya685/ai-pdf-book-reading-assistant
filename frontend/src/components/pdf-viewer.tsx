@@ -1032,25 +1032,25 @@ export function PDFViewer() {
 
   if (!pdfDataUrl) {
     return (
-      <div className="flex h-full items-center justify-center">
+      <div className="flex h-full items-center justify-center bg-gradient-to-b from-background to-muted/20">
         <div className="text-center">
-          <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl bg-muted/50">
-            <svg className="h-10 w-10 text-muted-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-100 to-emerald-50 shadow-lg shadow-emerald-500/10 dark:from-emerald-900/30 dark:to-emerald-800/20">
+            <svg className="h-12 w-12 text-emerald-500/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
-          <h3 className="text-lg font-semibold text-muted-foreground/70">No PDF Loaded</h3>
-          <p className="mt-1 text-sm text-muted-foreground/50">Upload a PDF to start reading</p>
+          <h3 className="text-lg font-bold text-foreground/60">No PDF Loaded</h3>
+          <p className="mt-1 text-sm text-muted-foreground/40">Upload a PDF to start reading</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="flex h-full flex-col">
-      <div className="flex items-center justify-between border-b bg-background/95 px-3 py-1.5 backdrop-blur-sm">
+    <div className="flex h-full flex-col bg-gradient-to-b from-background to-muted/10">
+      <div className="flex items-center justify-between border-b bg-background/80 px-3 py-1.5 backdrop-blur-lg shadow-sm">
         <div className="flex items-center gap-1">
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goToPrevPage} disabled={currentPage <= 1}>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={goToPrevPage} disabled={currentPage <= 1}>
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <input
@@ -1065,19 +1065,19 @@ export function PDFViewer() {
                 setCurrentPage(page)
               }
             }}
-            className="w-10 rounded border bg-background px-1 py-0.5 text-center text-xs outline-none focus:border-emerald-500 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            className="w-10 rounded-lg border bg-background/80 px-1 py-0.5 text-center text-xs font-semibold outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
           />
-          <span className="text-xs text-muted-foreground">/ {totalPages}</span>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={goToNextPage} disabled={currentPage >= totalPages}>
+          <span className="text-xs text-muted-foreground/60">/ {totalPages}</span>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={goToNextPage} disabled={currentPage >= totalPages}>
             <ChevronRight className="h-4 w-4" />
           </Button>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1">
           {showSearch && <SearchBar />}
           <Button
             variant="ghost"
             size="icon"
-            className={`h-7 w-7 ${showSearch ? 'text-emerald-500' : 'text-muted-foreground'}`}
+            className={`h-8 w-8 rounded-lg ${showSearch ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
             onClick={toggleSearch}
             title="Search in PDF (/ or F)"
           >
@@ -1086,7 +1086,7 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground"
+            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50"
             onClick={toggleBookmarks}
             title="Bookmarks (B)"
           >
@@ -1095,7 +1095,7 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground"
+            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50"
             onClick={toggleHistory}
             title="Word History (H)"
           >
@@ -1104,7 +1104,7 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground"
+            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50"
             onClick={toggleFlashcards}
             title="Flashcards (G)"
           >
@@ -1113,7 +1113,7 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
-            className={`h-7 w-7 ${showQuestionGenerator ? 'text-emerald-500 font-semibold' : 'text-muted-foreground'}`}
+            className={`h-8 w-8 rounded-lg ${showQuestionGenerator ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
             onClick={toggleQuestionGenerator}
             title="AI Question Generator"
           >
@@ -1122,7 +1122,7 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
-            className={`h-7 w-7 ${showSummarizer ? 'text-emerald-500 font-semibold' : 'text-muted-foreground'}`}
+            className={`h-8 w-8 rounded-lg ${showSummarizer ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
             onClick={toggleSummarizer}
             title="AI Summarizer"
           >
@@ -1131,7 +1131,7 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
-            className={`h-7 w-7 ${shareSession ? 'text-emerald-500' : 'text-muted-foreground'}`}
+            className={`h-8 w-8 rounded-lg ${shareSession ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
             onClick={toggleSharePanel}
             title={shareSession ? `Session: ${shareSession.name}` : 'Collaborative Reading'}
           >
@@ -1141,39 +1141,44 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-emerald-500"
+            className="h-8 w-8 rounded-lg text-muted-foreground hover:text-emerald-500 hover:bg-emerald-50/50 dark:hover:bg-emerald-950/20"
             onClick={handleReadAloud}
             title="Read Aloud (current page or selection)"
           >
             <Volume2 className="h-3.5 w-3.5" />
           </Button>
-          <div className="mx-1 h-4 w-px bg-border" />
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomOut} disabled={scale <= 0.5}>
+          <div className="mx-1 h-5 w-px bg-border/50" />
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={zoomOut} disabled={scale <= 0.5}>
             <ZoomOut className="h-3.5 w-3.5" />
           </Button>
-          <span className="min-w-[50px] text-center text-xs text-muted-foreground">{Math.round(scale * 100)}%</span>
-          <Button variant="ghost" size="icon" className="h-7 w-7" onClick={zoomIn} disabled={scale >= 3}>
+          <span className="min-w-[44px] text-center text-[11px] font-medium text-muted-foreground/70 tabular-nums">{Math.round(scale * 100)}%</span>
+          <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={zoomIn} disabled={scale >= 3}>
             <ZoomIn className="h-3.5 w-3.5" />
           </Button>
         </div>
       </div>
 
       {(isOcrProcessing || ocrProgress > 0 && ocrProgress < 100) && (
-        <div className="flex items-center justify-center gap-2 border-b px-3 py-1">
-          <Scan className="h-3 w-3 animate-pulse text-emerald-500" />
-          <span className="text-[10px] text-muted-foreground">OCR in progress...</span>
-          <Progress value={ocrProgress} className="h-1 w-20" />
-          <span className="text-[10px] text-muted-foreground">{ocrProgress}%</span>
+        <div className="flex items-center justify-center gap-2.5 border-b bg-gradient-to-r from-emerald-50/50 to-transparent px-4 py-1.5 dark:from-emerald-950/10">
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+            <Scan className="h-3 w-3 animate-pulse text-emerald-500" />
+          </div>
+          <span className="text-[11px] font-medium text-muted-foreground">OCR in progress...</span>
+          <Progress value={ocrProgress} className="h-1.5 w-24" />
+          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{ocrProgress}%</span>
         </div>
       )}
       <div className="relative flex-1 overflow-hidden">
         {/* Floating Annotation Toolbar */}
         <AnnotationToolbar onClearAll={handleClearAllPageAnnotations} />
 
-        <div ref={containerRef} className="pdf-scroll-container h-full overflow-auto bg-muted/30 dark:bg-muted/10" onClick={handleContainerClick} onMouseUp={handleMouseUp}>
+        <div ref={containerRef} className="pdf-scroll-container h-full overflow-auto bg-gradient-to-b from-muted/20 to-muted/5 dark:from-muted/5" onClick={handleContainerClick} onMouseUp={handleMouseUp}>
           {isLoading && (
-            <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/50 backdrop-blur-sm">
-              <Loader2 className="h-6 w-6 animate-spin text-emerald-600" />
+            <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
+              <div className="flex flex-col items-center gap-3">
+                <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+                <p className="text-xs text-muted-foreground/60">Loading page...</p>
+              </div>
             </div>
           )}
           <div className="flex justify-center py-6">
