@@ -31,6 +31,40 @@ export type TranslationLanguage =
   | 'ja' | 'zh' | 'ko'
   | 'ar' | 'ru' | 'tr' | 'ku' | 'am' | 'uz' | 'vi' | 'ps' | 'fa'
 
+export function detectBrowserLanguage(): TranslationLanguage {
+  if (typeof window === 'undefined') return 'none'
+  try {
+    const raw = navigator.language.split('-')[0].toLowerCase()
+    const supported: TranslationLanguage[] = [
+      'hi','mr','bn','or','kn','te','ta','pa','ml','ur','gu',
+      'es','fr','de','pt','nl',
+      'ja','zh','ko',
+      'ar','ru','tr','ku','am','uz','vi','ps','fa'
+    ]
+    return supported.includes(raw as TranslationLanguage) ? raw as TranslationLanguage : 'none'
+  } catch {
+    return 'none'
+  }
+}
+
+const STORAGE_KEY_LANG = 'pdf-reader-ai-translation-language'
+const STORAGE_KEY_ACCENT = 'pdf-reader-ai-accent'
+
+function loadInitialLanguage(): TranslationLanguage {
+  if (typeof window === 'undefined') return 'none'
+  try {
+    const stored = localStorage.getItem(STORAGE_KEY_LANG)
+    if (stored) {
+      const supported: TranslationLanguage[] = [
+        'none','hi','mr','bn','or','kn','te','ta','pa','ml','ur','gu',
+        'es','fr','de','pt','nl','ja','zh','ko','ar','ru','tr','ku','am','uz','vi','ps','fa'
+      ]
+      if (supported.includes(stored as TranslationLanguage)) return stored as TranslationLanguage
+    }
+  } catch {}
+  return detectBrowserLanguage()
+}
+
 export const LANGUAGE_LABELS: Record<TranslationLanguage, string> = {
   none: 'No Translation',
   hi: 'Hindi',
@@ -533,8 +567,11 @@ export const usePDFStore = create<PDFState>()(
       isExplaining: false,
       isOfflineResult: false,
 
-      translationLanguage: 'none',
-      accent: 'en-US',
+      translationLanguage: loadInitialLanguage(),
+      accent: (() => {
+        if (typeof window === 'undefined') return 'en-US'
+        try { return (localStorage.getItem(STORAGE_KEY_ACCENT) as PronunciationAccent) || 'en-US' } catch { return 'en-US' }
+      })(),
       scrollMode: true,
       theme: 'dark',
 
@@ -618,8 +655,18 @@ export const usePDFStore = create<PDFState>()(
       setExplanation: (explanation) => set({ explanation }),
       setIsExplaining: (loading) => set({ isExplaining: loading }),
       setIsOfflineResult: (offline) => set({ isOfflineResult: offline }),
-      setTranslationLanguage: (lang) => set({ translationLanguage: lang }),
-      setAccent: (accent) => set({ accent }),
+      setTranslationLanguage: (lang) => {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(STORAGE_KEY_LANG, lang)
+        }
+        set({ translationLanguage: lang })
+      },
+      setAccent: (accent) => {
+        if (typeof window !== 'undefined') {
+          localStorage.setItem(STORAGE_KEY_ACCENT, accent)
+        }
+        set({ accent })
+      },
       setScrollMode: (mode) => set({ scrollMode: mode }),
       setTheme: (theme) => {
         if (typeof window !== 'undefined') {
