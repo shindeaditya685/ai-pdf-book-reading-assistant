@@ -41,7 +41,7 @@ export async function POST(request: Request) {
   if (!admin) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
-    const { userId } = await request.json()
+    const { userId, makeAdmin } = await request.json()
     if (!userId) return NextResponse.json({ error: 'userId required' }, { status: 400 })
 
     const conn = await connectToDatabase()
@@ -53,9 +53,13 @@ export async function POST(request: Request) {
     const user = await conn.db.collection('users').findOne({ _id: objectId })
     if (!user) return NextResponse.json({ error: 'User not found' }, { status: 404 })
 
-    await conn.db.collection('users').updateOne({ _id: objectId }, { $set: { isAdmin: true } })
+    if (user.username === admin.username && makeAdmin === false) {
+      return NextResponse.json({ error: 'Cannot demote yourself' }, { status: 400 })
+    }
 
-    return NextResponse.json({ success: true, username: user.username })
+    await conn.db.collection('users').updateOne({ _id: objectId }, { $set: { isAdmin: makeAdmin !== false } })
+
+    return NextResponse.json({ success: true, username: user.username, isAdmin: makeAdmin !== false })
   } catch {
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })
   }

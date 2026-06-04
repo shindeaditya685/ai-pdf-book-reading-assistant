@@ -3,9 +3,21 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { BookOpen, Users, FileText, Bookmark, Brain, MessageSquare, Trash2, Shield, ShieldCheck, BarChart3, ArrowLeft, Search, Loader2 } from 'lucide-react'
+import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
+import {
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogAction,
+  AlertDialogCancel,
+} from '@/components/ui/alert-dialog'
+
+const PAGE_SIZE = 10
 
 interface UserStats {
   pdfs: number
@@ -39,7 +51,14 @@ export default function AdminPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
-  const [confirmDelete, setConfirmDelete] = useState<string | null>(null)
+  const [page, setPage] = useState(1)
+
+  // Confirmation dialog state
+  const [confirmAction, setConfirmAction] = useState<{
+    type: 'delete' | 'promote' | 'revoke'
+    userId: string
+    username: string
+  } | null>(null)
 
   useEffect(() => {
     if (authLoading) return
@@ -70,24 +89,31 @@ export default function AdminPage() {
     const res = await authFetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
     if (res.ok) {
       setUsers((prev) => prev.filter((u) => u._id !== userId))
-      setConfirmDelete(null)
     }
+    setConfirmAction(null)
   }
 
-  const handleMakeAdmin = async (userId: string) => {
+  const handleToggleAdmin = async (userId: string, makeAdmin: boolean) => {
     const res = await authFetch('/api/admin/users', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ userId }),
+      body: JSON.stringify({ userId, makeAdmin }),
     })
     if (res.ok) {
-      setUsers((prev) => prev.map((u) => u._id === userId ? { ...u, isAdmin: true } : u))
+      setUsers((prev) => prev.map((u) => u._id === userId ? { ...u, isAdmin: makeAdmin } : u))
     }
+    setConfirmAction(null)
   }
 
   const filteredUsers = users.filter((u) =>
     u.username.toLowerCase().includes(search.toLowerCase())
   )
+
+  const totalPages = Math.max(1, Math.ceil(filteredUsers.length / PAGE_SIZE))
+  const paginatedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
+
+  // Reset to page 1 when search changes
+  useEffect(() => { setPage(1) }, [search])
 
   if (authLoading || loading) {
     return (
@@ -181,7 +207,7 @@ export default function AdminPage() {
                 </tr>
               </thead>
               <tbody>
-                {filteredUsers.map((u) => (
+                {paginatedUsers.map((u) => (
                   <tr key={u._id} className="border-b border-border/20 transition-colors hover:bg-muted/30">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
@@ -210,54 +236,130 @@ export default function AdminPage() {
                     <td className="px-4 py-3 tabular-nums text-muted-foreground/70">{u.stats.annotations}</td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-1">
-                        {!u.isAdmin && (
+                        {u.isAdmin ? (
                           <button
-                            onClick={() => handleMakeAdmin(u._id)}
+                            onClick={() => setConfirmAction({ type: 'revoke', userId: u._id, username: u.username })}
+                            className="rounded-md px-2 py-1 text-[10px] font-semibold text-amber-600 transition-colors hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/20"
+                            title="Revoke admin"
+                          >
+                            <ShieldOff className="h-3.5 w-3.5" />
+                          </button>
+                        ) : (
+                          <button
+                            onClick={() => setConfirmAction({ type: 'promote', userId: u._id, username: u.username })}
                             className="rounded-md px-2 py-1 text-[10px] font-semibold text-violet-600 transition-colors hover:bg-violet-50 dark:text-violet-400 dark:hover:bg-violet-950/20"
                             title="Make admin"
                           >
                             Promote
                           </button>
                         )}
-                        {confirmDelete === u._id ? (
-                          <div className="flex items-center gap-1">
-                            <button
-                              onClick={() => handleDeleteUser(u._id)}
-                              className="rounded-md px-2 py-1 text-[10px] font-semibold text-red-600 hover:bg-red-50 dark:hover:bg-red-950/20"
-                            >
-                              Confirm
-                            </button>
-                            <button
-                              onClick={() => setConfirmDelete(null)}
-                              className="rounded-md px-2 py-1 text-[10px] text-muted-foreground hover:bg-muted/50"
-                            >
-                              Cancel
-                            </button>
-                          </div>
-                        ) : (
-                          <button
-                            onClick={() => setConfirmDelete(u._id)}
-                            className="rounded-md p-1 text-muted-foreground/40 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/20"
-                            title="Delete user"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
-                        )}
+                        <button
+                          onClick={() => setConfirmAction({ type: 'delete', userId: u._id, username: u.username })}
+                          className="rounded-md p-1 text-muted-foreground/40 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/20"
+                          title="Delete user"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
                       </div>
                     </td>
                   </tr>
                 ))}
               </tbody>
             </table>
-            {filteredUsers.length === 0 && (
+
+            {paginatedUsers.length === 0 && (
               <div className="flex flex-col items-center gap-2 py-12 text-center">
                 <Users className="h-8 w-8 text-muted-foreground/20" />
                 <p className="text-xs text-muted-foreground/50">No users found</p>
               </div>
             )}
           </div>
+
+          {/* ── PAGINATION ── */}
+          {totalPages > 1 && (
+            <div className="flex items-center justify-between border-t border-border/40 px-4 py-3">
+              <p className="text-[11px] text-muted-foreground/60">
+                Page {page} of {totalPages}
+              </p>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page <= 1}
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                >
+                  <ChevronLeft className="h-3.5 w-3.5" />
+                </button>
+                {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => setPage(p)}
+                    className={`flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-[11px] font-semibold transition-colors ${
+                      p === page
+                        ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+                        : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                    }`}
+                  >
+                    {p}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
+                >
+                  <ChevronRight className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </main>
+
+      {/* ── CONFIRMATION DIALOG ── */}
+      <AlertDialog open={!!confirmAction} onOpenChange={() => setConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              {confirmAction?.type === 'delete' && 'Delete User'}
+              {confirmAction?.type === 'promote' && 'Promote to Admin'}
+              {confirmAction?.type === 'revoke' && 'Revoke Admin'}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {confirmAction?.type === 'delete' && (
+                <>This will permanently delete <strong>{confirmAction.username}</strong> and all their data (PDFs, bookmarks, history, annotations). This action cannot be undone.</>
+              )}
+              {confirmAction?.type === 'promote' && (
+                <>Are you sure you want to make <strong>{confirmAction.username}</strong> an admin? They will have full access to the admin panel.</>
+              )}
+              {confirmAction?.type === 'revoke' && (
+                <>Are you sure you want to remove <strong>{confirmAction.username}</strong>&apos;s admin privileges?</>
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className={
+                confirmAction?.type === 'delete'
+                  ? 'bg-red-600 hover:bg-red-500'
+                  : confirmAction?.type === 'promote'
+                  ? 'bg-violet-600 hover:bg-violet-500'
+                  : 'bg-amber-600 hover:bg-amber-500'
+              }
+              onClick={() => {
+                if (!confirmAction) return
+                if (confirmAction.type === 'delete') handleDeleteUser(confirmAction.userId)
+                else if (confirmAction.type === 'promote') handleToggleAdmin(confirmAction.userId, true)
+                else if (confirmAction.type === 'revoke') handleToggleAdmin(confirmAction.userId, false)
+              }}
+            >
+              {confirmAction?.type === 'delete' && 'Delete'}
+              {confirmAction?.type === 'promote' && 'Promote'}
+              {confirmAction?.type === 'revoke' && 'Revoke'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

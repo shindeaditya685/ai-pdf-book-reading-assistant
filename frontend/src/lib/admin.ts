@@ -7,7 +7,7 @@ export async function requireAdmin(request: Request) {
   if (!auth?.startsWith('Bearer ')) return null
 
   const payload = verifyToken(auth.slice(7))
-  if (!payload?.isAdmin) return null
+  if (!payload) return null
 
   const conn = await connectToDatabase()
   if (!conn) return null
@@ -18,5 +18,5 @@ export async function requireAdmin(request: Request) {
   const user = await conn.db.collection('users').findOne({ _id: objectId })
   if (!user?.isAdmin) return null
 
-  return payload
+  return { id: user._id.toString(), username: user.username, isAdmin: true }
 }
