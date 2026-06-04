@@ -103,6 +103,85 @@ export default function ProfilePage() {
       </header>
 
       <main className="mx-auto max-w-4xl px-4 py-10 sm:px-6">
+        {loading ? (
+          <div className="space-y-6">
+            {/* User Info skeleton */}
+            <div className="rounded-xl border bg-background/60 p-6 shadow-sm">
+              <div className="flex items-center gap-4">
+                <div className="h-14 w-14 animate-pulse rounded-full bg-muted" />
+                <div className="space-y-2">
+                  <div className="h-5 w-32 animate-pulse rounded bg-muted" />
+                  <div className="h-3 w-24 animate-pulse rounded bg-muted" />
+                </div>
+              </div>
+            </div>
+            {/* Goals skeleton */}
+            <div className="grid gap-4 sm:grid-cols-2">
+              {[1, 2].map((i) => (
+                <div key={i} className="rounded-xl border bg-background/60 p-4 shadow-sm animate-pulse">
+                  <div className="h-3 w-24 rounded bg-muted mb-3" />
+                  <div className="h-2 w-full rounded-full bg-muted" />
+                </div>
+              ))}
+            </div>
+            {/* Stats grid skeleton */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="rounded-xl border bg-background/60 p-4 text-center shadow-sm animate-pulse">
+                  <div className="mx-auto h-4 w-4 rounded bg-muted" />
+                  <div className="mx-auto mt-3 h-6 w-12 rounded bg-muted" />
+                  <div className="mx-auto mt-1 h-3 w-16 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+            {/* Secondary stats skeleton */}
+            <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+              {[1, 2, 3, 4].map((i) => (
+                <div key={i} className="rounded-xl border bg-background/60 p-4 text-center shadow-sm animate-pulse">
+                  <div className="mx-auto h-4 w-4 rounded bg-muted" />
+                  <div className="mx-auto mt-3 h-6 w-12 rounded bg-muted" />
+                  <div className="mx-auto mt-1 h-3 w-16 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+            {/* Heatmap skeleton */}
+            <div className="rounded-xl border bg-background/60 p-4 shadow-sm animate-pulse">
+              <div className="h-3 w-28 rounded bg-muted mb-4" />
+              <div className="flex gap-0.5">
+                {Array.from({ length: 13 }).map((_, wi) => (
+                  <div key={wi} className="flex flex-col gap-0.5">
+                    {Array.from({ length: 7 }).map((_, di) => (
+                      <div key={di} className="h-3 w-3 rounded-sm bg-muted/40" />
+                    ))}
+                  </div>
+                ))}
+              </div>
+            </div>
+            {/* Activity skeleton */}
+            <div className="rounded-xl border bg-background/60 shadow-sm animate-pulse divide-y divide-border/50">
+              {[1, 2, 3, 4, 5].map((i) => (
+                <div key={i} className="flex items-center justify-between px-4 py-2.5">
+                  <div className="h-3 w-28 rounded bg-muted" />
+                  <div className="h-3 w-16 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+            {/* Top Books skeleton */}
+            <div className="rounded-xl border bg-background/60 p-4 shadow-sm animate-pulse space-y-3">
+              <div className="h-3 w-24 rounded bg-muted mb-3" />
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex items-center gap-3">
+                  <div className="h-3 w-5 rounded bg-muted" />
+                  <div className="h-4 w-4 rounded bg-muted" />
+                  <div className="flex-1 h-3 rounded bg-muted" />
+                  <div className="h-3 w-10 rounded bg-muted" />
+                </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          <>
+
         {/* User Info */}
         <div className="rounded-xl border bg-background/60 p-6 shadow-sm">
           <div className="flex items-center gap-4">
@@ -117,7 +196,6 @@ export default function ProfilePage() {
                 {analytics?.totalSessions || 0} reading session{analytics?.totalSessions !== 1 ? 's' : ''}
               </p>
             </div>
-            {/* Streak badge */}
             {streakCount > 0 && (
               <div className="ml-auto flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 dark:border-orange-800/30 dark:bg-orange-950/20">
                 <Flame className="h-4 w-4 text-orange-500" />
@@ -201,7 +279,6 @@ export default function ProfilePage() {
                   const weeks: { date: string; pages: number; active: boolean }[][] = []
                   let currentWeek: { date: string; pages: number; active: boolean }[] = []
 
-                  // Build 13 weeks of data ending today
                   const startDate = new Date(today)
                   startDate.setDate(startDate.getDate() - 90)
 
@@ -227,8 +304,6 @@ export default function ProfilePage() {
                     if (ratio > 0.33) return 'bg-emerald-400'
                     return 'bg-emerald-300'
                   }
-
-                  const dayLabels = ['', 'Mon', '', 'Wed', '', 'Fri', '']
 
                   return (
                     <div className="flex gap-0.5">
@@ -311,6 +386,8 @@ export default function ProfilePage() {
             Go to Dashboard
           </Link>
         </div>
+          </>
+        )}
       </main>
     </div>
   )
