@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, Brain, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, BookText, Brain, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
@@ -424,6 +424,13 @@ export default function DashboardPage() {
             </span>
           </button>
           <SettingsPanel />
+          <Link
+            href="/vocabulary"
+            className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-md dark:hover:border-violet-800/30 dark:hover:bg-violet-950/20"
+            title="Vocabulary"
+          >
+            <BookText className="h-3.5 w-3.5" />
+          </Link>
           {user?.isAdmin && (
             <Link
               href="/admin"
