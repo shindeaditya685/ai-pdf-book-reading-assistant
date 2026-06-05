@@ -564,6 +564,38 @@ export function PDFViewer() {
     [scrollMode, setCurrentPage, clearSelection]
   )
 
+  // Local buffer for the page number input so the user can type freely
+  // and only commit to navigation on Enter / blur (like Adobe Acrobat).
+  // Synced with `currentPage` when it changes externally (prev/next, follow mode, etc.)
+  const [pageInput, setPageInput] = useState<string>(String(currentPage))
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional external-state sync
+  useEffect(() => { setPageInput(String(currentPage)) }, [currentPage])
+  const commitPageInput = useCallback(() => {
+    const parsed = parseInt(pageInput, 10)
+    if (Number.isFinite(parsed) && parsed >= 1 && parsed <= totalPages && parsed !== currentPage) {
+      scrollToPage(parsed)
+    } else {
+      setPageInput(String(currentPage))
+    }
+  }, [pageInput, totalPages, currentPage, scrollToPage])
+
+  // Local buffer for the zoom input (displayed as %). Same pattern: only commits on Enter / blur.
+  const ZOOM_MIN = 50
+  const ZOOM_MAX = 300
+  const [zoomInput, setZoomInput] = useState<string>(String(Math.round(scale * 100)))
+  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional external-state sync
+  useEffect(() => { setZoomInput(String(Math.round(scale * 100))) }, [scale])
+  const commitZoomInput = useCallback(() => {
+    const parsed = parseInt(zoomInput, 10)
+    if (Number.isFinite(parsed) && parsed >= ZOOM_MIN && parsed <= ZOOM_MAX) {
+      const next = parsed / 100
+      if (Math.abs(next - scale) > 0.0001) setScale(next)
+      else setZoomInput(String(Math.round(scale * 100)))
+    } else {
+      setZoomInput(String(Math.round(scale * 100)))
+    }
+  }, [zoomInput, scale, setScale])
+
   // Track current page in scroll mode via IntersectionObserver
   useEffect(() => {
     if (!scrollMode || !pdfReady || totalPages === 0) return
@@ -654,15 +686,25 @@ export function PDFViewer() {
             <ChevronLeft className="h-4 w-4" />
           </Button>
           <input
-            type="number"
-            min={1}
-            max={totalPages}
-            value={currentPage}
-            onChange={(e) => {
-              const page = parseInt(e.target.value, 10)
-              if (page >= 1 && page <= totalPages) scrollToPage(page)
+            type="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
+            maxLength={String(totalPages).length}
+            value={pageInput}
+            onChange={(e) => setPageInput(e.target.value.replace(/\D/g, '').slice(0, String(totalPages).length))}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault()
+                ;(e.target as HTMLInputElement).blur()
+              } else if (e.key === 'Escape') {
+                e.preventDefault()
+                setPageInput(String(currentPage))
+                ;(e.target as HTMLInputElement).blur()
+              }
             }}
-            className="w-10 rounded-lg border bg-background/80 px-1 py-0.5 text-center text-xs font-semibold outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none"
+            onFocus={(e) => e.target.select()}
+            onBlur={commitPageInput}
+            className="w-12 rounded-lg border bg-background/80 px-1 py-0.5 text-center text-xs font-semibold outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20"
           />
           <span className="text-xs text-muted-foreground/60">/ {totalPages}</span>
           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={goToNextPage} disabled={currentPage >= totalPages}>
@@ -768,7 +810,31 @@ export function PDFViewer() {
           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={zoomOut} disabled={scale <= 0.5}>
             <ZoomOut className="h-3.5 w-3.5" />
           </Button>
-          <span className="min-w-[44px] text-center text-[11px] font-medium text-muted-foreground/70 tabular-nums">{Math.round(scale * 100)}%</span>
+          <div className="flex items-center">
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={3}
+              value={zoomInput}
+              onChange={(e) => setZoomInput(e.target.value.replace(/\D/g, '').slice(0, 3))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault()
+                  ;(e.target as HTMLInputElement).blur()
+                } else if (e.key === 'Escape') {
+                  e.preventDefault()
+                  setZoomInput(String(Math.round(scale * 100)))
+                  ;(e.target as HTMLInputElement).blur()
+                }
+              }}
+              onFocus={(e) => e.target.select()}
+              onBlur={commitZoomInput}
+              className="w-10 rounded-lg border bg-background/80 px-1 py-0.5 text-center text-[11px] font-semibold outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 tabular-nums"
+              title="Type a zoom percentage and press Enter (50-300%)"
+            />
+            <span className="ml-0.5 text-[11px] font-medium text-muted-foreground/70">%</span>
+          </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={zoomIn} disabled={scale >= 3}>
             <ZoomIn className="h-3.5 w-3.5" />
           </Button>
