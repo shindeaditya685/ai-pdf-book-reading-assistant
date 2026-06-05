@@ -129,7 +129,7 @@
 }
 
 .pdf-search-highlight-current {
-  background: rgba(16, 185, 129, 0.5);
+  background: var(--accent-search);
   border-radius: 2px;
   padding: 0 1px;
 }
@@ -162,6 +162,123 @@
 
 .pdf-text-layer ::selection {
   background: rgba(16, 185, 129, 0.3);
+}
+
+/* ── ACCENT THEMES ──
+   Override Tailwind's color CSS variables so ALL bg-emerald-* / text-violet-* / etc. change.  */
+:root {
+  --accent-search: rgba(16, 185, 129, 0.5);
+  --accent-selection: rgba(16, 185, 129, 0.3);
+}
+
+.accent-violet {
+  --color-emerald-50: #f5f3ff;
+  --color-emerald-100: #ede9fe;
+  --color-emerald-200: #ddd6fe;
+  --color-emerald-300: #c4b5fd;
+  --color-emerald-400: #a78bfa;
+  --color-emerald-500: #8b5cf6;
+  --color-emerald-600: #7c3aed;
+  --color-emerald-700: #6d28d9;
+  --color-emerald-800: #5b21b6;
+  --color-emerald-900: #4c1d95;
+  --color-violet-50: #eef2ff;
+  --color-violet-100: #e0e7ff;
+  --color-violet-200: #c7d2fe;
+  --color-violet-300: #a5b4fc;
+  --color-violet-400: #818cf8;
+  --color-violet-500: #6366f1;
+  --color-violet-600: #4f46e5;
+  --color-violet-700: #4338ca;
+  --color-violet-800: #3730a3;
+  --color-violet-900: #312e81;
+  --accent-search: rgba(139, 92, 246, 0.5);
+  --accent-selection: rgba(139, 92, 246, 0.3);
+}
+
+.accent-amber {
+  --color-emerald-50: #fffbeb;
+  --color-emerald-100: #fef3c7;
+  --color-emerald-200: #fde68a;
+  --color-emerald-300: #fcd34d;
+  --color-emerald-400: #fbbf24;
+  --color-emerald-500: #f59e0b;
+  --color-emerald-600: #d97706;
+  --color-emerald-700: #b45309;
+  --color-emerald-800: #92400e;
+  --color-emerald-900: #78350f;
+  --color-violet-50: #fff7ed;
+  --color-violet-100: #ffedd5;
+  --color-violet-200: #fed7aa;
+  --color-violet-300: #fdba74;
+  --color-violet-400: #fb923c;
+  --color-violet-500: #f97316;
+  --color-violet-600: #ea580c;
+  --color-violet-700: #c2410c;
+  --color-violet-800: #9a3412;
+  --color-violet-900: #7c2d12;
+  --accent-search: rgba(245, 158, 11, 0.5);
+  --accent-selection: rgba(245, 158, 11, 0.3);
+}
+
+.accent-rose {
+  --color-emerald-50: #fff1f2;
+  --color-emerald-100: #ffe4e6;
+  --color-emerald-200: #fecdd3;
+  --color-emerald-300: #fda4af;
+  --color-emerald-400: #fb7185;
+  --color-emerald-500: #f43f5e;
+  --color-emerald-600: #e11d48;
+  --color-emerald-700: #be123c;
+  --color-emerald-800: #9f1239;
+  --color-emerald-900: #881337;
+  --color-violet-50: #fdf2f8;
+  --color-violet-100: #fce7f3;
+  --color-violet-200: #fbcfe8;
+  --color-violet-300: #f9a8d4;
+  --color-violet-400: #f472b6;
+  --color-violet-500: #ec4899;
+  --color-violet-600: #db2777;
+  --color-violet-700: #be185d;
+  --color-violet-800: #9d174d;
+  --color-violet-900: #831843;
+  --accent-search: rgba(244, 63, 94, 0.5);
+  --accent-selection: rgba(244, 63, 94, 0.3);
+}
+
+.accent-blue {
+  --color-emerald-50: #eff6ff;
+  --color-emerald-100: #dbeafe;
+  --color-emerald-200: #bfdbfe;
+  --color-emerald-300: #93c5fd;
+  --color-emerald-400: #60a5fa;
+  --color-emerald-500: #3b82f6;
+  --color-emerald-600: #2563eb;
+  --color-emerald-700: #1d4ed8;
+  --color-emerald-800: #1e40af;
+  --color-emerald-900: #1e3a8a;
+  --color-violet-50: #eef2ff;
+  --color-violet-100: #e0e7ff;
+  --color-violet-200: #c7d2fe;
+  --color-violet-300: #a5b4fc;
+  --color-violet-400: #818cf8;
+  --color-violet-500: #6366f1;
+  --color-violet-600: #4f46e5;
+  --color-violet-700: #4338ca;
+  --color-violet-800: #3730a3;
+  --color-violet-900: #312e81;
+  --accent-search: rgba(59, 130, 246, 0.5);
+  --accent-selection: rgba(59, 130, 246, 0.3);
+}
+
+.pdf-search-highlight-current {
+  background: var(--accent-search);
+  border-radius: 2px;
+  padding: 0 1px;
+}
+
+.pdf-text-layer ::selection {
+  background: var(--accent-selection);
 }
 
 /* Custom scrollbar */

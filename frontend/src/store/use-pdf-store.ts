@@ -399,6 +399,7 @@ interface PDFState {
   accent: PronunciationAccent;
   scrollMode: boolean;
   theme: "light" | "dark";
+  themeAccent: "emerald" | "violet" | "amber" | "rose" | "blue";
 
   // Word History
   wordHistory: WordHistoryEntry[];
@@ -495,6 +496,7 @@ interface PDFState {
   setScrollMode: (mode: boolean) => void;
   setTheme: (theme: "light" | "dark") => void;
   toggleTheme: () => void;
+  setThemeAccent: (accent: "emerald" | "violet" | "amber" | "rose" | "blue") => void;
   clearSelection: () => void;
   reset: () => void;
 
@@ -660,6 +662,12 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   })(),
   scrollMode: true,
   theme: "dark",
+  themeAccent: (() => {
+    if (typeof window === "undefined") return "emerald";
+    try {
+      return (localStorage.getItem("pdf-reader-ai-theme-accent") as any) || "emerald";
+    } catch { return "emerald"; }
+  })(),
 
   wordHistory: [],
   bookmarks: [],
@@ -769,6 +777,14 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       localStorage.setItem("pdf-reader-ai-theme", isDark ? "light" : "dark");
     }
     set((s) => ({ theme: s.theme === "dark" ? "light" : "dark" }));
+  },
+  setThemeAccent: (accent) => {
+    if (typeof window !== "undefined") {
+      document.documentElement.classList.remove("accent-emerald", "accent-violet", "accent-amber", "accent-rose", "accent-blue");
+      document.documentElement.classList.add(`accent-${accent}`);
+      localStorage.setItem("pdf-reader-ai-theme-accent", accent);
+    }
+    set({ themeAccent: accent });
   },
 
   clearSelection: () =>

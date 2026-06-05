@@ -1,6 +1,6 @@
 'use client'
 
-import { Globe, Volume2, Sun, Moon, Settings2 } from 'lucide-react'
+import { Globe, Volume2, Sun, Moon, Settings2, Palette } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -12,8 +12,16 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { usePDFStore, LANGUAGE_LABELS, ACCENT_LABELS, type TranslationLanguage, type PronunciationAccent } from '@/store/use-pdf-store'
 import { Button } from '@/components/ui/button'
 
+const ACCENT_OPTIONS = [
+  { value: 'emerald' as const, label: 'Emerald', className: 'bg-emerald-500' },
+  { value: 'violet' as const, label: 'Violet', className: 'bg-violet-500' },
+  { value: 'amber' as const, label: 'Amber', className: 'bg-amber-500' },
+  { value: 'rose' as const, label: 'Rose', className: 'bg-rose-500' },
+  { value: 'blue' as const, label: 'Blue', className: 'bg-blue-500' },
+]
+
 export function SettingsPanel() {
-  const { translationLanguage, setTranslationLanguage, accent, setAccent, theme, toggleTheme } = usePDFStore()
+  const { translationLanguage, setTranslationLanguage, accent, setAccent, theme, toggleTheme, themeAccent, setThemeAccent } = usePDFStore()
 
   return (
     <Popover>
@@ -84,6 +92,28 @@ export function SettingsPanel() {
                 ))}
               </SelectContent>
             </Select>
+          </div>
+
+          {/* Theme accent — color picker */}
+          <div className="space-y-1.5">
+            <div className="flex items-center gap-1.5">
+              <Palette className="h-3.5 w-3.5 text-emerald-500" />
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                Theme Color
+              </label>
+            </div>
+            <div className="flex gap-2">
+              {ACCENT_OPTIONS.map((opt) => (
+                <button
+                  key={opt.value}
+                  onClick={() => setThemeAccent(opt.value)}
+                  className={`h-7 w-7 rounded-full ${opt.className} transition-all hover:scale-110 hover:shadow-md ${
+                    themeAccent === opt.value ? 'ring-2 ring-offset-2 ring-offset-background ring-emerald-500 scale-110' : 'ring-1 ring-border/40'
+                  }`}
+                  title={opt.label}
+                />
+              ))}
+            </div>
           </div>
 
           {/* Theme toggle */}

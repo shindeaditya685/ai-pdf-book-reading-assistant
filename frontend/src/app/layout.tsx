@@ -66,6 +66,10 @@ export default function RootLayout({
                 } catch(e) {
                   document.documentElement.classList.add('dark');
                 }
+                try {
+                  var accent = localStorage.getItem('pdf-reader-ai-theme-accent') || 'emerald';
+                  document.documentElement.classList.add('accent-' + accent);
+                } catch(e) {}
               })();
             `,
           }}
