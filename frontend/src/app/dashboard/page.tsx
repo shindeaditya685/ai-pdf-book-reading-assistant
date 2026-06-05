@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, Library, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, Library, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
@@ -44,6 +44,20 @@ const formatRecentDate = (timestamp: number) =>
     month: 'short',
     day: 'numeric',
   }).format(new Date(timestamp))
+
+const timeAgo = (timestamp: number) => {
+  const diff = Date.now() - timestamp
+  const mins = Math.floor(diff / 60000)
+  if (mins < 1) return 'just now'
+  if (mins < 60) return `${mins}m ago`
+  const hours = Math.floor(mins / 60)
+  if (hours < 24) return `${hours}h ago`
+  const days = Math.floor(hours / 24)
+  if (days < 7) return `${days}d ago`
+  return formatRecentDate(timestamp)
+}
+
+const RESUME_DISMISS_KEY = 'pdf-reader-ai-resume-dismissed'
 
 export default function DashboardPage() {
   const {
@@ -86,6 +100,13 @@ export default function DashboardPage() {
   const { user, logout } = useAuth()
   const [recentLoading, setRecentLoading] = useState<string | null>(null)
   const [recentPdfsLoading, setRecentPdfsLoading] = useState(true)
+  const [resumeBook, setResumeBook] = useState<{
+    fileName: string
+    lastPage: number
+    pageCount: number
+    timestamp: number
+  } | null>(null)
+  const [dismissedResume, setDismissedResume] = useState(true)
 
   const dataLoadedRef = useRef<string | null>(null)
   const recentLoadedRef = useRef<string | null>(null)
@@ -176,10 +197,18 @@ export default function DashboardPage() {
           const activeBook = getActiveBook(user.username)
           if (!pdfDataUrl && activeBook && pdfs.some((p) => p.fileName === activeBook)) {
             const activeMeta = pdfs.find((p) => p.fileName === activeBook)
-            await handleLoadRecentPdf(
-              activeBook,
-              activeMeta?.lastPage || getStoredBookPage(user.username, activeBook)
-            )
+            const lastPage = activeMeta?.lastPage || getStoredBookPage(user.username, activeBook) || 1
+            const dismissed = typeof window !== 'undefined' &&
+              window.localStorage.getItem(RESUME_DISMISS_KEY) === activeBook
+            setDismissedResume(dismissed)
+            if (!dismissed) {
+              setResumeBook({
+                fileName: activeBook,
+                lastPage,
+                pageCount: activeMeta?.pageCount || 0,
+                timestamp: activeMeta?.timestamp ? Number(activeMeta.timestamp) : Date.now(),
+              })
+            }
           }
         }
       } catch {
@@ -525,6 +554,82 @@ export default function DashboardPage() {
               </aside>
             </section>
 
+            {resumeBook && !dismissedResume && (
+              <div className="relative overflow-hidden rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-100/30 p-6 shadow-lg shadow-emerald-500/10 dark:from-emerald-950/20 dark:via-emerald-950/10 dark:to-emerald-900/20 dark:border-emerald-700/30">
+                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-emerald-400/20 blur-2xl" />
+                <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-emerald-300/10 blur-xl" />
+                <div className="relative flex items-start justify-between gap-4">
+                  <div className="flex min-w-0 items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20">
+                      <BookOpen className="h-5 w-5 text-white" />
+                    </div>
+                    <div className="min-w-0">
+                      <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                        <Sparkles className="h-3 w-3" />
+                        Resume Reading
+                      </div>
+                      <p className="mt-2 text-lg font-bold text-foreground truncate">
+                        {resumeBook.fileName}
+                      </p>
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                        <span className="inline-flex items-center gap-1.5">
+                          <FileText className="h-3.5 w-3.5 text-emerald-500" />
+                          Page {resumeBook.lastPage}{resumeBook.pageCount > 0 ? ` of ${resumeBook.pageCount}` : ''}
+                        </span>
+                        {resumeBook.timestamp && (
+                          <span className="inline-flex items-center gap-1.5">
+                            <Clock className="h-3.5 w-3.5 text-amber-500" />
+                            {timeAgo(Number(resumeBook.timestamp))}
+                          </span>
+                        )}
+                        {resumeBook.pageCount > 0 && (
+                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                            {Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}% complete
+                          </span>
+                        )}
+                      </div>
+                      {resumeBook.pageCount > 0 && (
+                        <div className="mt-3 h-2 w-full max-w-xs overflow-hidden rounded-full bg-emerald-500/10">
+                          <div
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all"
+                            style={{ width: `${Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}%` }}
+                          />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex shrink-0 items-start gap-2">
+                    <button
+                      onClick={() => handleLoadRecentPdf(resumeBook.fileName)}
+                      disabled={recentLoading === resumeBook.fileName}
+                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl hover:shadow-emerald-500/40 active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
+                    >
+                      {recentLoading === resumeBook.fileName ? (
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <>
+                          Continue
+                          <ArrowRight className="h-4 w-4" />
+                        </>
+                      )}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (typeof window !== 'undefined') {
+                          window.localStorage.setItem(RESUME_DISMISS_KEY, resumeBook.fileName)
+                        }
+                        setDismissedResume(true)
+                      }}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground/50 shadow-sm backdrop-blur-sm transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500 dark:hover:border-red-800/30 dark:hover:bg-red-950/20"
+                      title="Dismiss"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <section>
               <div className="mb-5 flex items-end justify-between gap-3">
                 <div>
@@ -586,7 +691,7 @@ export default function DashboardPage() {
                           </p>
                           <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
                             <Clock className="h-3 w-3" />
-                            <span>{formatRecentDate(pdf.timestamp)}</span>
+                            <span>{timeAgo(pdf.timestamp)}</span>
                           </div>
                         </div>
                       </div>
