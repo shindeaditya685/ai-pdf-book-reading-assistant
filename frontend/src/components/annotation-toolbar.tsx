@@ -123,7 +123,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
         </Button>
       </div>
 
-      {/* Toolbar — independently centered */}
+      {/* Toolbar — sits just below the main toolbar, vertically anchored to the same center as the toggle button */}
       <AnimatePresence>
         {!isMinimized && (
           <motion.div
@@ -131,7 +131,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
             animate={{ opacity: 1, x: 0, scale: 1 }}
             exit={{ opacity: 0, x: -12, scale: 0.95 }}
             transition={{ duration: 0.15 }}
-            className="fixed left-[calc(0.75rem+28px+4px)] top-32 z-40  pointer-events-auto select-none flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md"
+            className="fixed left-[calc(0.75rem+28px+4px)] top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md"
           >
             {/* ── 1. SELECT ── */}
             <ToolBtn
@@ -140,7 +140,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                 setAnnotationMode("select");
                 setOpenPanel(null);
               }}
-              title="Select / Dictionary Mode"
+              title="Select / Dictionary Mode (1)"
             >
               <MousePointer className="h-4 w-4" />
             </ToolBtn>
@@ -154,7 +154,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                   setAnnotationMode("highlight");
                   togglePanel("highlight");
                 }}
-                title="Highlight (click for colours)"
+                title="Highlight (2) — click for colours"
               >
                 <Highlighter className="h-4 w-4" />
               </ToolBtn>
@@ -204,7 +204,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                   setAnnotationMode("pen");
                   togglePanel("pen");
                 }}
-                title="Freehand Pen (click for options)"
+                title="Freehand Pen (3) — click for options"
               >
                 <PenTool className="h-4 w-4" />
               </ToolBtn>
@@ -259,7 +259,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                 setAnnotationMode("eraser");
                 setOpenPanel(null);
               }}
-              title="Eraser"
+              title="Eraser (4)"
             >
               <Eraser className="h-4 w-4" />
             </ToolBtn>
@@ -271,7 +271,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                 setAnnotationMode("note");
                 setOpenPanel(null);
               }}
-              title="Add Sticky Note"
+              title="Add Sticky Note (5)"
             >
               <MessageSquarePlus className="h-4 w-4" />
             </ToolBtn>
@@ -282,7 +282,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
             <button
               onClick={undo}
               disabled={undoStack.length === 0}
-              title="Undo last annotation"
+              title="Undo last annotation (Ctrl+Z)"
               className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90"
             >
               <Undo2 className="h-4 w-4" />
@@ -291,7 +291,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
             <button
               onClick={redo}
               disabled={redoStack.length === 0}
-              title="Redo last annotation"
+              title="Redo last annotation (Ctrl+Shift+Z)"
               className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90"
             >
               <Redo2 className="h-4 w-4" />
