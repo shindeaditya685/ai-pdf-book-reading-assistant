@@ -37,6 +37,7 @@ export type TranslationLanguage =
   | "ml"
   | "ur"
   | "gu"
+  | "ne"
   | "es"
   | "fr"
   | "de"
@@ -71,6 +72,7 @@ export function detectBrowserLanguage(): TranslationLanguage {
       "ml",
       "ur",
       "gu",
+      "ne",
       "es",
       "fr",
       "de",
@@ -118,6 +120,7 @@ function loadInitialLanguage(): TranslationLanguage {
         "ml",
         "ur",
         "gu",
+        "ne",
         "es",
         "fr",
         "de",
@@ -156,6 +159,7 @@ export const LANGUAGE_LABELS: Record<TranslationLanguage, string> = {
   ml: "Malayalam",
   ur: "Urdu",
   gu: "Gujarati",
+  ne: "Nepali",
   es: "Spanish",
   fr: "French",
   de: "German",
@@ -188,6 +192,7 @@ export const LANGUAGE_SCRIPT: Record<string, string> = {
   ml: "Malayalam (Malayalam script)",
   ur: "Urdu (Nastaliq script)",
   gu: "Gujarati (Gujarati script)",
+  ne: "Nepali (Devanagari script)",
   es: "Spanish",
   fr: "French",
   de: "German",
@@ -468,6 +473,24 @@ interface PDFState {
   sharedFlashcards: SharedFlashcard[];
   shareSessions: ShareSession[];
 
+  // Real-time collaboration
+  remoteCursors: Record<string, { username: string; color: string; pageNumber: number; x: number; y: number }>;
+  remotePages: Record<string, number>;
+  mouseX: number;
+  mouseY: number;
+
+  // Session chat
+  sessionChat: { id: string; username: string; color: string; text: string; createdAt: string }[];
+
+  // Follow mode
+  followMode: boolean;
+
+  // Shared timer
+  sharedTimer: { isRunning: boolean; mode: string; totalMs: number; startedAt: string | null } | null;
+
+  // Shared TTS
+  sharedTts: { username: string; color: string; playing: boolean; paused: boolean; pageNumber: number; wordIndex: number | null; speed: number } | null;
+
   // TTS state
   ttsPlaying: boolean;
   ttsPaused: boolean;
@@ -599,6 +622,25 @@ interface PDFState {
   setShareSessions: (sessions: ShareSession[]) => void;
   clearShareState: () => void;
 
+  // Real-time collaboration actions
+  addRemoteCursor: (username: string, cursor: { username: string; color: string; pageNumber: number; x: number; y: number }) => void;
+  removeRemoteCursor: (username: string) => void;
+  setRemotePage: (username: string, page: number) => void;
+  setMousePosition: (x: number, y: number) => void;
+
+  // Chat actions
+  addSessionChatMessage: (msg: { id: string; username: string; color: string; text: string; createdAt: string }) => void;
+  setSessionChatMessages: (msgs: { id: string; username: string; color: string; text: string; createdAt: string }[]) => void;
+
+  // Follow mode actions
+  setFollowMode: (enabled: boolean) => void;
+
+  // Timer actions
+  setSharedTimer: (timer: { isRunning: boolean; mode: string; totalMs: number; startedAt: string | null } | null) => void;
+
+  // Shared TTS actions
+  setSharedTts: (tts: { username: string; color: string; playing: boolean; paused: boolean; pageNumber: number; wordIndex: number | null; speed: number } | null) => void;
+
   // TTS actions
   setTtsPlaying: (playing: boolean) => void;
   setTtsPaused: (paused: boolean) => void;
@@ -711,6 +753,14 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   sharedBookmarks: [],
   sharedFlashcards: [],
   shareSessions: [],
+  remoteCursors: {},
+  remotePages: {},
+  mouseX: 0,
+  mouseY: 0,
+  sessionChat: [],
+  followMode: false,
+  sharedTimer: null,
+  sharedTts: null,
 
   ttsPlaying: false,
   ttsPaused: false,
@@ -1063,7 +1113,39 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       sharedBookmarks: [],
       sharedFlashcards: [],
       shareSessions: [],
+      remoteCursors: {},
+      remotePages: {},
+      sessionChat: [],
+      followMode: false,
+      sharedTimer: null,
+      sharedTts: null,
     }),
+
+  addRemoteCursor: (username, cursor) =>
+    set((s) => ({ remoteCursors: { ...s.remoteCursors, [username]: cursor } })),
+  removeRemoteCursor: (username) =>
+    set((s) => { const n = { ...s.remoteCursors }; delete n[username]; return { remoteCursors: n } }),
+  setRemotePage: (username, page) =>
+    set((s) => ({ remotePages: { ...s.remotePages, [username]: page } })),
+  setMousePosition: (x, y) => set({ mouseX: x, mouseY: y }),
+
+  addSessionChatMessage: (msg) =>
+    set((s) => {
+      if (s.sessionChat.some((m) => m.id === msg.id)) return s
+      return { sessionChat: [...s.sessionChat, msg] }
+    }),
+  setSessionChatMessages: (msgs) =>
+    set((s) => {
+      const seen = new Set(s.sessionChat.map((m) => m.id))
+      const merged = [...s.sessionChat]
+      for (const m of msgs) if (!seen.has(m.id)) merged.push(m)
+      return { sessionChat: merged }
+    }),
+
+  setFollowMode: (enabled) => set({ followMode: enabled }),
+
+  setSharedTimer: (timer) => set({ sharedTimer: timer }),
+  setSharedTts: (tts) => set({ sharedTts: tts }),
 
   setTtsPlaying: (playing) => set({ ttsPlaying: playing }),
   setTtsPaused: (paused) => set({ ttsPaused: paused }),

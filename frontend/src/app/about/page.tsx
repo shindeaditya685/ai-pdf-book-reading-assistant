@@ -331,6 +331,18 @@ export default function AboutPage() {
               >
                 Home
               </Link>
+              <Link
+                href="/terms"
+                className="transition-colors hover:text-foreground"
+              >
+                Terms
+              </Link>
+              <Link
+                href="/privacy"
+                className="transition-colors hover:text-foreground"
+              >
+                Privacy
+              </Link>
               <span className="text-xs text-muted-foreground/30">
                 by Aditya
               </span>

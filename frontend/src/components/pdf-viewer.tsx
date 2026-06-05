@@ -114,45 +114,22 @@ export function PDFViewer() {
     shareSession,
     sharedAnnotations,
     addSharedAnnotation,
+    remoteCursors,
+    setMousePosition,
+    followMode,
+    remotePages,
   } = usePDFStore()
 
-  // Poll shared resources (annotations, bookmarks, flashcards) when in a session
+  // Follow mode: auto-navigate when leader changes page
   useEffect(() => {
-    if (!shareSession) return
-    const poll = async () => {
-      try {
-        const [annRes, bmRes, fcRes] = await Promise.all([
-          authFetch(`/api/share/annotations?sessionId=${encodeURIComponent(shareSession._id)}`),
-          authFetch(`/api/share/bookmarks?sessionId=${encodeURIComponent(shareSession._id)}`),
-          authFetch(`/api/share/flashcards?sessionId=${encodeURIComponent(shareSession._id)}`)
-        ])
-        
-        if (annRes.ok) {
-          const data = await annRes.json()
-          if (Array.isArray(data)) {
-            usePDFStore.getState().setSharedAnnotations(data)
-          }
-        }
-        if (bmRes.ok) {
-          const data = await bmRes.json()
-          if (Array.isArray(data)) {
-            usePDFStore.getState().setSharedBookmarks(data)
-          }
-        }
-        if (fcRes.ok) {
-          const data = await fcRes.json()
-          if (Array.isArray(data)) {
-            usePDFStore.getState().setSharedFlashcards(data)
-          }
-        }
-      } catch (err) {
-        console.error('[Session Poll] Error:', err)
-      }
+    if (!followMode || !shareSession) return
+    const leader = shareSession.members.find((m) => m.username !== user?.username)
+    if (!leader) return
+    const leaderPage = remotePages[leader.username]
+    if (leaderPage && leaderPage !== currentPage && leaderPage >= 1 && leaderPage <= totalPages) {
+      setCurrentPage(leaderPage)
     }
-    poll()
-    const interval = setInterval(poll, 4000)
-    return () => clearInterval(interval)
-  }, [shareSession?._id])
+  }, [followMode, remotePages, shareSession, currentPage, totalPages, setCurrentPage, user?.username])
 
   // Pending word confirmation state (shown before firing API)
   const [pendingWord, setPendingWord] = useState<{
@@ -1172,7 +1149,7 @@ export function PDFViewer() {
         {/* Floating Annotation Toolbar */}
         <AnnotationToolbar onClearAll={handleClearAllPageAnnotations} />
 
-        <div ref={containerRef} className="pdf-scroll-container h-full overflow-auto bg-gradient-to-b from-muted/20 to-muted/5 dark:from-muted/5" onClick={handleContainerClick} onMouseUp={handleMouseUp} onContextMenu={(e) => e.preventDefault()}>
+        <div ref={containerRef} className="pdf-scroll-container h-full overflow-auto bg-gradient-to-b from-muted/20 to-muted/5 dark:from-muted/5" onClick={handleContainerClick} onMouseUp={handleMouseUp} onMouseMove={(e) => setMousePosition(e.clientX, e.clientY)} onContextMenu={(e) => e.preventDefault()}>
           {isLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
               <div className="flex flex-col items-center gap-3">
@@ -1340,6 +1317,18 @@ export function PDFViewer() {
           </div>
         </div>
       </div>
+
+      {/* Remote cursors */}
+      {shareSession && Object.values(remoteCursors).filter((c: any) => c.pageNumber === currentPage).map((cursor: any) => (
+        <div key={cursor.username} className="pointer-events-none fixed z-50" style={{ left: cursor.x, top: cursor.y }}>
+          <div className="relative">
+            <div className="h-3 w-3 rounded-full border-2 border-white shadow-sm" style={{ backgroundColor: cursor.color }} />
+            <span className="absolute left-4 top-0 whitespace-nowrap rounded-md px-1.5 py-0.5 text-[10px] font-semibold text-white shadow-sm" style={{ backgroundColor: cursor.color }}>
+              {cursor.username}
+            </span>
+          </div>
+        </div>
+      ))}
 
       {/* Confirm-before-fetch tooltip */}
       {pendingWord && (

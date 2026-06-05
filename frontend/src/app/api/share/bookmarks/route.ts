@@ -42,6 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'sessionId and word required' }, { status: 400 })
     }
 
+    const now = new Date().toISOString()
     const doc = {
       bookmarkId: id || `bm-${Date.now()}`,
       sessionId,
@@ -53,7 +54,8 @@ export async function POST(request: Request) {
       pageNumber: Number(pageNumber) || 0,
       pdfFileName: pdfFileName || '',
       author: user.username,
-      timestamp: new Date().toISOString(),
+      timestamp: now,
+      updatedAt: now,
     }
 
     await conn.db.collection('sharedBookmarks').updateOne(
@@ -91,6 +93,12 @@ export async function DELETE(request: Request) {
     }
 
     await conn.db.collection('sharedBookmarks').deleteOne({ bookmarkId: id, sessionId })
+    await conn.db.collection('sessionEvents').insertOne({
+      sessionId,
+      type: 'bookmark-deleted',
+      bookmarkId: id,
+      createdAt: new Date().toISOString(),
+    })
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('[API Shared Bookmarks Delete] Error:', error)

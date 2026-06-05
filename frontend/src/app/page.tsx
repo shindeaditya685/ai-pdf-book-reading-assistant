@@ -240,6 +240,8 @@ export default function LandingPage() {
             </div>
             <div className="flex items-center gap-6 text-xs text-muted-foreground">
               <Link href="/about" className="transition-colors hover:text-foreground">About</Link>
+              <Link href="/terms" className="transition-colors hover:text-foreground">Terms</Link>
+              <Link href="/privacy" className="transition-colors hover:text-foreground">Privacy</Link>
               <span>&copy; {new Date().getFullYear()} PDFMindAI</span>
             </div>
           </div>

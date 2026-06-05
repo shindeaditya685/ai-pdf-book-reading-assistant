@@ -20,6 +20,7 @@ import { QuestionGeneratorPanel } from '@/components/question-generator-panel'
 import { SummarizerPanel } from '@/components/summarizer-panel'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { usePDFStore } from '@/store/use-pdf-store'
+import { useShareSSE } from '@/hooks/useShareSSE'
 import { authFetch } from '@/lib/api'
 import { getActiveBook, getStoredBookPage, setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
 
@@ -290,6 +291,9 @@ export default function DashboardPage() {
       })
     }).catch(() => {})
   }, [setStreakCount])
+
+  // Real-time share session sync
+  useShareSSE()
 
   // Keyboard shortcuts
   const handleKeyDown = useCallback(

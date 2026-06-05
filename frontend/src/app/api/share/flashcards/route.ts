@@ -42,6 +42,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'sessionId and word required' }, { status: 400 })
     }
 
+    const now = new Date().toISOString()
     const doc = {
       flashcardId: id || `fc-${Date.now()}`,
       sessionId,
@@ -53,7 +54,8 @@ export async function POST(request: Request) {
       pageNumber: Number(pageNumber) || 0,
       pdfFileName: pdfFileName || '',
       author: user.username,
-      createdAt: new Date().toISOString(),
+      createdAt: now,
+      updatedAt: now,
     }
 
     await conn.db.collection('sharedFlashcards').updateOne(
@@ -91,6 +93,12 @@ export async function DELETE(request: Request) {
     }
 
     await conn.db.collection('sharedFlashcards').deleteOne({ flashcardId: id, sessionId })
+    await conn.db.collection('sessionEvents').insertOne({
+      sessionId,
+      type: 'flashcard-deleted',
+      flashcardId: id,
+      createdAt: new Date().toISOString(),
+    })
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('[API Shared Flashcards Delete] Error:', error)

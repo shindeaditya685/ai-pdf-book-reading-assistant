@@ -340,8 +340,8 @@ export function TtsControls() {
                     className="max-w-[140px] truncate rounded-lg border border-border bg-background px-1.5 py-1 text-[10px] font-medium text-foreground outline-none focus:border-emerald-500"
                     title="Voice"
                   >
-                    {voices.map((v) => (
-                      <option key={v.voiceURI} value={v.voiceURI}>
+                    {voices.map((v, i) => (
+                      <option key={`${v.voiceURI}-${i}`} value={v.voiceURI}>
                         {v.name} ({v.lang})
                       </option>
                     ))}

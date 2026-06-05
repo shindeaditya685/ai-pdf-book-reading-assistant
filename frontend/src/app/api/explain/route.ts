@@ -32,6 +32,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ml: 'Malayalam (Malayalam script)',
   ur: 'Urdu (Nastaliq script)',
   gu: 'Gujarati (Gujarati script)',
+  ne: 'Nepali (Devanagari script)',
   es: 'Spanish',
   fr: 'French',
   de: 'German',

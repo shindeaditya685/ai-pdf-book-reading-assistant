@@ -43,6 +43,8 @@ export function WordPopup() {
   const [isSimplifying, setIsSimplifying] = useState(false)
   const [showSimplified, setShowSimplified] = useState(false)
   const [dragOffset, setDragOffset] = useState({ x: 0, y: 0 })
+  const [isDragging, setIsDragging] = useState(false)
+  const dragStateRef = useRef<{ startX: number; startY: number; baseX: number; baseY: number } | null>(null)
   const [flashcardStatus, setFlashcardStatus] = useState<'idle' | 'creating' | 'created' | 'exists'>('idle')
   const historyAddedRef = useRef(false)
   const prevLanguageRef = useRef(translationLanguage)
@@ -80,9 +82,10 @@ export function WordPopup() {
     }
   }, [explanation, selectedWord, selectedSentence, selectedPageNumber, isExplaining, addToHistory, pdfFileName])
 
-  // Reset state and check for existing flashcard when word changes
+  // Reset drag offset and flashcard state when a new word is selected
   useEffect(() => {
     historyAddedRef.current = false
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset when selectedWord changes
     setDragOffset({ x: 0, y: 0 })
     if (selectedWord && pdfFileName && flashcards.some((f) => f.word === selectedWord && f.pdfFileName === pdfFileName)) {
       setFlashcardStatus('exists')
@@ -333,6 +336,45 @@ export function WordPopup() {
     setSimplified(null)
   }
 
+  // Manual drag handlers (replaces framer-motion's `drag` to avoid transform/style.left conflicts)
+  const handleHeaderMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return
+    const target = e.target as HTMLElement
+    if (target.closest('button, a, input, [role="button"]')) return
+    e.preventDefault()
+    setIsDragging(true)
+    dragStateRef.current = {
+      startX: e.clientX,
+      startY: e.clientY,
+      baseX: dragOffset.x,
+      baseY: dragOffset.y,
+    }
+  }, [dragOffset])
+
+  useEffect(() => {
+    if (!isDragging) return
+    const onMouseMove = (e: MouseEvent) => {
+      if (!dragStateRef.current) return
+      const { startX, startY, baseX, baseY } = dragStateRef.current
+      setDragOffset({
+        x: baseX + (e.clientX - startX),
+        y: baseY + (e.clientY - startY),
+      })
+    }
+    const onMouseUp = () => {
+      setIsDragging(false)
+      dragStateRef.current = null
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+    document.addEventListener('mousemove', onMouseMove)
+    document.addEventListener('mouseup', onMouseUp)
+    return () => {
+      document.removeEventListener('mousemove', onMouseMove)
+      document.removeEventListener('mouseup', onMouseUp)
+    }
+  }, [isDragging])
+
   if (!selectedWord || !popupPosition) return null
 
   // Calculate popup position - viewport-relative
@@ -357,8 +399,11 @@ export function WordPopup() {
     ? Math.max(8, popupY - popupHeight)
     : Math.min(popupY + 20, vh - 60)
 
-  const clampedTop = popupTop + dragOffset.y
-  const clampedLeft = popupX + dragOffset.x
+  // Clamp the FINAL (post-drag) position so the popup can't go off-screen
+  const maxX = vw - popupWidth - 12
+  const maxY = vh - popupHeight - 12
+  const clampedLeft = Math.max(12, Math.min(popupX + dragOffset.x, maxX))
+  const clampedTop = Math.max(8, Math.min(popupTop + dragOffset.y, maxY))
 
   return (
     <AnimatePresence>
@@ -374,18 +419,15 @@ export function WordPopup() {
         animate={{ opacity: 1, y: 0, scale: 1 }}
         exit={{ opacity: 0, y: showAbove ? 5 : -5, scale: 0.95 }}
         transition={{ duration: 0.15, ease: 'easeOut' }}
-        drag
-        dragMomentum={false}
-        onDragEnd={(_, info) =>
-          setDragOffset((prev) => ({
-            x: prev.x + info.offset.x,
-            y: prev.y + info.offset.y,
-          }))
-        }
       >
         <div className="rounded-xl border border-border bg-background shadow-2xl">
           {/* Header - drag handle */}
-          <div className="flex items-start justify-between border-b px-3 pt-3 pb-2 cursor-grab active:cursor-grabbing select-none">
+          <div
+            onMouseDown={handleHeaderMouseDown}
+            className={`flex items-start justify-between border-b px-3 pt-3 pb-2 select-none ${
+              isDragging ? 'cursor-grabbing' : 'cursor-grab'
+            }`}
+          >
             <div className="flex items-center gap-1 flex-1 min-w-0">
               <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
               <h3 className="text-base font-bold text-foreground">

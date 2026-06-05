@@ -30,12 +30,27 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
   const progressIntervalRef = useRef<ReturnType<typeof setInterval> | null>(null)
+  const dragCounterRef = useRef(0)
 
   useEffect(() => {
     return () => {
       if (progressIntervalRef.current) {
         clearInterval(progressIntervalRef.current)
       }
+    }
+  }, [])
+
+  useEffect(() => {
+    const preventDefault = (e: DragEvent) => {
+      if (e.dataTransfer?.types?.includes('Files')) {
+        e.preventDefault()
+      }
+    }
+    window.addEventListener('dragover', preventDefault)
+    window.addEventListener('drop', preventDefault)
+    return () => {
+      window.removeEventListener('dragover', preventDefault)
+      window.removeEventListener('drop', preventDefault)
     }
   }, [])
 
@@ -95,25 +110,41 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
     [addRecentPdf, clearOcrText, setCurrentPage, setPdfDataUrl, setPdfFile, user?.username]
   )
 
+  const handleDragEnter = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current++
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragging(true)
+    }
+  }, [])
+
+  const handleDragOver = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    if (e.dataTransfer) e.dataTransfer.dropEffect = 'copy'
+  }, [])
+
+  const handleDragLeave = useCallback((e: React.DragEvent) => {
+    e.preventDefault()
+    e.stopPropagation()
+    dragCounterRef.current = Math.max(0, dragCounterRef.current - 1)
+    if (dragCounterRef.current === 0) {
+      setIsDragging(false)
+    }
+  }, [])
+
   const handleDrop = useCallback(
     (e: React.DragEvent) => {
       e.preventDefault()
+      e.stopPropagation()
+      dragCounterRef.current = 0
       setIsDragging(false)
       const file = e.dataTransfer.files[0]
       if (file) handleFile(file)
     },
     [handleFile]
   )
-
-  const handleDragOver = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(true)
-  }, [])
-
-  const handleDragLeave = useCallback((e: React.DragEvent) => {
-    e.preventDefault()
-    setIsDragging(false)
-  }, [])
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -157,6 +188,7 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
       <div
         onDrop={handleDrop}
         onDragOver={handleDragOver}
+        onDragEnter={handleDragEnter}
         onDragLeave={handleDragLeave}
         className={`relative flex items-center gap-3 border-2 border-dashed transition-all duration-200 ${
           isPanel ? 'min-h-[172px] rounded-lg px-6 py-6' : 'rounded-lg px-4 py-2.5'
