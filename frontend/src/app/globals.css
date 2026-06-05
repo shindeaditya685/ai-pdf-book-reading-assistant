@@ -148,6 +148,7 @@
   overflow: hidden;
   opacity: 1;
   line-height: 1;
+  -webkit-touch-callout: none;
 }
 
 .pdf-text-layer > span {

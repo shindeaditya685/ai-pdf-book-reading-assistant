@@ -1172,7 +1172,7 @@ export function PDFViewer() {
         {/* Floating Annotation Toolbar */}
         <AnnotationToolbar onClearAll={handleClearAllPageAnnotations} />
 
-        <div ref={containerRef} className="pdf-scroll-container h-full overflow-auto bg-gradient-to-b from-muted/20 to-muted/5 dark:from-muted/5" onClick={handleContainerClick} onMouseUp={handleMouseUp}>
+        <div ref={containerRef} className="pdf-scroll-container h-full overflow-auto bg-gradient-to-b from-muted/20 to-muted/5 dark:from-muted/5" onClick={handleContainerClick} onMouseUp={handleMouseUp} onContextMenu={(e) => e.preventDefault()}>
           {isLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm">
               <div className="flex flex-col items-center gap-3">
@@ -1184,7 +1184,7 @@ export function PDFViewer() {
           <div className="flex justify-center py-6">
             <div className="relative shadow-xl">
               <canvas ref={canvasRef} className="block" />
-              <div ref={textLayerRef} className="pdf-text-layer" onClick={handleClick} />
+              <div ref={textLayerRef} className="pdf-text-layer" onClick={handleClick} onContextMenu={(e) => e.preventDefault()} />
 
               {/* Highlights Overlay Layer */}
               <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
