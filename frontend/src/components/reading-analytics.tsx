@@ -125,7 +125,7 @@ export function ReadingAnalytics() {
         />
       }
     >
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex h-full min-h-0 flex-col overflow-y-auto">
           {isLoading ? (
             <div className="flex h-full items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-sky-500" />

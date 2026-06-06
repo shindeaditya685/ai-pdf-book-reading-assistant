@@ -298,7 +298,7 @@ export function FlashcardReview() {
         </div>
       )}
 
-      <div className="flex-1 overflow-y-auto p-4">
+      <div className="flex h-full min-h-0 flex-col p-4">
           {(!shareSession || subTab === 'personal') ? (
             isLoadingCards ? (
               <div className="flex h-full items-center justify-center">

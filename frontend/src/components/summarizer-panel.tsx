@@ -198,7 +198,7 @@ export function SummarizerPanel() {
       }
     >
       {/* Content Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4">
+      <div className="flex h-full min-h-0 flex-col p-4 space-y-4 overflow-y-auto">
           {error && (
             <div className="flex gap-2 items-start rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 p-3 text-xs text-red-600 dark:text-red-400">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
