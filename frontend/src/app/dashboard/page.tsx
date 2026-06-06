@@ -32,6 +32,7 @@ import { useShareSSE } from '@/hooks/useShareSSE'
 import { authFetch } from '@/lib/api'
 import { getActiveBook, getStoredBookPage, setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
 import { PLAN_LABELS, type AIPlan } from '@/lib/ai-plan'
+import { useIsMobile } from '@/hooks/use-mobile'
 
 // Dynamically import PDFViewer to avoid loading pdfjs-dist in the initial bundle
 const PDFViewer = dynamic(
@@ -108,6 +109,7 @@ export default function DashboardPage() {
   } = usePDFStore()
 
   const { user, logout } = useAuth()
+  const isMobile = useIsMobile()
   const userPlan = user?.plan
   const userIsAdmin = user?.isAdmin
   const username = user?.username
@@ -613,7 +615,7 @@ export default function DashboardPage() {
             <PDFViewer />
             <WordPopup />
             <TtsControls />
-            <ReadingTimer />
+            {!isMobile && <ReadingTimer />}
           </ErrorBoundary>
           <div className={`transition-opacity duration-300 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
             <HistoryPanel />

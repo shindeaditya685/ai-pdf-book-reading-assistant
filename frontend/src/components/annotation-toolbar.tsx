@@ -173,15 +173,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                 <Highlighter className="h-4 w-4" />
               </ToolBtn>
 
-              {/* ── 7. SUMMARIZE PAGE ── */}
-              <ToolBtn
-                active={false}
-                panelOpen={false}
-                onClick={() => setShowSummarizer(true)}
-                title="Summarize Page"
-              >
-                <Sparkles className="h-4 w-4" />
-              </ToolBtn>
+              
 
               <AnimatePresence>
                 {openPanel === "highlight" && (

@@ -9,10 +9,46 @@ import {
   Gauge,
   ChevronDown,
   ChevronUp,
+  Check,
 } from 'lucide-react'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { Button } from '@/components/ui/button'
 import { motion, AnimatePresence } from 'framer-motion'
+import { useIsMobile } from '@/hooks/use-mobile'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
+
+/**
+ * Shorten a TTS voice name to a friendly, recognizable label.
+ * e.g. "Microsoft Aria Online (Natural) - English (United States)" → "Aria"
+ *      "Google US English" → "US English"
+ *      "Samantha" → "Samantha"
+ */
+function shortVoiceName(name: string): string {
+  if (!name) return 'Voice'
+  // Strip common vendor prefixes
+  let n = name.replace(/^(Microsoft|Google|Apple)\s+/i, '')
+  // If there's "X Online/Downloaded/Desktop (something) - Lang", grab the first word
+  const dashSplit = n.split(/\s+-\s+/)
+  if (dashSplit.length > 1) n = dashSplit[0]
+  // If pattern is "FirstName Lastname/Suffix" keep the first word
+  const tokens = n.split(/\s+/)
+  // If first token is a known vendor/system word, drop it
+  if (/^(Online|Desktop|Natural|Enhanced|Premium|Compact|Wavenet|Neural|Standard)$/i.test(tokens[0]) && tokens.length > 1) {
+    return tokens[1]
+  }
+  // Cap to first 2 tokens if they're short
+  if (tokens.length >= 2 && tokens[0].length <= 10 && tokens[1].length <= 10) {
+    return `${tokens[0]} ${tokens[1]}`
+  }
+  return tokens[0] || 'Voice'
+}
 
 export function TtsControls() {
   const {
@@ -33,7 +69,12 @@ export function TtsControls() {
   } = usePDFStore()
 
   const [voices, setVoices] = useState<SpeechSynthesisVoice[]>([])
-  const [minimized, setMinimized] = useState(false)
+  const isMobile = useIsMobile()
+  // Start minimized on mobile so the bar fits on small screens.
+  // The Play / Stop buttons stay visible; user can expand to access speed / voice.
+  const [minimized, setMinimized] = useState(() =>
+    typeof window !== 'undefined' ? window.matchMedia('(max-width: 767px)').matches : false
+  )
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
   const wordOffsetsRef = useRef<number[]>([])
   const wordsRef = useRef<string[]>([])
@@ -190,49 +231,78 @@ export function TtsControls() {
     setTtsTotalWords(words.length)
     clearHighlights()
 
-    const utterance = new SpeechSynthesisUtterance(text)
-    const store = usePDFStore.getState()
-    utterance.rate = store.ttsSpeed
-    if (store.ttsVoiceURI) {
-      const voice = voices.find((v) => v.voiceURI === store.ttsVoiceURI)
-      if (voice) utterance.voice = voice
-    }
+    // iOS Safari silently stops speechSynthesis after ~15s on long utterances.
+    // Chunk the text into sentences and chain utterances via onend so the
+    // full text plays through reliably on mobile.
+    const chunks = text
+      .split(/(?<=[.!?])\s+|\n+/)
+      .map((c) => c.trim())
+      .filter(Boolean)
+    if (chunks.length === 0) return
 
+    let chunkIdx = 0
     let lastHighlightedIdx = -1
+    // Track character offset across chunks so onboundary word indices map
+    // back into the original text.
+    let charOffset = 0
 
-    utterance.onboundary = (e) => {
-      if (cancelledRef.current) return
-      if (e.name !== 'word') return
-
-      // Find which word this char index corresponds to
-      const charIndex = e.charIndex ?? 0
-      const preceding = text.slice(0, charIndex)
-      const wordIdx = preceding.split(/\s+/).filter(Boolean).length - 1
-
-      if (wordIdx >= 0 && wordIdx !== lastHighlightedIdx && wordIdx < words.length) {
-        lastHighlightedIdx = wordIdx
-        highlightWord(wordOffsetsRef.current[wordIdx] ?? wordIdx)
+    const speakChunk = () => {
+      if (cancelledRef.current || chunkIdx >= chunks.length) {
+        if (!cancelledRef.current) {
+          clearHighlights()
+          setTtsPlaying(false)
+          setTtsPaused(false)
+        }
+        return
       }
+      const chunk = chunks[chunkIdx]
+      // Read the LATEST speed / voice from the store on every chunk so that
+      // mid-playback changes (speed slider, voice dropdown) take effect on
+      // the next sentence instead of requiring a stop + restart.
+      const liveState = usePDFStore.getState()
+      const liveVoice = liveState.ttsVoiceURI
+        ? voices.find((v) => v.voiceURI === liveState.ttsVoiceURI) ?? null
+        : null
+
+      const utterance = new SpeechSynthesisUtterance(chunk)
+      utterance.rate = liveState.ttsSpeed
+      if (liveVoice) utterance.voice = liveVoice
+
+      utterance.onboundary = (e) => {
+        if (cancelledRef.current) return
+        if (e.name !== 'word') return
+        const globalCharIndex = charOffset + (e.charIndex ?? 0)
+        const preceding = text.slice(0, globalCharIndex)
+        const wordIdx = preceding.split(/\s+/).filter(Boolean).length - 1
+        if (wordIdx >= 0 && wordIdx !== lastHighlightedIdx && wordIdx < words.length) {
+          lastHighlightedIdx = wordIdx
+          highlightWord(wordOffsetsRef.current[wordIdx] ?? wordIdx)
+        }
+      }
+
+      utterance.onend = () => {
+        if (cancelledRef.current) return
+        charOffset += chunk.length + 1 // +1 for the separator
+        chunkIdx++
+        speakChunk()
+      }
+
+      utterance.onerror = (e) => {
+        // "interrupted" / "canceled" is expected when we call .cancel()
+        if (e.error && e.error !== 'interrupted' && e.error !== 'canceled') {
+          if (!cancelledRef.current) {
+            clearHighlights()
+            setTtsPlaying(false)
+            setTtsPaused(false)
+          }
+        }
+      }
+
+      utteranceRef.current = utterance
+      speechSynthesis.speak(utterance)
     }
 
-    utterance.onend = () => {
-      if (!cancelledRef.current) {
-        clearHighlights()
-        setTtsPlaying(false)
-        setTtsPaused(false)
-      }
-    }
-
-    utterance.onerror = () => {
-      if (!cancelledRef.current) {
-        clearHighlights()
-        setTtsPlaying(false)
-        setTtsPaused(false)
-      }
-    }
-
-    utteranceRef.current = utterance
-    speechSynthesis.speak(utterance)
+    speakChunk()
     setTtsPlaying(true)
     setTtsPaused(false)
   }, [voices, buildWordIndex, setTtsPlaying, setTtsPaused, setTtsTotalWords, clearHighlights, highlightWord])
@@ -276,14 +346,22 @@ export function TtsControls() {
           animate={{ y: 0, opacity: 1 }}
           exit={{ y: 60, opacity: 0 }}
           transition={{ duration: 0.2 }}
-          className="absolute bottom-3 left-1/2 z-50 -translate-x-1/2"
+          className={
+            isMobile
+              ? "absolute bottom-20 inset-x-2 z-50"
+              : "absolute bottom-3 left-1/2 z-50 -translate-x-1/2"
+          }
         >
-          <div className="flex items-center gap-2 rounded-2xl border border-border/70 bg-background/95 px-3 py-2 shadow-2xl backdrop-blur-md">
+          <div className={
+            isMobile
+              ? "flex items-center gap-1.5 rounded-2xl border border-border/70 bg-background/95 px-2 py-1.5 shadow-2xl backdrop-blur-md"
+              : "flex items-center gap-2 rounded-2xl border border-border/70 bg-background/95 px-3 py-2 shadow-2xl backdrop-blur-md"
+          }>
             {/* Play/Pause */}
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30"
+              className="h-9 w-9 shrink-0 rounded-full text-emerald-500 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-emerald-950/30 sm:h-8 sm:w-8"
               onClick={ttsPaused ? resumeTts : pauseTts}
               title={ttsPaused ? 'Resume' : 'Pause'}
             >
@@ -294,20 +372,19 @@ export function TtsControls() {
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 rounded-full text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30"
+              className="h-9 w-9 shrink-0 rounded-full text-red-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/30 sm:h-8 sm:w-8"
               onClick={stopTts}
               title="Stop"
             >
               <Square className="h-3.5 w-3.5 fill-current" />
             </Button>
 
-            {!minimized && <div className="mx-1 h-5 w-px bg-border/60" />}
-
-            {!minimized && (
+            {/* Speed (always visible on mobile; only when expanded on desktop) */}
+            {(isMobile || !minimized) && (
               <>
-                {/* Speed */}
+                <div className="mx-0.5 h-5 w-px bg-border/60 sm:mx-1" />
                 <div className="flex items-center gap-1.5">
-                  <Gauge className="h-3.5 w-3.5 text-muted-foreground" />
+                  <Gauge className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
                   <input
                     type="range"
                     min={0.5}
@@ -321,37 +398,21 @@ export function TtsControls() {
                         utteranceRef.current.rate = speed
                       }
                     }}
-                    className="h-1 w-16 appearance-none rounded-full bg-muted accent-emerald-500 cursor-pointer"
-                    title={`Speed: ${ttsSpeed}x`}
+                    className="h-1 w-12 shrink-0 appearance-none rounded-full bg-muted accent-emerald-500 cursor-pointer sm:w-16"
+                    title={`Speed: ${ttsSpeed.toFixed(1)}x`}
+                    aria-label="Playback speed"
                   />
-                  <span className="min-w-[2.2rem] text-[10px] font-semibold text-muted-foreground">
-                    {ttsSpeed}x
+                  <span className="min-w-[1.8rem] text-[10px] font-semibold text-muted-foreground tabular-nums sm:min-w-[2.2rem]">
+                    {ttsSpeed.toFixed(1)}x
                   </span>
                 </div>
+              </>
+            )}
 
-                <div className="mx-1 h-5 w-px bg-border/60" />
-
-                {/* Voice selector */}
-                <div className="flex items-center gap-1.5">
-                  <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                  <select
-                    value={ttsVoiceURI || ''}
-                    onChange={(e) => setTtsVoiceURI(e.target.value || null)}
-                    className="max-w-[140px] truncate rounded-lg border border-border bg-background px-1.5 py-1 text-[10px] font-medium text-foreground outline-none focus:border-emerald-500"
-                    title="Voice"
-                  >
-                    {voices.map((v, i) => (
-                      <option key={`${v.voiceURI}-${i}`} value={v.voiceURI}>
-                        {v.name} ({v.lang})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div className="mx-1 h-5 w-px bg-border/60" />
-
-                {/* Progress */}
-                <div className="flex items-center gap-2 min-w-[80px]">
+            {/* Mobile: progress bar + voice dropdown in remaining space */}
+            {isMobile && (
+              <>
+                <div className="flex flex-1 items-center gap-1.5 min-w-0">
                   <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
                     <div
                       className="h-full rounded-full bg-emerald-500 transition-all duration-200"
@@ -362,23 +423,107 @@ export function TtsControls() {
                       }}
                     />
                   </div>
-                  <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+                  <span className="shrink-0 text-[10px] font-medium text-muted-foreground whitespace-nowrap tabular-nums">
                     {ttsHighlightIndex !== null ? ttsHighlightIndex + 1 : 0}/{ttsTotalWords}
                   </span>
                 </div>
+
+                {/* Voice: labeled dropdown trigger on mobile for discoverability */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <button
+                      type="button"
+                      className="flex h-9 shrink-0 items-center gap-1 rounded-full bg-muted/60 px-2.5 text-xs font-semibold text-foreground transition-colors hover:bg-muted active:scale-95"
+                      title={`Voice: ${selectedVoice?.name ?? 'Default'}`}
+                      aria-label="Choose voice"
+                    >
+                      <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="max-w-[64px] truncate">
+                        {selectedVoice ? shortVoiceName(selectedVoice.name) : 'Voice'}
+                      </span>
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent
+                    side="top"
+                    align="end"
+                    sideOffset={8}
+                    className="max-h-72 w-60"
+                  >
+                    <DropdownMenuLabel className="text-[10px]">Voice</DropdownMenuLabel>
+                    <DropdownMenuSeparator />
+                    {voices.length === 0 ? (
+                      <DropdownMenuItem disabled>No voices available</DropdownMenuItem>
+                    ) : (
+                      voices.map((v, i) => (
+                        <DropdownMenuItem
+                          key={`${v.voiceURI}-${i}`}
+                          onSelect={() => setTtsVoiceURI(v.voiceURI)}
+                          className="flex items-center justify-between gap-2"
+                        >
+                          <span className="truncate text-xs">
+                            {v.name} <span className="text-muted-foreground">({v.lang})</span>
+                          </span>
+                          {ttsVoiceURI === v.voiceURI && (
+                            <Check className="h-3.5 w-3.5 shrink-0 text-emerald-500" />
+                          )}
+                        </DropdownMenuItem>
+                      ))
+                    )}
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </>
             )}
 
-            {/* Minimize / Expand */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-6 w-6 text-muted-foreground hover:text-foreground"
-              onClick={() => setMinimized(!minimized)}
-              title={minimized ? 'Show details' : 'Hide details'}
-            >
-              {minimized ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
-            </Button>
+            {/* Desktop-only sections: voice select + progress + minimize toggle */}
+            {!isMobile && (
+              <>
+                {!minimized && (
+                  <>
+                    <div className="mx-1 h-5 w-px bg-border/60" />
+                    <div className="flex items-center gap-1.5">
+                      <Volume2 className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <select
+                        value={ttsVoiceURI || ''}
+                        onChange={(e) => setTtsVoiceURI(e.target.value || null)}
+                        className="max-w-[140px] truncate rounded-lg border border-border bg-background px-1.5 py-1 text-[10px] font-medium text-foreground outline-none focus:border-emerald-500"
+                        title="Voice"
+                      >
+                        {voices.map((v, i) => (
+                          <option key={`${v.voiceURI}-${i}`} value={v.voiceURI}>
+                            {v.name} ({v.lang})
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="mx-1 h-5 w-px bg-border/60" />
+                    <div className="flex items-center gap-2 min-w-[80px]">
+                      <div className="h-1 flex-1 overflow-hidden rounded-full bg-muted">
+                        <div
+                          className="h-full rounded-full bg-emerald-500 transition-all duration-200"
+                          style={{
+                            width: ttsTotalWords > 0
+                              ? `${Math.min(100, ((ttsHighlightIndex ?? 0) + 1) / ttsTotalWords * 100)}%`
+                              : '0%',
+                          }}
+                        />
+                      </div>
+                      <span className="text-[10px] font-medium text-muted-foreground whitespace-nowrap">
+                        {ttsHighlightIndex !== null ? ttsHighlightIndex + 1 : 0}/{ttsTotalWords}
+                      </span>
+                    </div>
+                  </>
+                )}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 shrink-0 text-muted-foreground hover:text-foreground sm:h-6 sm:w-6"
+                  onClick={() => setMinimized(!minimized)}
+                  title={minimized ? 'Show details' : 'Hide details'}
+                >
+                  {minimized ? <ChevronUp className="h-3 w-3" /> : <ChevronDown className="h-3 w-3" />}
+                </Button>
+              </>
+            )}
           </div>
         </motion.div>
       ) : null}
