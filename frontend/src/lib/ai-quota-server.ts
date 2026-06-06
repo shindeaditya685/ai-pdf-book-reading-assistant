@@ -9,6 +9,7 @@ import {
   isUnlimitedPlan,
   getDailyLimit,
   getPerMinuteLimit,
+  normalizeAIPlan,
   todayUtc,
   nextMidnightUtc,
 } from './ai-plan'
@@ -47,9 +48,7 @@ async function getUserForQuota(userId: string): Promise<UserRecord | null> {
 }
 
 function resolvePlan(user: UserRecord | null): AIPlan {
-  if (!user) return 'free'
-  if (user.isAdmin) return 'admin'
-  return (user.plan as AIPlan) || 'free'
+  return normalizeAIPlan(user?.plan, !!user?.isAdmin)
 }
 
 function freshUsageIfStale(usage: AIUsage | undefined): AIUsage {

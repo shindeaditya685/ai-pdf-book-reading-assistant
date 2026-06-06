@@ -1,8 +1,8 @@
 'use client'
 
 import { Sparkles, Crown, Rocket, FlaskConical } from 'lucide-react'
-import { type AIPlan } from '@/lib/ai-plan'
-import { remainingFor, type QuotaState } from '@/hooks/use-ai-quota'
+import { PLAN_LABELS, type AIPlan } from '@/lib/ai-plan'
+import { quotaTotals, type QuotaState } from '@/hooks/use-ai-quota'
 
 interface Props {
   state: QuotaState
@@ -28,20 +28,15 @@ function planBadgeClass(plan: AIPlan) {
 export function AIQuotaBadge({ state, onClick }: Props) {
   if (state.loading) return null
 
-  const lowestRemaining = Math.min(
-    remainingFor(state, 'summary'),
-    remainingFor(state, 'question'),
-    remainingFor(state, 'translation'),
-  )
+  const totals = quotaTotals(state)
+  const isOut = !state.isUnlimited && totals.remaining === 0
+  const isLow = !state.isUnlimited && !isOut && totals.remaining <= 5
 
-  const isOut = !state.isUnlimited && lowestRemaining === 0
-  const isLow = !state.isUnlimited && !isOut && lowestRemaining <= 2
-
-  const label = state.isUnlimited
-    ? state.plan.toUpperCase()
-    : isOut
-    ? '0 left'
-    : `${lowestRemaining}/${state.limits.summary + state.limits.question + state.limits.translation}`
+  const label = state.error
+    ? 'AI status'
+    : state.isUnlimited
+    ? PLAN_LABELS[state.plan]
+    : `${totals.remaining}/${totals.limit}`
 
   return (
     <button
@@ -49,7 +44,7 @@ export function AIQuotaBadge({ state, onClick }: Props) {
       className={`inline-flex h-7 items-center gap-1 rounded-full px-2 text-[10px] font-semibold transition-opacity hover:opacity-80 ${planBadgeClass(state.plan)} ${
         isOut ? 'ring-1 ring-red-500/50' : isLow ? 'ring-1 ring-amber-500/50' : ''
       }`}
-      title="View AI quota and plan"
+      title={state.error ? 'AI quota status unavailable' : 'View AI quota and plan'}
     >
       {planIcon(state.plan)}
       <span className="tabular-nums">{label}</span>

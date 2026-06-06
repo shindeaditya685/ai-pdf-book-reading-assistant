@@ -7,14 +7,16 @@ import {
   type AIFeature,
   type AIPlan,
   type AIUsage,
+  getUsageForFeature,
+  normalizeAIPlan,
 } from '@/lib/ai-plan'
 
 export interface QuotaState {
   plan: AIPlan
   isUnlimited: boolean
   usage: AIUsage
-  limits: Record<AIFeature, number>
-  perMinuteLimit: number
+  limits: Record<AIFeature, number | null>
+  perMinuteLimit: number | null
   resetAt: string
   loading: boolean
   error: string | null
@@ -46,13 +48,19 @@ export function useAIQuota(enabled = true) {
         return
       }
       const data = await res.json()
+      const isUnlimited = !!data.isUnlimited
+      const plan = normalizeAIPlan(data.plan, data.plan === 'admin')
       setState({
-        plan: data.plan,
-        isUnlimited: !!data.isUnlimited,
-        usage: data.usage,
-        limits: data.limits,
-        perMinuteLimit: data.perMinuteLimit ?? 0,
-        resetAt: data.resetAt,
+        plan,
+        isUnlimited,
+        usage: data.usage || EMPTY.usage,
+        limits: {
+          summary: isUnlimited ? null : Number(data.limits?.summary) || 0,
+          question: isUnlimited ? null : Number(data.limits?.question) || 0,
+          translation: isUnlimited ? null : Number(data.limits?.translation) || 0,
+        },
+        perMinuteLimit: isUnlimited ? null : Number(data.perMinuteLimit) || 0,
+        resetAt: data.resetAt || '',
         loading: false,
         error: null,
       })
@@ -74,10 +82,18 @@ export function useAIQuota(enabled = true) {
 
 export function remainingFor(state: Pick<QuotaState, 'usage' | 'limits' | 'isUnlimited'>, feature: AIFeature): number {
   if (state.isUnlimited) return Number.POSITIVE_INFINITY
-  const limit = state.limits[feature] ?? 0
-  const used =
-    feature === 'summary' ? state.usage.summaries : feature === 'question' ? state.usage.questions : state.usage.translations
+  const limit = state.limits[feature]
+  const used = getUsageForFeature(state.usage, feature)
+  if (typeof limit !== 'number') return 0
   return Math.max(0, limit - used)
+}
+
+export function quotaTotals(state: Pick<QuotaState, 'usage' | 'limits' | 'isUnlimited'>) {
+  if (state.isUnlimited) return { used: 0, limit: Number.POSITIVE_INFINITY, remaining: Number.POSITIVE_INFINITY }
+  const features: AIFeature[] = ['summary', 'question', 'translation']
+  const limit = features.reduce((sum, feature) => sum + (state.limits[feature] || 0), 0)
+  const used = features.reduce((sum, feature) => sum + getUsageForFeature(state.usage, feature), 0)
+  return { used, limit, remaining: Math.max(0, limit - used) }
 }
 
 export function quotaBadgeLabel(state: Pick<QuotaState, 'plan' | 'isUnlimited' | 'usage' | 'limits'>): string {

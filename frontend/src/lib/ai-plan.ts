@@ -58,6 +58,12 @@ export function isAIPlan(value: unknown): value is AIPlan {
   return typeof value === 'string' && (AI_PLANS as readonly string[]).includes(value)
 }
 
+export function normalizeAIPlan(value: unknown, isAdmin = false): AIPlan {
+  if (isAdmin) return 'admin'
+  if (!isAIPlan(value) || value === 'admin') return 'free'
+  return value
+}
+
 export function getDailyLimit(plan: AIPlan, feature: AIFeature): number {
   if (isUnlimitedPlan(plan)) return Number.POSITIVE_INFINITY
   return DAILY_QUOTAS.free[feature]

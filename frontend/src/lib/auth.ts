@@ -2,7 +2,7 @@ import crypto from 'crypto'
 import { connectToDatabase } from './db'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
-import type { AIPlan, AIUsage } from './ai-plan'
+import { normalizeAIPlan, type AIPlan, type AIUsage } from './ai-plan'
 
 const JWT_SECRET =
   process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex')
@@ -72,7 +72,7 @@ export async function authenticateUser(username: string, password: string) {
     id: user._id.toString(),
     username: user.username,
     isAdmin: !!user.isAdmin,
-    plan: (user.plan as AIPlan) || 'free',
+    plan: normalizeAIPlan(user.plan, !!user.isAdmin),
   }
 }
 
@@ -106,7 +106,7 @@ export async function getUserFromDb(payload: { id: string; username: string }) {
     id: user._id.toString(),
     username: user.username,
     isAdmin: !!user.isAdmin,
-    plan: (user.plan as AIPlan) || 'free',
+    plan: normalizeAIPlan(user.plan, !!user.isAdmin),
   }
 }
 

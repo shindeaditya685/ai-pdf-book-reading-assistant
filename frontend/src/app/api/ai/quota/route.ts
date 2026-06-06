@@ -10,6 +10,7 @@ import {
   getPerMinuteLimit,
   isUnlimitedPlan,
   nextMidnightUtc,
+  normalizeAIPlan,
   todayUtc,
 } from '@/lib/ai-plan'
 
@@ -35,7 +36,7 @@ export async function GET(request: Request) {
       { projection: { isAdmin: 1, plan: 1, aiUsage: 1 } }
     )
 
-    const plan: AIPlan = doc?.isAdmin ? 'admin' : (doc?.plan as AIPlan) || 'free'
+    const plan: AIPlan = normalizeAIPlan(doc?.plan, !!doc?.isAdmin)
     const isUnlimited = isUnlimitedPlan(plan)
     const stored = doc?.aiUsage as AIUsage | undefined
     const usage: AIUsage = !stored || stored.date !== todayUtc() ? emptyUsage() : stored
@@ -45,11 +46,11 @@ export async function GET(request: Request) {
       isUnlimited,
       usage,
       limits: {
-        summary: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'summary'),
-        question: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'question'),
-        translation: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'translation'),
+        summary: isUnlimited ? null : getDailyLimit(plan, 'summary'),
+        question: isUnlimited ? null : getDailyLimit(plan, 'question'),
+        translation: isUnlimited ? null : getDailyLimit(plan, 'translation'),
       },
-      perMinuteLimit: isUnlimited ? Number.POSITIVE_INFINITY : getPerMinuteLimit(plan),
+      perMinuteLimit: isUnlimited ? null : getPerMinuteLimit(plan),
       resetAt: nextMidnightUtc().toISOString(),
     })
   } catch {

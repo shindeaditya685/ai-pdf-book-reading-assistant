@@ -209,7 +209,7 @@ export function WordPopup() {
     setShowSimplified(true)
 
     try {
-      const res = await fetch('/api/simplify', {
+      const res = await authFetch('/api/simplify', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -218,7 +218,10 @@ export function WordPopup() {
         }),
       })
       const data = await res.json()
-      setSimplified(data.simplified || 'Could not simplify')
+      if (res.status === 429) {
+        window.dispatchEvent(new CustomEvent('ai-quota-exceeded', { detail: { feature: 'summary' } }))
+      }
+      setSimplified(data.simplified || data.error || 'Could not simplify')
     } catch {
       setSimplified('Failed to simplify. Please try again.')
     } finally {
@@ -296,7 +299,7 @@ export function WordPopup() {
     setIsOfflineResult(false)
     setExplanation(null)
     try {
-      const res = await fetch('/api/explain', {
+      const res = await authFetch('/api/explain', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
@@ -308,10 +311,14 @@ export function WordPopup() {
         }),
       })
       const data = await res.json()
+      if (res.status === 429) {
+        window.dispatchEvent(new CustomEvent('ai-quota-exceeded', { detail: { feature: 'translation' } }))
+      }
       if (data.error) {
         setExplanation({ word: selectedWord, meaning: data.error, pronunciation: '', translation: '' })
       } else {
         setExplanation(data)
+        window.dispatchEvent(new CustomEvent('ai-quota-changed'))
       }
     } catch {
       setExplanation({ word: selectedWord, meaning: 'Failed to get AI context. Please try again.', pronunciation: '', translation: '' })

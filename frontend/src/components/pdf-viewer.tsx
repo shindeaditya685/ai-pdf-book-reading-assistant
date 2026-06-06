@@ -52,6 +52,9 @@ export function PDFViewer() {
   const quota = useAIQuota(!!user)
   const [quotaModalOpen, setQuotaModalOpen] = useState(false)
   const lastSavedPageRef = useRef<{ page: number; fileName: string | null }>({ page: 0, fileName: null })
+  const quotaReady = !quota.loading && !quota.error
+  const questionQuotaBlocked = quotaReady && !quota.isUnlimited && remainingFor(quota, 'question') === 0
+  const summaryQuotaBlocked = quotaReady && !quota.isUnlimited && remainingFor(quota, 'summary') === 0
 
   useEffect(() => {
     const onChanged = () => quota.refresh()
@@ -62,7 +65,7 @@ export function PDFViewer() {
       window.removeEventListener('ai-quota-changed', onChanged)
       window.removeEventListener('ai-quota-exceeded', onExceeded)
     }
-  }, [quota])
+  }, [quota.refresh])
 
   const [isLoading, setIsLoading] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
@@ -426,7 +429,7 @@ export function PDFViewer() {
       setExplanation(null)
       let aiOk = false
       try {
-        const res = await fetch('/api/explain', {
+        const res = await authFetch('/api/explain', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ word, sentence, pageNumber: pageNum, translationLanguage, accent }),
@@ -437,6 +440,7 @@ export function PDFViewer() {
           setIsOfflineResult(false)
           aiOk = true
         } else if (res.status === 429) {
+          quota.refresh()
           setQuotaModalOpen(true)
         }
         if (aiOk) quota.refresh()
@@ -461,7 +465,7 @@ export function PDFViewer() {
       setIsOfflineResult(true)
       setIsExplaining(false)
     },
-    [setExplanation, setIsExplaining, setIsOfflineResult, translationLanguage, accent]
+    [setExplanation, setIsExplaining, setIsOfflineResult, translationLanguage, accent, quota.refresh]
   )
 
   // Load annotations
@@ -881,17 +885,17 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
-            disabled={!quota.isUnlimited && remainingFor(quota, 'question') === 0}
-            className={`h-8 w-8 rounded-lg ${showQuestionGenerator ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:hover:bg-transparent'}`}
+            aria-disabled={questionQuotaBlocked}
+            className={`h-8 w-8 rounded-lg ${questionQuotaBlocked ? 'cursor-not-allowed opacity-50' : ''} ${showQuestionGenerator ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
             onClick={() => {
-              if (!quota.isUnlimited && remainingFor(quota, 'question') === 0) {
+              if (questionQuotaBlocked) {
                 setQuotaModalOpen(true)
                 return
               }
               toggleQuestionGenerator()
             }}
             title={
-              !quota.isUnlimited && remainingFor(quota, 'question') === 0
+              questionQuotaBlocked
                 ? 'Daily question limit reached'
                 : 'AI Question Generator'
             }
@@ -901,17 +905,17 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
-            disabled={!quota.isUnlimited && remainingFor(quota, 'summary') === 0}
-            className={`h-8 w-8 rounded-lg ${showSummarizer ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:hover:bg-transparent'}`}
+            aria-disabled={summaryQuotaBlocked}
+            className={`h-8 w-8 rounded-lg ${summaryQuotaBlocked ? 'cursor-not-allowed opacity-50' : ''} ${showSummarizer ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
             onClick={() => {
-              if (!quota.isUnlimited && remainingFor(quota, 'summary') === 0) {
+              if (summaryQuotaBlocked) {
                 setQuotaModalOpen(true)
                 return
               }
               toggleSummarizer()
             }}
             title={
-              !quota.isUnlimited && remainingFor(quota, 'summary') === 0
+              summaryQuotaBlocked
                 ? 'Daily summary limit reached'
                 : 'AI Summarizer'
             }

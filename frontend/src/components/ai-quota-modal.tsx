@@ -7,6 +7,7 @@ import { authFetch } from '@/lib/api'
 import {
   PLAN_LABELS,
   PLAN_DESCRIPTIONS,
+  getUsageForFeature,
   type AIFeature,
   type AIPlan,
 } from '@/lib/ai-plan'
@@ -72,10 +73,9 @@ export function AIQuotaModal({ open, onOpenChange, state, onRequested }: Props) 
   }
 
   const resetAt = state.resetAt ? new Date(state.resetAt) : null
-  const hoursToReset = resetAt ? Math.max(0, Math.round((resetAt.getTime() - Date.now()) / 3_600_000)) : 0
-  const minutesToReset = resetAt
-    ? Math.max(0, Math.round(((resetAt.getTime() - Date.now()) % 3_600_000) / 60_000))
-    : 0
+  const resetMs = resetAt ? Math.max(0, resetAt.getTime() - Date.now()) : 0
+  const hoursToReset = Math.floor(resetMs / 3_600_000)
+  const minutesToReset = Math.floor((resetMs % 3_600_000) / 60_000)
 
   return (
     <div
@@ -116,17 +116,18 @@ export function AIQuotaModal({ open, onOpenChange, state, onRequested }: Props) 
           </div>
         )}
 
+        {state.error && (
+          <div className="mb-4 rounded-lg border border-red-200/60 bg-red-50/70 px-3 py-2 text-xs text-red-700 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-300">
+            Could not load your latest AI quota. Try again in a moment, or request access below if limits keep blocking you.
+          </div>
+        )}
+
         <div className="mb-5 space-y-2">
           {FEATURE_META.map((f) => {
             const remaining = remainingFor(state, f.key)
             const limit = state.limits[f.key]
-            const used =
-              f.key === 'summary'
-                ? state.usage.summaries
-                : f.key === 'question'
-                ? state.usage.questions
-                : state.usage.translations
-            const pct = state.isUnlimited ? 0 : limit > 0 ? Math.min(100, (used / limit) * 100) : 0
+            const used = getUsageForFeature(state.usage, f.key)
+            const pct = state.isUnlimited || !limit ? 0 : Math.min(100, (used / limit) * 100)
             const isOut = !state.isUnlimited && remaining === 0
             return (
               <div key={f.key} className="rounded-lg border border-border/40 p-3">
@@ -137,14 +138,20 @@ export function AIQuotaModal({ open, onOpenChange, state, onRequested }: Props) 
                   </div>
                   <div className="text-right">
                     {state.isUnlimited ? (
-                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">∞</span>
+                      <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">Unlimited</span>
                     ) : (
                       <span className={`text-xs font-bold tabular-nums ${isOut ? 'text-red-500' : 'text-foreground'}`}>
-                        {used} / {limit}
+                        {isOut ? 'Limit reached' : `${remaining} left`}
                       </span>
                     )}
                   </div>
                 </div>
+                {!state.isUnlimited && (
+                  <div className="mb-1 flex justify-between text-[10px] text-muted-foreground/70">
+                    <span>{used} used</span>
+                    <span>{limit || 0} daily</span>
+                  </div>
+                )}
                 {!state.isUnlimited && (
                   <div className="h-1.5 w-full overflow-hidden rounded-full bg-muted/50">
                     <div
