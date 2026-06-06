@@ -172,13 +172,23 @@ export function PdfPage({
       let renderTask: pdfjsLib.RenderTask | null = null
       try {
         const page = await pdf.getPage(pageNumber)
-        const viewport = page.getViewport({ scale })
+        // HiDPI: render at scale × devicePixelRatio (capped at 2x to keep memory safe)
+        // and use CSS to display the canvas at the original `scale` size. Without
+        // this, mobile (DPR 2-3) upscales the 1x canvas with bilinear filtering,
+        // making text and lines look blurry.
+        const outputScale = Math.min(typeof window !== 'undefined' ? window.devicePixelRatio || 1 : 1, 2)
+        const renderScale = scale * outputScale
+        const viewport = page.getViewport({ scale: renderScale })
         const canvas = canvasRef.current
         const context = canvas.getContext('2d')
         if (!context) return
 
+        // Backing store: high-res for sharpness on HiDPI screens
         canvas.height = viewport.height
         canvas.width = viewport.width
+        // CSS display size: matches the user's display `scale` (not the render scale)
+        canvas.style.width = `${viewport.width / outputScale}px`
+        canvas.style.height = `${viewport.height / outputScale}px`
 
         renderTask = page.render({ canvasContext: context, viewport })
         renderTaskRef.current = renderTask
@@ -199,12 +209,16 @@ export function PdfPage({
         if (textLayer) {
           textLayer.innerHTML = ''
           textLayer.className = 'pdf-text-layer'
-          textLayer.style.width = `${viewport.width}px`
-          textLayer.style.height = `${viewport.height}px`
+          // Text layer uses CSS coordinates (display size), matching the canvas CSS size
+          const cssWidth = viewport.width / outputScale
+          const cssHeight = viewport.height / outputScale
+          textLayer.style.width = `${cssWidth}px`
+          textLayer.style.height = `${cssHeight}px`
 
           if (pageOcrData && pageOcrData.words.length > 0) {
-            const scaleX = viewport.width / pageOcrData.width
-            const scaleY = viewport.height / pageOcrData.height
+            // OCR words were captured at a fixed reference scale; map them to CSS coords
+            const scaleX = cssWidth / pageOcrData.width
+            const scaleY = cssHeight / pageOcrData.height
             pageOcrData.words.forEach((word: any) => {
               if (!word.text) return
               const fontSize = Math.min(word.height * scaleY * 0.85, 30)
@@ -234,12 +248,13 @@ export function PdfPage({
             textContent.items.forEach((item: any) => {
               if (!('str' in item) || !item.str) return
               const tx = pdfjsLib.Util.transform(viewport.transform, item.transform)
-              const fontSize = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3])
+              // `tx` is in backing coordinates; convert to CSS (display) coordinates
+              const fontSize = Math.sqrt(tx[2] * tx[2] + tx[3] * tx[3]) / outputScale
               const span = document.createElement('span')
               span.textContent = item.str
               span.style.position = 'absolute'
-              span.style.left = `${tx[4]}px`
-              span.style.top = `${tx[5] - fontSize}px`
+              span.style.left = `${tx[4] / outputScale}px`
+              span.style.top = `${(tx[5] - fontSize * outputScale) / outputScale}px`
               span.style.fontSize = `${fontSize}px`
               span.style.fontFamily = 'sans-serif'
               span.style.transformOrigin = '0% 0%'
@@ -280,15 +295,20 @@ export function PdfPage({
     if (pdfDocRef.current && pdfReady && isVisible) renderPageCanvas()
   }, [renderPageCanvas, pdfReady, isVisible])
 
-  // Sync drawing canvas size when scale/page changes
+  // Sync drawing canvas size when scale/page changes.
+  // Drawing canvas backing is sized to match the PDF canvas's *display* size
+  // (not its backing size) so the line-drawing math (`x * scale`) maps 1:1
+  // to the displayed PDF. CSS `inset-0` then stretches it across the wrapper.
   useEffect(() => {
     if (
       (annotationMode === 'pen' || annotationMode === 'eraser') &&
       drawingCanvasRef.current &&
       canvasRef.current
     ) {
-      drawingCanvasRef.current.width = canvasRef.current.width
-      drawingCanvasRef.current.height = canvasRef.current.height
+      const cssW = parseFloat(canvasRef.current.style.width) || canvasRef.current.width
+      const cssH = parseFloat(canvasRef.current.style.height) || canvasRef.current.height
+      drawingCanvasRef.current.width = cssW
+      drawingCanvasRef.current.height = cssH
     }
   }, [annotationMode, scale, pageNumber, isVisible])
 
