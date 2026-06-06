@@ -2,8 +2,9 @@
 
 import { useCallback, useState, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, HelpCircle, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, ChevronRight, Check, Play, BookOpen, Loader2 } from 'lucide-react'
+import { HelpCircle, ArrowRight, CheckCircle2, AlertCircle, RefreshCw, ChevronRight, Check, Play, BookOpen, Loader2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 import * as pdfjsLib from 'pdfjs-dist'
@@ -213,32 +214,20 @@ export function QuestionGeneratorPanel() {
   const activeQuestion = questions[currentQuestionIndex]
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ x: 320 }}
-        animate={{ x: 0 }}
-        exit={{ x: 320 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed right-0 top-0 z-40 flex h-full w-80 flex-col border-l bg-background shadow-2xl"
-      >
-        {/* Panel Header */}
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="flex items-center gap-2">
-            <HelpCircle className="h-4 w-4 text-emerald-500" />
-            <h2 className="text-sm font-semibold text-foreground">AI Question Generator</h2>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onClick={() => setShowQuestionGenerator(false)}
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
+    <ResponsivePanel
+      open={showQuestionGenerator}
+      onClose={() => setShowQuestionGenerator(false)}
+      ariaLabel="AI Question Generator"
+      header={
+        <PanelHeader
+          icon={HelpCircle}
+          title="AI Question Generator"
+          onClose={() => setShowQuestionGenerator(false)}
+        />
+      }
+    >
+      {/* Content Area */}
+      <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {error && (
             <div className="flex gap-2 items-start rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 p-3 text-xs text-red-600 dark:text-red-400">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
@@ -560,8 +549,7 @@ export function QuestionGeneratorPanel() {
               </div>
             </div>
           ) : null}
-        </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </ResponsivePanel>
   )
 }

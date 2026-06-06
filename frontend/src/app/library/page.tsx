@@ -111,13 +111,13 @@ export default function LibraryPage() {
 
         {/* ── SEARCH ── */}
         <div className="relative mb-6">
-          <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
+          <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
           <input
             type="text"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search your books..."
-            className="h-9 w-full max-w-md rounded-lg border border-border/60 bg-background/80 pl-9 pr-3 text-xs outline-none transition-all focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15"
+            className="h-10 w-full max-w-md rounded-lg border border-border/60 bg-background/80 pl-9 pr-3 text-base outline-none transition-all focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 sm:h-9 sm:text-sm"
           />
         </div>
 

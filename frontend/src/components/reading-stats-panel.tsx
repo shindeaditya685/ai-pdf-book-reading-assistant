@@ -1,9 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X,
   Flame,
   Target,
   BookOpen,
@@ -18,6 +16,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Switch } from '@/components/ui/switch'
 import { Label } from '@/components/ui/label'
+import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 
@@ -113,38 +112,31 @@ export function ReadingStatsPanel() {
   if (!showReadingStats) return null
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ x: 320 }}
-        animate={{ x: 0 }}
-        exit={{ x: 320 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed right-0 top-0 z-40 flex h-full w-80 flex-col border-l bg-background shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="flex items-center gap-2">
-            <BarChart3 className="h-4 w-4 text-sky-500" />
-            <h2 className="text-sm font-semibold text-foreground">Reading Stats</h2>
-          </div>
-          <div className="flex items-center gap-1">
+    <ResponsivePanel
+      open={showReadingStats}
+      onClose={() => setShowReadingStats(false)}
+      ariaLabel="Reading stats"
+      header={
+        <PanelHeader
+          icon={BarChart3}
+          iconClassName="text-sky-500"
+          title="Reading Stats"
+          actions={
             <Button
               variant="ghost"
               size="icon"
               className="h-7 w-7 text-muted-foreground hover:text-foreground"
               onClick={() => { setShowSettings(!showSettings); setShowReadingStats(false); setTimeout(() => setShowReadingStats(true), 50) }}
+              title="Goal settings"
+              aria-label="Goal settings"
             >
               <Settings2 className="h-3.5 w-3.5" />
             </Button>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              onClick={() => setShowReadingStats(false)}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </div>
+          }
+          onClose={() => setShowReadingStats(false)}
+        />
+      }
+    >
 
         <div className="flex-1 overflow-y-auto">
           {isLoading ? (
@@ -362,8 +354,7 @@ export function ReadingStatsPanel() {
               </div>
             </div>
           )}
-        </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </ResponsivePanel>
   )
 }

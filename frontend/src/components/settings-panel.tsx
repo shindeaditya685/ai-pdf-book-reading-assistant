@@ -29,7 +29,8 @@ export function SettingsPanel() {
         <Button
           variant="outline"
           size="icon"
-          className="h-8 w-8 rounded-xl border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:text-foreground hover:shadow-md"
+          aria-label="Settings"
+          className="h-8 w-8 rounded-xl border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:text-foreground hover:shadow-md sm:h-9 sm:w-9"
           title="Settings"
         >
           <Settings2 className="h-3.5 w-3.5" />

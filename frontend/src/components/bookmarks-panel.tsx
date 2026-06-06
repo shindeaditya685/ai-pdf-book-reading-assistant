@@ -1,9 +1,9 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import { X, Bookmark, Trash2, BookOpen, Download, Plus, Loader2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 import { useAuth } from '@/context/auth-context'
@@ -127,232 +127,220 @@ export function BookmarksPanel() {
     URL.revokeObjectURL(url)
   }, [bookmarks, pdfFileName])
 
-  if (!showBookmarks) return null
-
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ x: 320 }}
-        animate={{ x: 0 }}
-        exit={{ x: 320 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed right-0 top-0 z-40 flex h-full w-80 flex-col border-l bg-background shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="flex items-center gap-2">
-            <Bookmark className="h-4 w-4 text-amber-500" />
-            <h2 className="text-sm font-semibold text-foreground">
-              Bookmarks
-            </h2>
+    <ResponsivePanel
+      open={showBookmarks}
+      onClose={() => setShowBookmarks(false)}
+      ariaLabel="Bookmarks"
+      header={
+        <PanelHeader
+          icon={Bookmark}
+          iconClassName="text-amber-500"
+          title="Bookmarks"
+          badge={
             <span className="text-[10px] text-muted-foreground">
               ({shareSession ? bookmarks.length + sharedBookmarks.length : bookmarks.length})
             </span>
-          </div>
-          <div className="flex items-center gap-1">
-            {bookmarks.length > 0 && (
+          }
+          actions={
+            bookmarks.length > 0 ? (
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-foreground"
                 onClick={handleExport}
                 title="Export as Anki CSV"
+                aria-label="Export as Anki CSV"
               >
                 <Download className="h-3.5 w-3.5" />
               </Button>
-            )}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-foreground"
-              onClick={() => setShowBookmarks(false)}
-            >
-              <X className="h-3.5 w-3.5" />
-            </Button>
-          </div>
+            ) : null
+          }
+          onClose={() => setShowBookmarks(false)}
+        />
+      }
+    >
+      {shareSession && (
+        <div className="mx-4 mt-3 flex gap-0.5 rounded-lg bg-muted/40 p-0.5">
+          <button
+            onClick={() => setSubTab('personal')}
+            className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
+              subTab === 'personal' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            My Bookmarks ({bookmarks.length})
+          </button>
+          <button
+            onClick={() => setSubTab('shared')}
+            className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
+              subTab === 'shared' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            Session ({sharedBookmarks.length})
+          </button>
         </div>
+      )}
 
-        {shareSession && (
-          <div className="flex gap-0.5 px-4 mb-2 rounded-lg bg-muted/40 p-0.5 mx-4 mt-3">
-            <button
-              onClick={() => setSubTab('personal')}
-              className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
-                subTab === 'personal' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              My Bookmarks ({bookmarks.length})
-            </button>
-            <button
-              onClick={() => setSubTab('shared')}
-              className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
-                subTab === 'shared' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Session ({sharedBookmarks.length})
-            </button>
+      {(!shareSession || subTab === 'personal') ? (
+        bookmarks.length === 0 ? (
+          <div className="flex h-full items-center justify-center p-8 text-center">
+            <div>
+              <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/30" />
+              <p className="mt-3 text-sm text-muted-foreground">
+                No bookmarks yet
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground/60">
+                Bookmark pages to quickly jump back to them
+              </p>
+            </div>
           </div>
-        )}
-
-        <div className="flex-1 overflow-y-auto">
-          {(!shareSession || subTab === 'personal') ? (
-            bookmarks.length === 0 ? (
-              <div className="flex h-full items-center justify-center p-8 text-center">
-                <div>
-                  <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/30" />
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    No bookmarks yet
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground/60">
-                    Bookmark pages to quickly jump back to them
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="divide-y">
-                {[...bookmarks]
-                  .sort((a, b) => a.timestamp - b.timestamp)
-                  .map((bm) => (
-                    <div
-                      key={bm.id}
-                      className="group relative px-4 py-3 transition-colors hover:bg-muted/30"
+        ) : (
+          <div className="divide-y">
+            {[...bookmarks]
+              .sort((a, b) => a.timestamp - b.timestamp)
+              .map((bm) => (
+                <div
+                  key={bm.id}
+                  className="group relative px-4 py-3 transition-colors hover:bg-muted/30"
+                >
+                  <div className="flex items-start justify-between">
+                    <button
+                      className="flex-1 text-left"
+                      onClick={() => handleGoToPage(bm.pageNumber)}
                     >
-                      <div className="flex items-start justify-between">
-                        <button
-                          className="flex-1 text-left"
-                          onClick={() => handleGoToPage(bm.pageNumber)}
-                        >
-                          <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
-                            {bm.word}
+                      <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                        {bm.word}
+                      </span>
+                      <span className="ml-2 text-[10px] text-muted-foreground">
+                        Page {bm.pageNumber}
+                      </span>
+                      {bm.pronunciation && (
+                        <span className="ml-2 text-[10px] italic text-muted-foreground">
+                          {bm.pronunciation}
+                        </span>
+                      )}
+                    </button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500"
+                      onClick={() => handleDeleteBookmark(bm.id)}
+                      aria-label="Delete bookmark"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </Button>
+                  </div>
+                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                    {bm.meaning}
+                  </p>
+                  {bm.translation && (
+                    <p className="mt-0.5 text-[10px] text-emerald-600 dark:text-emerald-400">
+                      {bm.translation}
+                    </p>
+                  )}
+                </div>
+              ))}
+          </div>
+        )
+      ) : (
+        sharedBookmarks.length === 0 ? (
+          <div className="flex h-full items-center justify-center p-8 text-center">
+            <div>
+              <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/30" />
+              <p className="mt-3 text-sm text-muted-foreground">
+                No session bookmarks yet
+              </p>
+              <p className="mt-1 text-xs text-muted-foreground/60">
+                Bookmarks added by group members will appear here
+              </p>
+            </div>
+          </div>
+        ) : (
+          <div className="divide-y">
+            {[...sharedBookmarks]
+              .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
+              .map((bm) => {
+                const member = shareSession?.members.find((m) => m.username === bm.author)
+                const authorColor = member?.color || '#3B82F6'
+                const inPersonalBookmarks = bookmarks.some((b) => b.word.toLowerCase() === bm.word.toLowerCase())
+                const isImporting = importingBookmarkId === bm.bookmarkId
+
+                return (
+                  <div
+                    key={bm.bookmarkId}
+                    className="group relative px-4 py-3 transition-colors hover:bg-muted/30"
+                  >
+                    <div className="flex items-start justify-between gap-2">
+                      <button
+                        className="flex-1 text-left min-w-0"
+                        onClick={() => handleGoToPage(bm.pageNumber)}
+                      >
+                        <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 truncate block">
+                          {bm.word}
+                        </span>
+                        <span className="text-[10px] text-muted-foreground block mt-0.5">
+                          Page {bm.pageNumber} {bm.pronunciation && `· ${bm.pronunciation}`}
+                        </span>
+                        <div className="flex items-center gap-1.5 mt-1 text-[10px]">
+                          <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: authorColor }} />
+                          <span style={{ color: authorColor }} className="font-semibold">
+                            {bm.author} {bm.author === user?.username && '(you)'}
                           </span>
-                          <span className="ml-2 text-[10px] text-muted-foreground">
-                            Page {bm.pageNumber}
+                        </div>
+                      </button>
+
+                      <div className="flex items-center gap-1 shrink-0">
+                        {inPersonalBookmarks ? (
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">
+                            <Check className="h-2.5 w-2.5" />
+                            Saved
                           </span>
-                          {bm.pronunciation && (
-                            <span className="ml-2 text-[10px] italic text-muted-foreground">
-                              {bm.pronunciation}
-                            </span>
-                          )}
-                        </button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500"
-                          onClick={() => handleDeleteBookmark(bm.id)}
-                        >
-                          <Trash2 className="h-3 w-3" />
-                        </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-6 gap-1 px-2 text-[9px] font-bold"
+                            onClick={() => handleImportBookmark(bm)}
+                            disabled={isImporting}
+                          >
+                            {isImporting ? (
+                              <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                            ) : (
+                              <Plus className="h-2.5 w-2.5" />
+                            )}
+                            Import
+                          </Button>
+                        )}
+
+                        {bm.author === user?.username && (
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={() => handleDeleteSharedBookmark(bm.bookmarkId)}
+                            aria-label="Delete shared bookmark"
+                          >
+                            <Trash2 className="h-3 w-3" />
+                          </Button>
+                        )}
                       </div>
-                      <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+                    </div>
+                    {bm.meaning && (
+                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
                         {bm.meaning}
                       </p>
-                      {bm.translation && (
-                        <p className="mt-0.5 text-[10px] text-emerald-600 dark:text-emerald-400">
-                          {bm.translation}
-                        </p>
-                      )}
-                    </div>
-                  ))}
-              </div>
-            )
-          ) : (
-            sharedBookmarks.length === 0 ? (
-              <div className="flex h-full items-center justify-center p-8 text-center">
-                <div>
-                  <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/30" />
-                  <p className="mt-3 text-sm text-muted-foreground">
-                    No session bookmarks yet
-                  </p>
-                  <p className="mt-1 text-xs text-muted-foreground/60">
-                    Bookmarks added by group members will appear here
-                  </p>
-                </div>
-              </div>
-            ) : (
-              <div className="divide-y">
-                {[...sharedBookmarks]
-                  .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
-                  .map((bm) => {
-                    const member = shareSession?.members.find((m) => m.username === bm.author)
-                    const authorColor = member?.color || '#3B82F6'
-                    const inPersonalBookmarks = bookmarks.some((b) => b.word.toLowerCase() === bm.word.toLowerCase())
-                    const isImporting = importingBookmarkId === bm.bookmarkId
-
-                    return (
-                      <div
-                        key={bm.bookmarkId}
-                        className="group relative px-4 py-3 transition-colors hover:bg-muted/30"
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <button
-                            className="flex-1 text-left min-w-0"
-                            onClick={() => handleGoToPage(bm.pageNumber)}
-                          >
-                            <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 truncate block">
-                              {bm.word}
-                            </span>
-                            <span className="text-[10px] text-muted-foreground block mt-0.5">
-                              Page {bm.pageNumber} {bm.pronunciation && `· ${bm.pronunciation}`}
-                            </span>
-                            <div className="flex items-center gap-1.5 mt-1 text-[10px]">
-                              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: authorColor }} />
-                              <span style={{ color: authorColor }} className="font-semibold">
-                                {bm.author} {bm.author === user?.username && '(you)'}
-                              </span>
-                            </div>
-                          </button>
-
-                          <div className="flex items-center gap-1 shrink-0">
-                            {inPersonalBookmarks ? (
-                              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">
-                                <Check className="h-2.5 w-2.5" />
-                                Saved
-                              </span>
-                            ) : (
-                              <Button
-                                size="sm"
-                                variant="outline"
-                                className="h-6 gap-1 px-2 text-[9px] font-bold"
-                                onClick={() => handleImportBookmark(bm)}
-                                disabled={isImporting}
-                              >
-                                {isImporting ? (
-                                  <Loader2 className="h-2.5 w-2.5 animate-spin" />
-                                ) : (
-                                  <Plus className="h-2.5 w-2.5" />
-                                )}
-                                Import
-                              </Button>
-                            )}
-
-                            {bm.author === user?.username && (
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-6 w-6 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                onClick={() => handleDeleteSharedBookmark(bm.bookmarkId)}
-                              >
-                                <Trash2 className="h-3 w-3" />
-                              </Button>
-                            )}
-                          </div>
-                        </div>
-                        {bm.meaning && (
-                          <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
-                            {bm.meaning}
-                          </p>
-                        )}
-                        {bm.translation && (
-                          <p className="mt-0.5 text-[10px] text-emerald-600 dark:text-emerald-400">
-                            {bm.translation}
-                          </p>
-                        )}
-                      </div>
-                    )
-                  })}
-              </div>
-            )
-          )}
-        </div>
-      </motion.div>
-    </AnimatePresence>
+                    )}
+                    {bm.translation && (
+                      <p className="mt-0.5 text-[10px] text-emerald-600 dark:text-emerald-400">
+                        {bm.translation}
+                      </p>
+                    )}
+                  </div>
+                )
+              })}
+          </div>
+        )
+      )}
+    </ResponsivePanel>
   )
 }

@@ -196,10 +196,10 @@ export default function ReviewPage() {
             </div>
 
             {/* Card */}
-            <div className="rounded-2xl border bg-background/60 p-8 shadow-lg backdrop-blur-sm text-center">
+            <div className="rounded-2xl border bg-background/60 p-5 shadow-lg backdrop-blur-sm text-center sm:p-8">
               {!revealed ? (
                 <div className="space-y-4">
-                  <p className="text-3xl font-bold text-foreground">{card.word}</p>
+                  <p className="text-2xl font-bold text-foreground sm:text-3xl">{card.word}</p>
                   {card.pronunciation && (
                     <p className="text-sm italic text-muted-foreground/60">{card.pronunciation}</p>
                   )}
@@ -251,30 +251,30 @@ export default function ReviewPage() {
                   </div>
 
                   <p className="pt-2 text-[11px] text-muted-foreground/40">How well did you remember?</p>
-                  <div className="flex justify-center gap-3">
+                  <div className="grid grid-cols-3 gap-2 sm:flex sm:justify-center sm:gap-3">
                     <button
                       onClick={() => handleGrade(1)}
                       disabled={submitting}
-                      className="flex items-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-all hover:bg-red-100 hover:shadow-md disabled:opacity-50 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/30"
+                      className="flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-xs font-bold text-red-600 transition-all hover:bg-red-100 hover:shadow-md disabled:opacity-50 sm:px-4 sm:py-2 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/30"
                     >
                       <XCircle className="h-4 w-4" />
-                      Again
+                      <span>Again</span>
                     </button>
                     <button
                       onClick={() => handleGrade(3)}
                       disabled={submitting}
-                      className="flex items-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-2 text-xs font-bold text-amber-600 transition-all hover:bg-amber-100 hover:shadow-md disabled:opacity-50 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                      className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs font-bold text-amber-600 transition-all hover:bg-amber-100 hover:shadow-md disabled:opacity-50 sm:px-4 sm:py-2 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400 dark:hover:bg-amber-950/30"
                     >
                       <ThumbsUp className="h-4 w-4" />
-                      Good
+                      <span>Good</span>
                     </button>
                     <button
                       onClick={() => handleGrade(5)}
                       disabled={submitting}
-                      className="flex items-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-2 text-xs font-bold text-emerald-600 transition-all hover:bg-emerald-100 hover:shadow-md disabled:opacity-50 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                      className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-xs font-bold text-emerald-600 transition-all hover:bg-emerald-100 hover:shadow-md disabled:opacity-50 sm:px-4 sm:py-2 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
                     >
                       <CheckCircle2 className="h-4 w-4" />
-                      Easy
+                      <span>Easy</span>
                     </button>
                   </div>
                 </div>

@@ -427,7 +427,7 @@ export default function ProfilePage() {
                         rows={4}
                         maxLength={MAX_REQUEST_MESSAGE}
                         disabled={requesting || !!lastDismissed?.active}
-                        className="w-full resize-none rounded-lg border border-border/60 bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:border-violet-500/40 focus:outline-none focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50"
+                        className="w-full resize-none rounded-lg border border-border/60 bg-background px-3 py-2.5 text-base placeholder:text-muted-foreground/50 focus:border-violet-500/40 focus:outline-none focus:ring-2 focus:ring-violet-500/20 disabled:cursor-not-allowed disabled:opacity-50 sm:text-sm"
                       />
                       <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground/60">
                         <span>Min {MIN_REQUEST_MESSAGE} characters</span>

@@ -155,20 +155,20 @@ export default function VocabularyPage() {
         {/* ── FILTERS ── */}
         <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
           <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
             <input
               type="text"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder="Search words..."
-              className="h-9 w-full rounded-lg border border-border/60 bg-background/80 pl-9 pr-3 text-xs outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+              className="h-10 w-full rounded-lg border border-border/60 bg-background/80 pl-9 pr-3 text-base outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15 sm:h-9 sm:text-sm"
             />
           </div>
           <select
             value={pdfFilter}
             onChange={(e) => setPdfFilter(e.target.value)}
-            className="h-9 w-44 rounded-lg border border-border/60 bg-background/80 px-2.5 text-xs outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+            className="h-10 w-full rounded-lg border border-border/60 bg-background/80 px-2.5 text-base outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15 sm:h-9 sm:w-44 sm:text-sm"
           >
             <option value="">All Books</option>
             {pdfs.map((p) => (

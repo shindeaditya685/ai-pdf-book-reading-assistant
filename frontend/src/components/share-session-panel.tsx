@@ -1,9 +1,9 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
-import { X, Users, Link2, Copy, Plus, LogIn, Trash2, MessageSquare, AtSign, Check, Loader2, UserPlus, RefreshCw, MessageCircle, Timer, Volume2, UserCheck, Wifi, ThumbsUp, Heart, Laugh, PartyPopper, Send, Play, Pause, RotateCcw } from 'lucide-react'
+import { Users, Link2, Copy, Plus, LogIn, Trash2, MessageSquare, AtSign, Check, Loader2, UserPlus, RefreshCw, MessageCircle, Timer, Volume2, UserCheck, Wifi, ThumbsUp, Heart, Laugh, PartyPopper, Send, Play, Pause, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
+import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
 import { usePDFStore, type ShareSession, type SharedAnnotation, type SharedComment } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 import { useAuth } from '@/context/auth-context'
@@ -371,17 +371,18 @@ export function ShareSessionPanel() {
     : null
 
   return (
-    <div className="fixed right-0 top-0 z-40 flex h-full w-80 flex-col border-l bg-background shadow-2xl">
-      <div className="flex items-center justify-between border-b px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Users className="h-4 w-4 text-emerald-500" />
-          <h2 className="text-sm font-bold">Collaborative Reading</h2>
-        </div>
-        <button onClick={toggleSharePanel} className="rounded-lg p-1 text-muted-foreground hover:text-foreground transition-colors">
-          <X className="h-4 w-4" />
-        </button>
-      </div>
-
+    <ResponsivePanel
+      open={showSharePanel}
+      onClose={toggleSharePanel}
+      ariaLabel="Collaborative Reading"
+      header={
+        <PanelHeader
+          icon={Users}
+          title="Collaborative Reading"
+          onClose={toggleSharePanel}
+        />
+      }
+    >
       <div className="flex-1 overflow-auto">
         {tab === 'sessions' ? (
           <div className="p-4 space-y-4">
@@ -902,6 +903,6 @@ export function ShareSessionPanel() {
           </div>
         ) : null}
       </div>
-    </div>
+    </ResponsivePanel>
   )
 }

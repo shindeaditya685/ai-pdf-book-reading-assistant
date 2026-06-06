@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, Library, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, Library, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
@@ -19,6 +19,14 @@ import { ShareSessionPanel } from '@/components/share-session-panel'
 import { QuestionGeneratorPanel } from '@/components/question-generator-panel'
 import { SummarizerPanel } from '@/components/summarizer-panel'
 import { ErrorBoundary } from '@/components/error-boundary'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { useShareSSE } from '@/hooks/useShareSSE'
 import { authFetch } from '@/lib/api'
@@ -441,22 +449,24 @@ export default function DashboardPage() {
           <kbd className="rounded-md border border-violet-200/50 bg-white/60 px-1.5 py-0.5 text-[10px] font-mono font-bold dark:border-violet-800/30 dark:bg-violet-950/50">Esc</kbd>
         </button>
       )}
-      <header className={`flex h-16 items-center justify-between border-b border-emerald-500/10 bg-background/60 px-4 shadow-[0_1px_0_0_rgba(16,185,129,0.05)] backdrop-blur-xl transition-opacity duration-300 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
-        <div className="flex min-w-0 items-center gap-3">
-          <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-500/20">
-            <BookOpen className="h-4 w-4 text-white" />
-          </div>
-          <div className="min-w-0">
-            <p className="truncate text-sm font-bold text-foreground">PDFMind<span className="text-emerald-500">AI</span></p>
-            {!pdfDataUrl && (
-              <p className="hidden text-xs text-muted-foreground/60 sm:block">
-                Reading workspace
-              </p>
-            )}
-          </div>
+      <header className={`flex h-16 items-center justify-between gap-2 border-b border-emerald-500/10 bg-background/60 px-3 shadow-[0_1px_0_0_rgba(16,185,129,0.05)] backdrop-blur-xl transition-opacity duration-300 sm:px-4 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
+          <Link href="/dashboard" className="flex shrink-0 items-center gap-2 sm:gap-3">
+            <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-500/20">
+              <BookOpen className="h-4 w-4 text-white" />
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-bold text-foreground">PDFMind<span className="text-emerald-500">AI</span></p>
+              {!pdfDataUrl && (
+                <p className="hidden text-xs text-muted-foreground/60 sm:block">
+                  Reading workspace
+                </p>
+              )}
+            </div>
+          </Link>
         </div>
 
-        <div className="flex min-w-0 items-center gap-1.5">
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2">
           {pdfFileName && (
             <>
               <div className="hidden md:block">
@@ -468,16 +478,18 @@ export default function DashboardPage() {
           {streakCount > 0 && (
             <Link
               href="/profile"
-              className="flex items-center gap-1.5 rounded-xl border border-orange-200/30 bg-gradient-to-r from-orange-50 to-amber-50 px-3 py-1.5 text-xs font-semibold text-orange-600 shadow-sm shadow-orange-200/20 transition-all hover:shadow-md hover:shadow-orange-200/30 dark:border-orange-800/15 dark:from-orange-950/15 dark:to-amber-950/15 dark:text-orange-400 dark:shadow-orange-900/10"
+              className="flex h-9 w-9 items-center justify-center rounded-xl border border-orange-200/30 bg-gradient-to-r from-orange-50 to-amber-50 text-xs font-semibold text-orange-600 shadow-sm shadow-orange-200/20 transition-all hover:shadow-md hover:shadow-orange-200/30 sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 dark:border-orange-800/15 dark:from-orange-950/15 dark:to-amber-950/15 dark:text-orange-400 dark:shadow-orange-900/10"
               title={`${streakCount}-day streak!`}
             >
               <Flame className="h-3.5 w-3.5" />
-              <span>{streakCount}</span>
+              <span className="hidden sm:inline">{streakCount}</span>
             </Link>
           )}
+
+          {/* Desktop: individual icon buttons */}
           <button
             onClick={toggleSharePanel}
-            className={`flex items-center gap-1.5 rounded-xl border px-3 py-1.5 text-xs font-semibold transition-all ${
+            className={`hidden sm:inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-all ${
               shareSession
                 ? 'border-emerald-400/50 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-200/30 dark:bg-emerald-950/20 dark:text-emerald-400'
                 : 'border-border/60 bg-background/80 text-muted-foreground hover:border-muted-foreground/20 hover:text-foreground hover:shadow-sm'
@@ -485,28 +497,30 @@ export default function DashboardPage() {
             title="Collaborative Reading Groups"
           >
             <Users className="h-3.5 w-3.5" />
-            <span className="hidden sm:inline">
+            <span className="hidden md:inline">
               {shareSession ? shareSession.name : 'Collaborate'}
             </span>
           </button>
-          <SettingsPanel />
+          <div className="hidden sm:inline-flex">
+            <SettingsPanel />
+          </div>
           <Link
             href="/library"
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600 hover:shadow-md dark:hover:border-amber-800/30 dark:hover:bg-amber-950/20"
+            className="hidden h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600 hover:shadow-md sm:flex dark:hover:border-amber-800/30 dark:hover:bg-amber-950/20"
             title="Library"
           >
             <Library className="h-3.5 w-3.5" />
           </Link>
           <Link
             href="/review"
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-md dark:hover:border-violet-800/30 dark:hover:bg-violet-950/20"
+            className="hidden h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-md sm:flex dark:hover:border-violet-800/30 dark:hover:bg-violet-950/20"
             title="Flashcard Review"
           >
             <BrainCircuit className="h-3.5 w-3.5" />
           </Link>
           <Link
             href="/vocabulary"
-            className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-md dark:hover:border-violet-800/30 dark:hover:bg-violet-950/20"
+            className="hidden h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-md sm:flex dark:hover:border-violet-800/30 dark:hover:bg-violet-950/20"
             title="Vocabulary"
           >
             <BookText className="h-3.5 w-3.5" />
@@ -514,32 +528,80 @@ export default function DashboardPage() {
           {user?.isAdmin && (
             <Link
               href="/admin"
-              className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-md dark:hover:border-violet-800/30 dark:hover:bg-violet-950/20"
+              className="hidden h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-md sm:flex dark:hover:border-violet-800/30 dark:hover:bg-violet-950/20"
               title="Admin Panel"
             >
               <Shield className="h-3.5 w-3.5" />
             </Link>
           )}
+
+          {/* Mobile: overflow menu with everything that doesn't fit */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <button
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-muted-foreground/20 hover:text-foreground sm:hidden"
+                aria-label="More menu"
+              >
+                <MoreHorizontal className="h-4 w-4" />
+              </button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" sideOffset={6} className="w-56">
+              <DropdownMenuLabel className="text-xs text-muted-foreground">
+                Signed in as <span className="font-semibold text-foreground">{user?.username}</span>
+              </DropdownMenuLabel>
+              <DropdownMenuItem onSelect={() => toggleSharePanel()}>
+                <Users className="h-3.5 w-3.5" />
+                {shareSession ? shareSession.name : 'Collaborate'}
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/library" className="flex items-center gap-2">
+                  <Library className="h-3.5 w-3.5" /> Library
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/review" className="flex items-center gap-2">
+                  <BrainCircuit className="h-3.5 w-3.5" /> Flashcard Review
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/vocabulary" className="flex items-center gap-2">
+                  <BookText className="h-3.5 w-3.5" /> Vocabulary
+                </Link>
+              </DropdownMenuItem>
+              {user?.isAdmin && (
+                <DropdownMenuItem asChild>
+                  <Link href="/admin" className="flex items-center gap-2">
+                    <Shield className="h-3.5 w-3.5" /> Admin Panel
+                  </Link>
+                </DropdownMenuItem>
+              )}
+              <DropdownMenuItem onSelect={(e) => {
+                // SettingsPanel uses a Popover so we just trigger its trigger
+                e.preventDefault()
+                const btn = document.querySelector<HTMLButtonElement>('[aria-label="Settings"]')
+                btn?.click()
+              }}>
+                <Settings2 className="h-3.5 w-3.5" /> Settings
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onSelect={() => logout()} className="text-red-600 focus:text-red-600">
+                <LogOut className="h-3.5 w-3.5" /> Sign out
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
           {user && (
-            <div className="flex items-center gap-1 rounded-xl border border-border/60 bg-background/80 px-1.5 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
+            <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border/60 bg-background/80 px-1.5 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
               <Link href="/profile" className="flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 transition-colors hover:bg-muted/50">
                 <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm">
                   <span className="text-[10px] font-bold text-white">{user.username.charAt(0).toUpperCase()}</span>
                 </div>
                 <span className="hidden max-w-[100px] truncate sm:inline font-medium">{user.username}</span>
               </Link>
-              <span className={`hidden sm:inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${planBadgeClass}`} title={`Plan: ${PLAN_LABELS[plan as AIPlan]}`}>
+              <span className={`hidden md:inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${planBadgeClass}`} title={`Plan: ${PLAN_LABELS[plan as AIPlan]}`}>
                 <PlanIcon className="h-2.5 w-2.5" />
                 {PLAN_LABELS[plan as AIPlan]}
               </span>
-              <div className="h-4 w-px bg-border/40" />
-              <button
-                onClick={logout}
-                className="rounded-md p-1 text-muted-foreground/40 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/20"
-                title="Sign out"
-              >
-                <LogOut className="h-3.5 w-3.5" />
-              </button>
             </div>
           )}
         </div>
@@ -565,14 +627,14 @@ export default function DashboardPage() {
       ) : (
         <main className="flex-1 overflow-auto relative">
           <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--emerald-500)/0.05)_0%,transparent_40%,hsl(var(--background))_100%)]" />
-          <div className="relative mx-auto flex min-h-full w-full max-w-6xl flex-col gap-8 px-4 py-10 sm:px-6 lg:px-8">
-            <section className="grid items-start gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
+          <div className="relative mx-auto flex min-h-full w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 lg:px-8">
+            <section className="grid items-start gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
               <div className="min-w-0 pt-2">
                 <div className="inline-flex items-center gap-2 rounded-full border bg-emerald-50/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">
                   <Sparkles className="h-3 w-3" />
                   Reading Desk
                 </div>
-                <h1 className="mt-4 max-w-2xl text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+                <h1 className="mt-4 max-w-2xl text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
                   Pick up your next page
                 </h1>
                 <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground/80">
@@ -596,12 +658,12 @@ export default function DashboardPage() {
             </section>
 
             {resumeBook && !dismissedResume && (
-              <div className="relative overflow-hidden rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-100/30 p-6 shadow-lg shadow-emerald-500/10 dark:from-emerald-950/20 dark:via-emerald-950/10 dark:to-emerald-900/20 dark:border-emerald-700/30">
+              <div className="relative overflow-hidden rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-100/30 p-5 shadow-lg shadow-emerald-500/10 sm:p-6 dark:from-emerald-950/20 dark:via-emerald-950/10 dark:to-emerald-900/20 dark:border-emerald-700/30">
                 <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-emerald-400/20 blur-2xl" />
                 <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-emerald-300/10 blur-xl" />
-                <div className="relative flex items-start justify-between gap-4">
-                  <div className="flex min-w-0 items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20">
+                <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="flex min-w-0 items-start gap-3 sm:gap-4">
+                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 sm:h-12 sm:w-12">
                       <BookOpen className="h-5 w-5 text-white" />
                     </div>
                     <div className="min-w-0">
@@ -609,10 +671,10 @@ export default function DashboardPage() {
                         <Sparkles className="h-3 w-3" />
                         Resume Reading
                       </div>
-                      <p className="mt-2 text-lg font-bold text-foreground truncate">
+                      <p className="mt-2 text-base font-bold text-foreground truncate sm:text-lg">
                         {resumeBook.fileName}
                       </p>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-muted-foreground">
+                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground sm:gap-x-4 sm:text-sm">
                         <span className="inline-flex items-center gap-1.5">
                           <FileText className="h-3.5 w-3.5 text-emerald-500" />
                           Page {resumeBook.lastPage}{resumeBook.pageCount > 0 ? ` of ${resumeBook.pageCount}` : ''}
@@ -639,11 +701,11 @@ export default function DashboardPage() {
                       )}
                     </div>
                   </div>
-                  <div className="flex shrink-0 items-start gap-2">
+                  <div className="flex shrink-0 items-center gap-2 sm:items-start">
                     <button
                       onClick={() => handleLoadRecentPdf(resumeBook.fileName, resumeBook.lastPage)}
                       disabled={recentLoading === resumeBook.fileName}
-                      className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl hover:shadow-emerald-500/40 active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl hover:shadow-emerald-500/40 active:scale-[0.97] disabled:cursor-wait disabled:opacity-60 sm:flex-none"
                     >
                       {recentLoading === resumeBook.fileName ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -661,8 +723,9 @@ export default function DashboardPage() {
                         }
                         setDismissedResume(true)
                       }}
-                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground/50 shadow-sm backdrop-blur-sm transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500 dark:hover:border-red-800/30 dark:hover:bg-red-950/20"
+                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground/50 shadow-sm backdrop-blur-sm transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500 sm:h-9 sm:w-9 dark:hover:border-red-800/30 dark:hover:bg-red-950/20"
                       title="Dismiss"
+                      aria-label="Dismiss resume card"
                     >
                       <X className="h-4 w-4" />
                     </button>

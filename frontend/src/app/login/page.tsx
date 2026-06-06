@@ -53,8 +53,9 @@ export default function LoginPage() {
                 type="text"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                className="mt-1.5 w-full rounded-xl border border-border/60 bg-background/80 px-3.5 py-2.5 text-sm outline-none transition-all placeholder:text-muted-foreground/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+                className="mt-1.5 w-full rounded-xl border border-border/60 bg-background/80 px-3.5 py-3 text-base outline-none transition-all placeholder:text-muted-foreground/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 sm:py-2.5 sm:text-sm"
                 placeholder="your_username"
+                autoComplete="username"
                 required
               />
             </div>
@@ -66,8 +67,9 @@ export default function LoginPage() {
                   type={showPassword ? 'text' : 'password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-border/60 bg-background/80 px-3.5 py-2.5 pr-10 text-sm outline-none transition-all placeholder:text-muted-foreground/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+                  className="w-full rounded-xl border border-border/60 bg-background/80 px-3.5 py-3 pr-10 text-base outline-none transition-all placeholder:text-muted-foreground/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 sm:py-2.5 sm:text-sm"
                   placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"
+                  autoComplete="current-password"
                   required
                 />
                 <button
@@ -89,7 +91,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-2.5 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 ring-1 ring-emerald-400/20 transition-all hover:shadow-xl hover:shadow-emerald-500/30 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100"
+              className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-emerald-500/25 ring-1 ring-emerald-400/20 transition-all hover:shadow-xl hover:shadow-emerald-500/30 active:scale-[0.98] disabled:opacity-50 disabled:active:scale-100 sm:py-2.5"
             >
               {loading ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

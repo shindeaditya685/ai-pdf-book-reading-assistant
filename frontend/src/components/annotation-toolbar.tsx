@@ -104,11 +104,12 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
   return (
     <div ref={toolbarRef} className="contents">
       {/* Toggle button — fixed position, never shifts */}
-      <div className="fixed left-3 top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none">
+      <div className="fixed left-2 top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none sm:left-3">
         <Button
           variant="outline"
           size="icon"
-          className="h-6 w-6 rounded-full bg-background/95 shadow-md border hover:bg-muted"
+          aria-label={isMinimized ? "Show toolbar" : "Hide toolbar"}
+          className="h-9 w-9 rounded-full bg-background/95 shadow-md border hover:bg-muted sm:h-8 sm:w-8"
           onClick={() => {
             setIsMinimized(!isMinimized);
             setOpenPanel(null);
@@ -116,9 +117,9 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
           title={isMinimized ? "Show Toolbar" : "Hide Toolbar"}
         >
           {isMinimized ? (
-            <ChevronRight className="h-3 w-3" />
+            <ChevronRight className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
           ) : (
-            <ChevronLeft className="h-3 w-3" />
+            <ChevronLeft className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
           )}
         </Button>
       </div>

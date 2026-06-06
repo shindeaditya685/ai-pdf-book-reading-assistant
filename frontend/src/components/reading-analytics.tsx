@@ -1,9 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState } from 'react'
-import { motion, AnimatePresence } from 'framer-motion'
 import {
-  X,
   BookOpen,
   Clock,
   TrendingUp,
@@ -15,6 +13,7 @@ import {
   ArrowLeft,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
+import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 
@@ -102,33 +101,31 @@ export function ReadingAnalytics() {
   }
 
   return (
-    <AnimatePresence>
-      <motion.div
-        initial={{ x: 320 }}
-        animate={{ x: 0 }}
-        exit={{ x: 320 }}
-        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-        className="fixed right-0 top-0 z-40 flex h-full w-80 flex-col border-l bg-background shadow-2xl"
-      >
-        <div className="flex items-center justify-between border-b px-4 py-3">
-          <div className="flex items-center gap-2">
-            <button onClick={handleBack} className="text-muted-foreground hover:text-foreground transition-colors">
-              <ArrowLeft className="h-4 w-4" />
-            </button>
-            <BarChart3 className="h-4 w-4 text-sky-500" />
-            <h2 className="text-sm font-semibold text-foreground">Analytics</h2>
-          </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-foreground"
-            onClick={() => setShowReadingAnalytics(false)}
-          >
-            <X className="h-3.5 w-3.5" />
-          </Button>
-        </div>
-
-        <div className="flex-1 overflow-y-auto">
+    <ResponsivePanel
+      open={showReadingAnalytics}
+      onClose={() => setShowReadingAnalytics(false)}
+      ariaLabel="Reading analytics"
+      header={
+        <PanelHeader
+          icon={BarChart3}
+          iconClassName="text-sky-500"
+          title={
+            <span className="flex items-center gap-2">
+              <button
+                onClick={handleBack}
+                className="text-muted-foreground hover:text-foreground transition-colors"
+                aria-label="Back to stats"
+              >
+                <ArrowLeft className="h-4 w-4" />
+              </button>
+              Analytics
+            </span>
+          }
+          onClose={() => setShowReadingAnalytics(false)}
+        />
+      }
+    >
+      <div className="flex-1 overflow-y-auto">
           {isLoading ? (
             <div className="flex h-full items-center justify-center">
               <Loader2 className="h-5 w-5 animate-spin text-sky-500" />
@@ -277,9 +274,8 @@ export function ReadingAnalytics() {
               </div>
             </div>
           )}
-        </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </ResponsivePanel>
   )
 }
 
