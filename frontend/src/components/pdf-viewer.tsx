@@ -3,11 +3,14 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
 import { useAuth } from '@/context/auth-context'
-import { setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
+import { setActiveBook, setStoredBookPage, getStoredBookPage, getActiveBook } from '@/lib/reading-progress'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 import { lookupWord } from '@/lib/dictionary'
 import { PdfPage } from '@/components/pdf-page'
+import { AIQuotaBadge } from '@/components/ai-quota-badge'
+import { AIQuotaModal } from '@/components/ai-quota-modal'
+import { useAIQuota, remainingFor } from '@/hooks/use-ai-quota'
 import {
   ChevronLeft,
   ChevronRight,
@@ -44,6 +47,21 @@ export function PDFViewer() {
   const sessionStartRef = useRef<number>(Date.now())
   const lastLoggedPageRef = useRef<number>(0)
   const { user } = useAuth()
+  const username = user?.username
+  const quota = useAIQuota(!!user)
+  const [quotaModalOpen, setQuotaModalOpen] = useState(false)
+  const lastSavedPageRef = useRef<{ page: number; fileName: string | null }>({ page: 0, fileName: null })
+
+  useEffect(() => {
+    const onChanged = () => quota.refresh()
+    const onExceeded = () => setQuotaModalOpen(true)
+    window.addEventListener('ai-quota-changed', onChanged)
+    window.addEventListener('ai-quota-exceeded', onExceeded)
+    return () => {
+      window.removeEventListener('ai-quota-changed', onChanged)
+      window.removeEventListener('ai-quota-exceeded', onExceeded)
+    }
+  }, [quota])
 
   const [isLoading, setIsLoading] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
@@ -129,8 +147,25 @@ export function PDFViewer() {
         const pdf = await loadingTask.promise
         pdfDocRef.current = pdf
         setTotalPages(pdf.numPages)
-        const requestedPage = usePDFStore.getState().currentPage || 1
-        const restoredPage = Math.min(Math.max(1, requestedPage), pdf.numPages)
+
+        let restoredPage: number
+        if (pdfFileName) {
+          const stored = getStoredBookPage(username, pdfFileName)
+          const recentMatch = usePDFStore
+            .getState()
+            .recentPdfs.find((p) => p.fileName === pdfFileName)
+          const recentLastPage = recentMatch?.lastPage
+          const activeBook = getActiveBook(username)
+          const storePage = usePDFStore.getState().currentPage
+          const requestedFromStore = activeBook === pdfFileName ? storePage : 0
+
+          const candidates = [stored, recentLastPage, requestedFromStore, 1].filter(
+            (v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0
+          )
+          restoredPage = Math.min(Math.max(1, candidates[0] ?? 1), pdf.numPages)
+        } else {
+          restoredPage = Math.min(Math.max(1, usePDFStore.getState().currentPage || 1), pdf.numPages)
+        }
         setCurrentPage(restoredPage)
         if (pdfFileName) {
           const { addRecentPdf } = usePDFStore.getState()
@@ -158,8 +193,8 @@ export function PDFViewer() {
     if (!pdfDataUrl || !pdfFileName || totalPages <= 0) return
 
     const safePage = Math.min(Math.max(1, currentPage), totalPages)
-    setActiveBook(user?.username, pdfFileName)
-    setStoredBookPage(user?.username, pdfFileName, safePage)
+    setActiveBook(username, pdfFileName)
+    setStoredBookPage(username, pdfFileName, safePage)
     const { addRecentPdf } = usePDFStore.getState()
     addRecentPdf({
       fileName: pdfFileName,
@@ -189,7 +224,62 @@ export function PDFViewer() {
         clearTimeout(saveProgressTimerRef.current)
       }
     }
-  }, [currentPage, pdfDataUrl, pdfFileName, totalPages, user?.username])
+  }, [currentPage, pdfDataUrl, pdfFileName, totalPages, username])
+
+  // Synchronous page-save: keep `lastSavedPageRef` in sync with currentPage
+  // so the pagehide / beforeunload flush below can write to localStorage
+  // even if React unmounts the component before the next paint.
+  useEffect(() => {
+    if (!pdfFileName || totalPages <= 0) return
+    const safePage = Math.min(Math.max(1, currentPage), totalPages)
+    if (lastSavedPageRef.current.fileName === pdfFileName && lastSavedPageRef.current.page === safePage) return
+    lastSavedPageRef.current = { page: safePage, fileName: pdfFileName }
+    setActiveBook(username, pdfFileName)
+    setStoredBookPage(username, pdfFileName, safePage)
+  }, [currentPage, pdfFileName, totalPages, username])
+
+  // Flush the latest page to localStorage AND MongoDB on tab close / navigation away.
+  // The 500ms debounced PATCH above can be cancelled by React unmount cleanup if the
+  // user closes the tab within 500ms of navigating. We use `keepalive: true` so the
+  // fetch is guaranteed to complete even as the page unloads.
+  useEffect(() => {
+    const flush = () => {
+      const { page, fileName } = lastSavedPageRef.current
+      if (!fileName || page <= 0) return
+      setActiveBook(username, fileName)
+      setStoredBookPage(username, fileName, page)
+
+      // Best-effort DB flush. If the user isn't logged in, the PATCH will 401 silently.
+      // `keepalive: true` lets the request complete even as the page unloads.
+      try {
+        const token = window.localStorage?.getItem('auth-token')
+        if (!token) return
+        const body = JSON.stringify({ fileName, lastPage: page })
+        fetch('/api/db/pdf', {
+          method: 'PATCH',
+          headers: {
+            'Content-Type': 'application/json',
+            authorization: `Bearer ${token}`,
+          },
+          body,
+          keepalive: true,
+        }).catch(() => {})
+      } catch {
+        // Ignore — localStorage is already updated; DB will catch up on next mount.
+      }
+    }
+    const onVisibility = () => {
+      if (document.visibilityState === 'hidden') flush()
+    }
+    window.addEventListener('pagehide', flush)
+    window.addEventListener('beforeunload', flush)
+    document.addEventListener('visibilitychange', onVisibility)
+    return () => {
+      window.removeEventListener('pagehide', flush)
+      window.removeEventListener('beforeunload', flush)
+      document.removeEventListener('visibilitychange', onVisibility)
+    }
+  }, [username])
 
   // Log reading activity (debounced)
   useEffect(() => {
@@ -342,7 +432,10 @@ export function PDFViewer() {
           setExplanation(data)
           setIsOfflineResult(false)
           aiOk = true
+        } else if (res.status === 429) {
+          setQuotaModalOpen(true)
         }
+        if (aiOk) quota.refresh()
       } catch {}
       if (aiOk) { setIsExplaining(false); return }
       try {
@@ -634,13 +727,13 @@ export function PDFViewer() {
   // Follow mode: auto-navigate when leader changes page
   useEffect(() => {
     if (!followMode || !shareSession) return
-    const leader = shareSession.members.find((m) => m.username !== user?.username)
+    const leader = shareSession.members.find((m) => m.username !== username)
     if (!leader) return
     const leaderPage = remotePages[leader.username]
     if (leaderPage && leaderPage !== currentPage && leaderPage >= 1 && leaderPage <= totalPages) {
       scrollToPage(leaderPage)
     }
-  }, [followMode, remotePages, shareSession, currentPage, totalPages, user?.username, scrollToPage])
+  }, [followMode, remotePages, shareSession, currentPage, totalPages, username, scrollToPage])
 
   const goToPrevPage = useCallback(() => {
     if (currentPage > 1) scrollToPage(currentPage - 1)
@@ -752,21 +845,44 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
-            className={`h-8 w-8 rounded-lg ${showQuestionGenerator ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
-            onClick={toggleQuestionGenerator}
-            title="AI Question Generator"
+            disabled={!quota.isUnlimited && remainingFor(quota, 'question') === 0}
+            className={`h-8 w-8 rounded-lg ${showQuestionGenerator ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:hover:bg-transparent'}`}
+            onClick={() => {
+              if (!quota.isUnlimited && remainingFor(quota, 'question') === 0) {
+                setQuotaModalOpen(true)
+                return
+              }
+              toggleQuestionGenerator()
+            }}
+            title={
+              !quota.isUnlimited && remainingFor(quota, 'question') === 0
+                ? 'Daily question limit reached'
+                : 'AI Question Generator'
+            }
           >
             <HelpCircle className="h-3.5 w-3.5" />
           </Button>
           <Button
             variant="ghost"
             size="icon"
-            className={`h-8 w-8 rounded-lg ${showSummarizer ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
-            onClick={toggleSummarizer}
-            title="AI Summarizer"
+            disabled={!quota.isUnlimited && remainingFor(quota, 'summary') === 0}
+            className={`h-8 w-8 rounded-lg ${showSummarizer ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50 disabled:opacity-40 disabled:hover:bg-transparent'}`}
+            onClick={() => {
+              if (!quota.isUnlimited && remainingFor(quota, 'summary') === 0) {
+                setQuotaModalOpen(true)
+                return
+              }
+              toggleSummarizer()
+            }}
+            title={
+              !quota.isUnlimited && remainingFor(quota, 'summary') === 0
+                ? 'Daily summary limit reached'
+                : 'AI Summarizer'
+            }
           >
             <Sparkles className="h-3.5 w-3.5" />
           </Button>
+          <AIQuotaBadge state={quota} onClick={() => setQuotaModalOpen(true)} />
           <Button
             variant="ghost"
             size="icon"
@@ -918,6 +1034,13 @@ export function PDFViewer() {
           onDismiss={() => setPendingWord(null)}
         />
       )}
+
+      <AIQuotaModal
+        open={quotaModalOpen}
+        onOpenChange={setQuotaModalOpen}
+        state={quota}
+        onRequested={() => quota.refresh()}
+      />
     </div>
   )
 }

@@ -3,9 +3,10 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
+import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight, Sparkles, Crown, FlaskConical, Rocket } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
+import { PLAN_LABELS, PLAN_DESCRIPTIONS, type AIPlan } from '@/lib/ai-plan'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -30,8 +31,19 @@ interface AppUser {
   _id: string
   username: string
   isAdmin: boolean
+  plan?: AIPlan
+  isUnlimited?: boolean
   createdAt: string
   stats: UserStats
+}
+
+interface AccessRequest {
+  _id: string
+  userId: string
+  username: string
+  message: string
+  status: string
+  createdAt: string
 }
 
 interface PlatformStats {
@@ -48,6 +60,7 @@ export default function AdminPage() {
   const router = useRouter()
   const [users, setUsers] = useState<AppUser[]>([])
   const [stats, setStats] = useState<PlatformStats | null>(null)
+  const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -55,9 +68,10 @@ export default function AdminPage() {
 
   // Confirmation dialog state
   const [confirmAction, setConfirmAction] = useState<{
-    type: 'delete' | 'promote' | 'revoke'
+    type: 'delete' | 'promote' | 'revoke' | 'plan'
     userId: string
     username: string
+    plan?: AIPlan
   } | null>(null)
 
   useEffect(() => {
@@ -67,15 +81,18 @@ export default function AdminPage() {
 
     const load = async () => {
       try {
-        const [usersRes, statsRes] = await Promise.all([
+        const [usersRes, statsRes, requestsRes] = await Promise.all([
           authFetch('/api/admin/users'),
           authFetch('/api/admin/stats'),
+          authFetch('/api/admin/access-requests').catch(() => null),
         ])
         if (!usersRes.ok || !statsRes.ok) { setError('Failed to load data'); return }
         const usersData = await usersRes.json()
         const statsData = await statsRes.json()
+        const requestsData = requestsRes?.ok ? await requestsRes.json() : { requests: [] }
         setUsers(usersData.users || [])
         setStats(statsData.stats || null)
+        setAccessRequests((requestsData.requests || []).filter((r: AccessRequest) => r.status === 'pending'))
       } catch {
         setError('Failed to load data')
       } finally {
@@ -105,6 +122,48 @@ export default function AdminPage() {
     setConfirmAction(null)
   }
 
+  const handleChangePlan = async (userId: string, plan: AIPlan) => {
+    const res = await authFetch(`/api/admin/users/${userId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ plan }),
+    })
+    if (res.ok) {
+      setUsers((prev) => prev.map((u) => u._id === userId ? { ...u, plan } : u))
+      setAccessRequests((prev) => prev.filter((r) => r.userId !== userId))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data?.error || 'Failed to change plan')
+    }
+    setConfirmAction(null)
+  }
+
+  const handleDismissRequest = async (requestId: string) => {
+    const res = await authFetch(`/api/admin/access-requests/${requestId}`, { method: 'DELETE' })
+    if (res.ok) {
+      setAccessRequests((prev) => prev.filter((r) => r._id !== requestId))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data?.error || 'Failed to dismiss request')
+    }
+  }
+
+  const planIcon = (plan?: AIPlan) => {
+    if (plan === 'founder') return <Crown className="h-3 w-3" />
+    if (plan === 'pro') return <Rocket className="h-3 w-3" />
+    if (plan === 'beta') return <FlaskConical className="h-3 w-3" />
+    if (plan === 'admin') return <ShieldCheck className="h-3 w-3" />
+    return <Sparkles className="h-3 w-3" />
+  }
+
+  const planBadgeClass = (plan?: AIPlan, isAdmin?: boolean) => {
+    if (isAdmin) return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+    if (plan === 'founder') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+    if (plan === 'pro') return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+    if (plan === 'beta') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+    return 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400'
+  }
+
   const filteredUsers = users.filter((u) =>
     u.username.toLowerCase().includes(search.toLowerCase())
   )
@@ -113,7 +172,9 @@ export default function AdminPage() {
   const paginatedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   // Reset to page 1 when search changes
+  /* eslint-disable react-hooks/set-state-in-effect */
   useEffect(() => { setPage(1) }, [search])
+  /* eslint-enable react-hooks/set-state-in-effect */
 
   if (authLoading || loading) {
     return (
@@ -151,6 +212,54 @@ export default function AdminPage() {
       </header>
 
       <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 lg:px-8">
+        {/* ── PENDING ACCESS REQUESTS ── */}
+        {accessRequests.length > 0 && (
+          <div className="mb-6 rounded-xl border border-amber-500/30 bg-amber-50/40 p-4 shadow-sm backdrop-blur-sm dark:bg-amber-950/10">
+            <div className="mb-3 flex items-center justify-between">
+              <div>
+                <h2 className="text-sm font-bold text-foreground">Pending AI Access Requests</h2>
+                <p className="text-xs text-muted-foreground/70">
+                  {accessRequests.length} user{accessRequests.length === 1 ? '' : 's'} want{accessRequests.length === 1 ? 's' : ''} full AI access
+                </p>
+              </div>
+            </div>
+            <div className="space-y-2">
+              {accessRequests.map((r) => (
+                <div
+                  key={r._id}
+                  className="flex items-start justify-between gap-3 rounded-lg border border-amber-200/50 bg-background/80 p-3"
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-semibold text-foreground">{r.username}</span>
+                      <span className="text-[10px] text-muted-foreground/60">
+                        {new Date(r.createdAt).toLocaleString()}
+                      </span>
+                    </div>
+                    {r.message && (
+                      <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground/80">{r.message}</p>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      onClick={() => setConfirmAction({ type: 'plan', userId: r.userId, username: r.username, plan: 'free' })}
+                      className="rounded-md bg-emerald-600 px-2.5 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-emerald-500"
+                    >
+                      Grant
+                    </button>
+                    <button
+                      onClick={() => handleDismissRequest(r._id)}
+                      className="rounded-md border border-border/60 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                    >
+                      Dismiss
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+
         {/* ── STATS CARDS ── */}
         {stats && (
           <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -198,6 +307,7 @@ export default function AdminPage() {
                 <tr className="border-b border-border/30 text-muted-foreground/60">
                   <th className="px-4 py-3 font-semibold uppercase tracking-wider">Username</th>
                   <th className="px-4 py-3 font-semibold uppercase tracking-wider">Role</th>
+                  <th className="px-4 py-3 font-semibold uppercase tracking-wider">Plan</th>
                   <th className="px-4 py-3 font-semibold uppercase tracking-wider">Joined</th>
                   <th className="px-4 py-3 font-semibold uppercase tracking-wider">PDFs</th>
                   <th className="px-4 py-3 font-semibold uppercase tracking-wider">Words</th>
@@ -226,6 +336,16 @@ export default function AdminPage() {
                       ) : (
                         <span className="text-muted-foreground/50">User</span>
                       )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => setConfirmAction({ type: 'plan', userId: u._id, username: u.username, plan: u.plan })}
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold transition-opacity hover:opacity-80 ${planBadgeClass(u.plan, u.isAdmin)}`}
+                        title="Click to change plan"
+                      >
+                        {planIcon(u.plan)}
+                        {u.isAdmin ? 'Admin' : PLAN_LABELS[u.plan || 'free']}
+                      </button>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground/70">
                       {new Date(u.createdAt).toLocaleDateString()}
@@ -323,6 +443,7 @@ export default function AdminPage() {
               {confirmAction?.type === 'delete' && 'Delete User'}
               {confirmAction?.type === 'promote' && 'Promote to Admin'}
               {confirmAction?.type === 'revoke' && 'Revoke Admin'}
+              {confirmAction?.type === 'plan' && `Change Plan for ${confirmAction.username}`}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction?.type === 'delete' && (
@@ -334,30 +455,56 @@ export default function AdminPage() {
               {confirmAction?.type === 'revoke' && (
                 <>Are you sure you want to remove <strong>{confirmAction.username}</strong>&apos;s admin privileges?</>
               )}
+              {confirmAction?.type === 'plan' && (
+                <>Select a new plan for <strong>{confirmAction.username}</strong>. Changes take effect immediately.</>
+              )}
             </AlertDialogDescription>
+            {confirmAction?.type === 'plan' && (
+              <div className="mt-3 grid gap-2">
+                {(['free', 'pro', 'beta', 'founder'] as AIPlan[]).map((p) => (
+                  <button
+                    key={p}
+                    onClick={() => {
+                      if (confirmAction) handleChangePlan(confirmAction.userId, p)
+                    }}
+                    className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-xs transition-colors hover:bg-muted/50 ${
+                      confirmAction.plan === p ? 'border-violet-500/40 bg-violet-500/5' : 'border-border/60'
+                    }`}
+                  >
+                    <span className="flex items-center gap-2 font-semibold">
+                      {planIcon(p)}
+                      {PLAN_LABELS[p]}
+                    </span>
+                    <span className="text-muted-foreground/70">{PLAN_DESCRIPTIONS[p]}</span>
+                  </button>
+                ))}
+              </div>
+            )}
           </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction
-              className={
-                confirmAction?.type === 'delete'
-                  ? 'bg-red-600 hover:bg-red-500'
-                  : confirmAction?.type === 'promote'
-                  ? 'bg-violet-600 hover:bg-violet-500'
-                  : 'bg-amber-600 hover:bg-amber-500'
-              }
-              onClick={() => {
-                if (!confirmAction) return
-                if (confirmAction.type === 'delete') handleDeleteUser(confirmAction.userId)
-                else if (confirmAction.type === 'promote') handleToggleAdmin(confirmAction.userId, true)
-                else if (confirmAction.type === 'revoke') handleToggleAdmin(confirmAction.userId, false)
-              }}
-            >
-              {confirmAction?.type === 'delete' && 'Delete'}
-              {confirmAction?.type === 'promote' && 'Promote'}
-              {confirmAction?.type === 'revoke' && 'Revoke'}
-            </AlertDialogAction>
-          </AlertDialogFooter>
+          {confirmAction?.type !== 'plan' && (
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                className={
+                  confirmAction?.type === 'delete'
+                    ? 'bg-red-600 hover:bg-red-500'
+                    : confirmAction?.type === 'promote'
+                    ? 'bg-violet-600 hover:bg-violet-500'
+                    : 'bg-amber-600 hover:bg-amber-500'
+                }
+                onClick={() => {
+                  if (!confirmAction) return
+                  if (confirmAction.type === 'delete') handleDeleteUser(confirmAction.userId)
+                  else if (confirmAction.type === 'promote') handleToggleAdmin(confirmAction.userId, true)
+                  else if (confirmAction.type === 'revoke') handleToggleAdmin(confirmAction.userId, false)
+                }}
+              >
+                {confirmAction?.type === 'delete' && 'Delete'}
+                {confirmAction?.type === 'promote' && 'Promote'}
+                {confirmAction?.type === 'revoke' && 'Revoke'}
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          )}
         </AlertDialogContent>
       </AlertDialog>
     </div>

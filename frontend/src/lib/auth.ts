@@ -2,6 +2,7 @@ import crypto from 'crypto'
 import { connectToDatabase } from './db'
 import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
+import type { AIPlan, AIUsage } from './ai-plan'
 
 const JWT_SECRET =
   process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex')
@@ -11,6 +12,8 @@ export interface User {
   username: string
   password: string
   isAdmin?: boolean
+  plan?: AIPlan
+  aiUsage?: AIUsage
   createdAt: Date
 }
 
@@ -49,9 +52,10 @@ export async function createUser(username: string, password: string) {
     username,
     password: hashed,
     isAdmin: false,
+    plan: 'free',
     createdAt: new Date(),
   })
-  return { id: result.insertedId.toString(), username, isAdmin: false }
+  return { id: result.insertedId.toString(), username, isAdmin: false, plan: 'free' as AIPlan }
 }
 
 export async function authenticateUser(username: string, password: string) {
@@ -64,7 +68,12 @@ export async function authenticateUser(username: string, password: string) {
   const match = await bcrypt.compare(password, user.password)
   if (!match) return null
 
-  return { id: user._id.toString(), username: user.username, isAdmin: !!user.isAdmin }
+  return {
+    id: user._id.toString(),
+    username: user.username,
+    isAdmin: !!user.isAdmin,
+    plan: (user.plan as AIPlan) || 'free',
+  }
 }
 
 export function generateToken(user: { id: string; username: string; isAdmin?: boolean }) {
@@ -97,6 +106,7 @@ export async function getUserFromDb(payload: { id: string; username: string }) {
     id: user._id.toString(),
     username: user.username,
     isAdmin: !!user.isAdmin,
+    plan: (user.plan as AIPlan) || 'free',
   }
 }
 

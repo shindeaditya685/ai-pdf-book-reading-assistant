@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { Switch } from '@/components/ui/switch'
 import { useAuth } from '@/context/auth-context'
-import { clearActiveBook, setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
+import { clearActiveBook, setActiveBook, setStoredBookPage, getStoredBookPage } from '@/lib/reading-progress'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 
@@ -26,6 +26,7 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
     clearOcrText,
   } = usePDFStore()
   const { user } = useAuth()
+  const username = user?.username
   const [isDragging, setIsDragging] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [progress, setProgress] = useState(0)
@@ -80,18 +81,19 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
           reader.readAsDataURL(file)
         })
         setProgress(100)
-        setCurrentPage(1)
+        const restoredPage = getStoredBookPage(username, file.name) ?? 1
+        setCurrentPage(restoredPage)
         setPdfFile(file)
         setPdfDataUrl(dataUrl)
-        addRecentPdf({ fileName: file.name, timestamp: Date.now(), lastPage: 1, pageCount: 0 })
-        setActiveBook(user?.username, file.name)
-        setStoredBookPage(user?.username, file.name, 1)
+        addRecentPdf({ fileName: file.name, timestamp: Date.now(), lastPage: restoredPage, pageCount: 0 })
+        setActiveBook(username, file.name)
+        setStoredBookPage(username, file.name, restoredPage)
         clearOcrText()
         // Save PDF to MongoDB
         authFetch('/api/db/pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: file.name, content: dataUrl, pageCount: 0, lastPage: 1 }),
+          body: JSON.stringify({ fileName: file.name, content: dataUrl, pageCount: 0, lastPage: restoredPage }),
         }).catch(() => {})
       } catch (err) {
         console.error('Error reading PDF:', err)
@@ -107,7 +109,7 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
         }, 500)
       }
     },
-    [addRecentPdf, clearOcrText, setCurrentPage, setPdfDataUrl, setPdfFile, user?.username]
+    [addRecentPdf, clearOcrText, setCurrentPage, setPdfDataUrl, setPdfFile, username]
   )
 
   const handleDragEnter = useCallback((e: React.DragEvent) => {
@@ -155,9 +157,9 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
   )
 
   const handleClear = useCallback(() => {
-    clearActiveBook(user?.username)
+    clearActiveBook(username)
     usePDFStore.getState().reset()
-  }, [user?.username])
+  }, [username])
 
   if (pdfFileName) {
     return (

@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, Library, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, Library, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
@@ -23,6 +23,7 @@ import { usePDFStore } from '@/store/use-pdf-store'
 import { useShareSSE } from '@/hooks/useShareSSE'
 import { authFetch } from '@/lib/api'
 import { getActiveBook, getStoredBookPage, setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
+import { PLAN_LABELS, type AIPlan } from '@/lib/ai-plan'
 
 // Dynamically import PDFViewer to avoid loading pdfjs-dist in the initial bundle
 const PDFViewer = dynamic(
@@ -99,6 +100,19 @@ export default function DashboardPage() {
   } = usePDFStore()
 
   const { user, logout } = useAuth()
+  const userPlan = user?.plan
+  const userIsAdmin = user?.isAdmin
+  const username = user?.username
+
+  const plan: AIPlan = userPlan || (userIsAdmin ? 'admin' : 'free')
+  const planBadgeClass = (() => {
+    if (plan === 'admin') return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
+    if (plan === 'founder') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+    if (plan === 'pro') return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+    if (plan === 'beta') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+    return 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400'
+  })()
+  const PlanIcon = plan === 'founder' ? Crown : plan === 'pro' ? Rocket : plan === 'beta' ? FlaskConical : Sparkles
   const [recentLoading, setRecentLoading] = useState<string | null>(null)
   const [recentPdfsLoading, setRecentPdfsLoading] = useState(true)
   const [resumeBook, setResumeBook] = useState<{
@@ -125,12 +139,13 @@ export default function DashboardPage() {
           const existingMeta = usePDFStore
             .getState()
             .recentPdfs.find((item) => item.fileName === fileName)
-          const restoredPage =
-            preferredPage ||
-            pdf.lastPage ||
-            existingMeta?.lastPage ||
-            getStoredBookPage(user?.username, fileName) ||
-            1
+          // Combine all sources and take the highest — localStorage may be ahead of the DB
+          // if the user closed the tab before the debounced PATCH fired.
+          const storedPage = getStoredBookPage(username, fileName) || 0
+          const dbPage = Number(pdf.lastPage) || 0
+          const metaPage = Number(existingMeta?.lastPage) || 0
+          const preferred = Number(preferredPage) || 0
+          const restoredPage = Math.max(preferred, dbPage, metaPage, storedPage) || 1
 
           clearOcrText()
           setCurrentPage(Math.max(1, Number(restoredPage) || 1))
@@ -144,8 +159,8 @@ export default function DashboardPage() {
             wordCount: existingMeta?.wordCount,
             bookmarkCount: existingMeta?.bookmarkCount,
           })
-          setActiveBook(user?.username, fileName)
-          setStoredBookPage(user?.username, fileName, Math.max(1, Number(restoredPage) || 1))
+          setActiveBook(username, fileName)
+          setStoredBookPage(username, fileName, Math.max(1, Number(restoredPage) || 1))
 
           // Restore OCR data if available
           if (pdf.ocrText) {
@@ -167,7 +182,7 @@ export default function DashboardPage() {
       setPdfDataUrl,
       setPdfFileName,
       setOcrText,
-      user?.username,
+      username,
     ]
   )
 
@@ -184,7 +199,11 @@ export default function DashboardPage() {
         const pdfs: any[] = await res.json()
         if (Array.isArray(pdfs)) {
           pdfs.forEach((p) => {
-            const lastPage = p.lastPage || getStoredBookPage(user.username, p.fileName) || 1
+            // Use the max of DB and localStorage — localStorage may be ahead of the DB
+            // if the user closed the tab before the debounced PATCH fired.
+            const storedPage = getStoredBookPage(user.username, p.fileName) || 0
+            const dbPage = Number(p.lastPage) || 0
+            const lastPage = Math.max(dbPage, storedPage) || 1
             addRecentPdf({
               fileName: p.fileName,
               timestamp: new Date(p.updatedAt || p.createdAt).getTime(),
@@ -198,7 +217,10 @@ export default function DashboardPage() {
           const activeBook = getActiveBook(user.username)
           if (!pdfDataUrl && activeBook && pdfs.some((p) => p.fileName === activeBook)) {
             const activeMeta = pdfs.find((p) => p.fileName === activeBook)
-            const lastPage = activeMeta?.lastPage || getStoredBookPage(user.username, activeBook) || 1
+            // Use the max of DB and localStorage for the resume display
+            const storedPage = getStoredBookPage(user.username, activeBook) || 0
+            const dbPage = Number(activeMeta?.lastPage) || 0
+            const lastPage = Math.max(dbPage, storedPage) || 1
             const dismissed = typeof window !== 'undefined' &&
               window.localStorage.getItem(RESUME_DISMISS_KEY) === activeBook
             setDismissedResume(dismissed)
@@ -374,8 +396,9 @@ export default function DashboardPage() {
   }, [handleKeyDown])
 
   const recentBookCards = recentPdfs.map((pdf) => {
-    const storedPage = getStoredBookPage(user?.username, pdf.fileName)
-    const lastPage = Math.max(1, Number(pdf.lastPage || storedPage || 1))
+    const storedPage = getStoredBookPage(user?.username, pdf.fileName) || 0
+    const dbPage = Number(pdf.lastPage) || 0
+    const lastPage = Math.max(1, Math.max(dbPage, storedPage))
     const pageCount = Math.max(0, Number(pdf.pageCount || 0))
     const progress = pageCount > 0 ? Math.min(100, Math.round((lastPage / pageCount) * 100)) : 0
     const wordCount =
@@ -495,6 +518,10 @@ export default function DashboardPage() {
                 </div>
                 <span className="hidden max-w-[100px] truncate sm:inline font-medium">{user.username}</span>
               </Link>
+              <span className={`hidden sm:inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${planBadgeClass}`} title={`Plan: ${PLAN_LABELS[plan as AIPlan]}`}>
+                <PlanIcon className="h-2.5 w-2.5" />
+                {PLAN_LABELS[plan as AIPlan]}
+              </span>
               <div className="h-4 w-px bg-border/40" />
               <button
                 onClick={logout}
@@ -604,7 +631,7 @@ export default function DashboardPage() {
                   </div>
                   <div className="flex shrink-0 items-start gap-2">
                     <button
-                      onClick={() => handleLoadRecentPdf(resumeBook.fileName)}
+                      onClick={() => handleLoadRecentPdf(resumeBook.fileName, resumeBook.lastPage)}
                       disabled={recentLoading === resumeBook.fileName}
                       className="inline-flex items-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl hover:shadow-emerald-500/40 active:scale-[0.97] disabled:cursor-wait disabled:opacity-60"
                     >

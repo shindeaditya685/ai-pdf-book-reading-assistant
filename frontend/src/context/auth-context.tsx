@@ -2,10 +2,13 @@
 
 import { createContext, useContext, useEffect, useState, useCallback, type ReactNode } from 'react'
 
+import type { AIPlan } from '@/lib/ai-plan'
+
 interface User {
   id: string
   username: string
   isAdmin?: boolean
+  plan?: AIPlan
 }
 
 interface AuthContextValue {

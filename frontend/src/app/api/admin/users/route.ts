@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/admin'
 import { connectToDatabase } from '@/lib/db'
 import { ObjectId } from 'mongodb'
+import { isUnlimitedPlan, type AIPlan } from '@/lib/ai-plan'
 
 export async function GET(request: Request) {
   const admin = await requireAdmin(request)
@@ -21,10 +22,14 @@ export async function GET(request: Request) {
         db.collection('wordHistory').countDocuments({ username: u.username }),
         db.collection('annotations').countDocuments({ username: u.username }),
       ])
+      const plan: AIPlan = u.isAdmin ? 'admin' : (u.plan as AIPlan) || 'free'
       return {
         _id: u._id.toString(),
         username: u.username,
         isAdmin: !!u.isAdmin,
+        plan,
+        isUnlimited: isUnlimitedPlan(plan),
+        aiUsage: u.aiUsage ?? null,
         createdAt: u.createdAt,
         stats: { pdfs: pdfCount, bookmarks: bookmarksCount, words: historyCount, annotations: annotationsCount },
       }
