@@ -23,8 +23,12 @@ export async function GET(request: Request) {
         userId: r.userId.toString(),
         username: r.username,
         message: r.message || '',
+        requestedPlan: r.requestedPlan || null,
         status: r.status,
         createdAt: r.createdAt,
+        dismissReason: r.dismissReason || '',
+        dismissedAt: r.dismissedAt || null,
+        dismissedBy: r.dismissedBy || '',
       })),
     })
   } catch {

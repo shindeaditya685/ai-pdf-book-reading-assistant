@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight, Sparkles, Crown, FlaskConical, Rocket } from 'lucide-react'
+import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight, Sparkles, Crown, FlaskConical, Rocket, MessageSquareQuote } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 import { PLAN_LABELS, PLAN_DESCRIPTIONS, type AIPlan } from '@/lib/ai-plan'
+import { DISMISS_REASON_TEMPLATES, MIN_DISMISS_REASON } from '@/lib/access-request'
 import {
   AlertDialog,
   AlertDialogContent,
@@ -42,6 +43,7 @@ interface AccessRequest {
   userId: string
   username: string
   message: string
+  requestedPlan?: AIPlan | null
   status: string
   createdAt: string
 }
@@ -73,6 +75,13 @@ export default function AdminPage() {
     username: string
     plan?: AIPlan
   } | null>(null)
+
+  // Dismiss-request dialog state (admin must supply a reason)
+  const [dismissTarget, setDismissTarget] = useState<{ id: string; username: string } | null>(null)
+  const [dismissReason, setDismissReason] = useState('')
+  const [dismissing, setDismissing] = useState(false)
+  const [dismissError, setDismissError] = useState('')
+  const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({})
 
   useEffect(() => {
     if (authLoading) return
@@ -138,13 +147,33 @@ export default function AdminPage() {
     setConfirmAction(null)
   }
 
-  const handleDismissRequest = async (requestId: string) => {
-    const res = await authFetch(`/api/admin/access-requests/${requestId}`, { method: 'DELETE' })
+  const openDismissDialog = (requestId: string, username: string) => {
+    setDismissTarget({ id: requestId, username })
+    setDismissReason('')
+    setDismissError('')
+  }
+
+  const handleDismissRequest = async () => {
+    if (!dismissTarget) return
+    if (dismissReason.trim().length < MIN_DISMISS_REASON) {
+      setDismissError(`Reason must be at least ${MIN_DISMISS_REASON} characters.`)
+      return
+    }
+    setDismissing(true)
+    setDismissError('')
+    const res = await authFetch(`/api/admin/access-requests/${dismissTarget.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ reason: dismissReason.trim() }),
+    })
+    setDismissing(false)
     if (res.ok) {
-      setAccessRequests((prev) => prev.filter((r) => r._id !== requestId))
+      setAccessRequests((prev) => prev.filter((r) => r._id !== dismissTarget.id))
+      setDismissTarget(null)
+      setDismissReason('')
     } else {
       const data = await res.json().catch(() => ({}))
-      alert(data?.error || 'Failed to dismiss request')
+      setDismissError(data?.error || 'Failed to dismiss request')
     }
   }
 
@@ -223,38 +252,66 @@ export default function AdminPage() {
               </div>
             </div>
             <div className="space-y-2">
-              {accessRequests.map((r) => (
-                <div
-                  key={r._id}
-                  className="flex items-start justify-between gap-3 rounded-lg border border-amber-200/50 bg-background/80 p-3"
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xs font-semibold text-foreground">{r.username}</span>
-                      <span className="text-[10px] text-muted-foreground/60">
-                        {new Date(r.createdAt).toLocaleString()}
-                      </span>
+              {accessRequests.map((r) => {
+                const expanded = !!expandedMessages[r._id]
+                const message = r.message || ''
+                const longMessage = message.length > 120
+                return (
+                  <div
+                    key={r._id}
+                    className="rounded-lg border border-amber-200/50 bg-background/80 p-3"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1 min-w-0">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <span className="text-xs font-semibold text-foreground">{r.username}</span>
+                          <span className="text-[10px] text-muted-foreground/60">
+                            {new Date(r.createdAt).toLocaleString()}
+                          </span>
+                          {r.requestedPlan && (
+                            <span className={`inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[9px] font-semibold ${planBadgeClass(r.requestedPlan)}`}>
+                              {planIcon(r.requestedPlan)}
+                              wants {PLAN_LABELS[r.requestedPlan]}
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        <button
+                          onClick={() => setConfirmAction({ type: 'plan', userId: r.userId, username: r.username, plan: r.requestedPlan || 'pro' })}
+                          className="rounded-md bg-emerald-600 px-2.5 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-emerald-500"
+                        >
+                          Grant{r.requestedPlan ? ` ${PLAN_LABELS[r.requestedPlan]}` : ''}
+                        </button>
+                        <button
+                          onClick={() => openDismissDialog(r._id, r.username)}
+                          className="rounded-md border border-border/60 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                        >
+                          Dismiss
+                        </button>
+                      </div>
                     </div>
-                    {r.message && (
-                      <p className="mt-1 line-clamp-2 text-[11px] text-muted-foreground/80">{r.message}</p>
+                    {message && (
+                      <div className="mt-2 flex gap-2 rounded-md border-l-2 border-amber-400/60 bg-amber-50/40 px-2.5 py-1.5 dark:bg-amber-950/20">
+                        <MessageSquareQuote className="mt-0.5 h-3 w-3 shrink-0 text-amber-600/70 dark:text-amber-400/70" />
+                        <div className="min-w-0 flex-1">
+                          <p className={`text-[11px] italic leading-relaxed text-amber-900/80 dark:text-amber-200/80 ${!expanded && longMessage ? 'line-clamp-2' : ''}`}>
+                            {message}
+                          </p>
+                          {longMessage && (
+                            <button
+                              onClick={() => setExpandedMessages((prev) => ({ ...prev, [r._id]: !expanded }))}
+                              className="mt-0.5 text-[10px] font-semibold text-amber-700 hover:underline dark:text-amber-400"
+                            >
+                              {expanded ? 'Show less' : 'Read full message'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
                     )}
                   </div>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <button
-                      onClick={() => setConfirmAction({ type: 'plan', userId: r.userId, username: r.username, plan: 'free' })}
-                      className="rounded-md bg-emerald-600 px-2.5 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-emerald-500"
-                    >
-                      Grant
-                    </button>
-                    <button
-                      onClick={() => handleDismissRequest(r._id)}
-                      className="rounded-md border border-border/60 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-                    >
-                      Dismiss
-                    </button>
-                  </div>
-                </div>
-              ))}
+                )
+              })}
             </div>
           </div>
         )}
@@ -505,6 +562,63 @@ export default function AdminPage() {
               )}
             </AlertDialogFooter>
           )}
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── DISMISS REQUEST DIALOG (requires a reason) ── */}
+      <AlertDialog open={!!dismissTarget} onOpenChange={(open) => { if (!open) { setDismissTarget(null); setDismissError('') } }}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Dismiss {dismissTarget?.username}&apos;s request</AlertDialogTitle>
+            <AlertDialogDescription>
+              Please tell the user why their request is being declined. This message is shown to them and they won&apos;t be able to send another request for a few days.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="space-y-3">
+            <div>
+              <label className="mb-1.5 block text-xs font-semibold text-foreground">Reason</label>
+              <textarea
+                value={dismissReason}
+                onChange={(e) => setDismissReason(e.target.value)}
+                placeholder="Explain why this request is being declined…"
+                rows={4}
+                maxLength={500}
+                className="w-full resize-none rounded-lg border border-border/60 bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/50 focus:border-amber-500/40 focus:outline-none focus:ring-2 focus:ring-amber-500/20"
+              />
+              <div className="mt-1 flex items-center justify-between text-[10px] text-muted-foreground/60">
+                <span>Min {MIN_DISMISS_REASON} characters</span>
+                <span className={dismissReason.length > 450 ? 'text-amber-600' : ''}>{dismissReason.length}/500</span>
+              </div>
+            </div>
+            <div>
+              <span className="mb-1.5 block text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">Quick templates</span>
+              <div className="flex flex-wrap gap-1.5">
+                {DISMISS_REASON_TEMPLATES.map((tpl) => (
+                  <button
+                    key={tpl}
+                    onClick={() => setDismissReason(tpl)}
+                    className="rounded-full border border-border/60 bg-background/60 px-2.5 py-1 text-[10px] text-muted-foreground transition-colors hover:border-amber-400/40 hover:bg-amber-50/40 hover:text-amber-700 dark:hover:bg-amber-950/20 dark:hover:text-amber-300"
+                  >
+                    {tpl}
+                  </button>
+                ))}
+              </div>
+            </div>
+            {dismissError && (
+              <p className="text-xs text-red-500">{dismissError}</p>
+            )}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={dismissing}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(e) => { e.preventDefault(); handleDismissRequest() }}
+              disabled={dismissing || dismissReason.trim().length < MIN_DISMISS_REASON}
+              className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50"
+            >
+              {dismissing && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
+              {dismissing ? 'Dismissing…' : 'Dismiss request'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
