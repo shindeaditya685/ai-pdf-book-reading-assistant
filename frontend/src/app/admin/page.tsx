@@ -156,10 +156,9 @@ export default function AdminPage() {
     return <Sparkles className="h-3 w-3" />
   }
 
-  const planBadgeClass = (plan?: AIPlan, isAdmin?: boolean) => {
-    if (isAdmin) return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+  const planBadgeClass = (plan?: AIPlan) => {
     if (plan === 'founder') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-    if (plan === 'pro') return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+    if (plan === 'admin' || plan === 'pro') return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
     if (plan === 'beta') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
     return 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400'
   }
@@ -340,11 +339,11 @@ export default function AdminPage() {
                     <td className="px-4 py-3">
                       <button
                         onClick={() => setConfirmAction({ type: 'plan', userId: u._id, username: u.username, plan: u.plan })}
-                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold transition-opacity hover:opacity-80 ${planBadgeClass(u.plan, u.isAdmin)}`}
+                        className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold transition-opacity hover:opacity-80 ${planBadgeClass(u.plan)}`}
                         title="Click to change plan"
                       >
                         {planIcon(u.plan)}
-                        {u.isAdmin ? 'Admin' : PLAN_LABELS[u.plan || 'free']}
+                        {PLAN_LABELS[u.plan || 'free']}
                       </button>
                     </td>
                     <td className="px-4 py-3 text-muted-foreground/70">
@@ -481,28 +480,29 @@ export default function AdminPage() {
               </div>
             )}
           </AlertDialogHeader>
-          {confirmAction?.type !== 'plan' && (
+          {confirmAction && (
             <AlertDialogFooter>
               <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                className={
-                  confirmAction?.type === 'delete'
-                    ? 'bg-red-600 hover:bg-red-500'
-                    : confirmAction?.type === 'promote'
-                    ? 'bg-violet-600 hover:bg-violet-500'
-                    : 'bg-amber-600 hover:bg-amber-500'
-                }
-                onClick={() => {
-                  if (!confirmAction) return
-                  if (confirmAction.type === 'delete') handleDeleteUser(confirmAction.userId)
-                  else if (confirmAction.type === 'promote') handleToggleAdmin(confirmAction.userId, true)
-                  else if (confirmAction.type === 'revoke') handleToggleAdmin(confirmAction.userId, false)
-                }}
-              >
-                {confirmAction?.type === 'delete' && 'Delete'}
-                {confirmAction?.type === 'promote' && 'Promote'}
-                {confirmAction?.type === 'revoke' && 'Revoke'}
-              </AlertDialogAction>
+              {confirmAction.type !== 'plan' && (
+                <AlertDialogAction
+                  className={
+                    confirmAction.type === 'delete'
+                      ? 'bg-red-600 hover:bg-red-500'
+                      : confirmAction.type === 'promote'
+                      ? 'bg-violet-600 hover:bg-violet-500'
+                      : 'bg-amber-600 hover:bg-amber-500'
+                  }
+                  onClick={() => {
+                    if (confirmAction.type === 'delete') handleDeleteUser(confirmAction.userId)
+                    else if (confirmAction.type === 'promote') handleToggleAdmin(confirmAction.userId, true)
+                    else if (confirmAction.type === 'revoke') handleToggleAdmin(confirmAction.userId, false)
+                  }}
+                >
+                  {confirmAction.type === 'delete' && 'Delete'}
+                  {confirmAction.type === 'promote' && 'Promote'}
+                  {confirmAction.type === 'revoke' && 'Revoke'}
+                </AlertDialogAction>
+              )}
             </AlertDialogFooter>
           )}
         </AlertDialogContent>

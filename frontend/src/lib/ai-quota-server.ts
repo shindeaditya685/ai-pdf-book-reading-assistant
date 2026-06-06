@@ -48,7 +48,7 @@ async function getUserForQuota(userId: string): Promise<UserRecord | null> {
 }
 
 function resolvePlan(user: UserRecord | null): AIPlan {
-  return normalizeAIPlan(user?.plan, !!user?.isAdmin)
+  return normalizeAIPlan(user?.plan)
 }
 
 function freshUsageIfStale(usage: AIUsage | undefined): AIUsage {

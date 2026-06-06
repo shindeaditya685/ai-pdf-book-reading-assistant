@@ -49,7 +49,7 @@ export function useAIQuota(enabled = true) {
       }
       const data = await res.json()
       const isUnlimited = !!data.isUnlimited
-      const plan = normalizeAIPlan(data.plan, data.plan === 'admin')
+      const plan = normalizeAIPlan(data.plan)
       setState({
         plan,
         isUnlimited,

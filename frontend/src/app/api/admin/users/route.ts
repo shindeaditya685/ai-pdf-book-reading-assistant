@@ -22,7 +22,7 @@ export async function GET(request: Request) {
         db.collection('wordHistory').countDocuments({ username: u.username }),
         db.collection('annotations').countDocuments({ username: u.username }),
       ])
-      const plan: AIPlan = normalizeAIPlan(u.plan, !!u.isAdmin)
+      const plan: AIPlan = normalizeAIPlan(u.plan)
       return {
         _id: u._id.toString(),
         username: u.username,

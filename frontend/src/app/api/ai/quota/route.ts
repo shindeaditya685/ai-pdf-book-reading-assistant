@@ -36,7 +36,7 @@ export async function GET(request: Request) {
       { projection: { isAdmin: 1, plan: 1, aiUsage: 1 } }
     )
 
-    const plan: AIPlan = normalizeAIPlan(doc?.plan, !!doc?.isAdmin)
+    const plan: AIPlan = normalizeAIPlan(doc?.plan)
     const isUnlimited = isUnlimitedPlan(plan)
     const stored = doc?.aiUsage as AIUsage | undefined
     const usage: AIUsage = !stored || stored.date !== todayUtc() ? emptyUsage() : stored

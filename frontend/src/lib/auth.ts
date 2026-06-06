@@ -72,7 +72,7 @@ export async function authenticateUser(username: string, password: string) {
     id: user._id.toString(),
     username: user.username,
     isAdmin: !!user.isAdmin,
-    plan: normalizeAIPlan(user.plan, !!user.isAdmin),
+    plan: normalizeAIPlan(user.plan),
   }
 }
 
@@ -106,7 +106,7 @@ export async function getUserFromDb(payload: { id: string; username: string }) {
     id: user._id.toString(),
     username: user.username,
     isAdmin: !!user.isAdmin,
-    plan: normalizeAIPlan(user.plan, !!user.isAdmin),
+    plan: normalizeAIPlan(user.plan),
   }
 }
 
