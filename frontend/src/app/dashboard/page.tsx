@@ -125,6 +125,7 @@ export default function DashboardPage() {
 
   const dataLoadedRef = useRef<string | null>(null)
   const recentLoadedRef = useRef<string | null>(null)
+  const openRequestLoadedRef = useRef<string | null>(null)
 
   // Load a recent PDF from MongoDB
   const handleLoadRecentPdf = useCallback(
@@ -185,6 +186,15 @@ export default function DashboardPage() {
       username,
     ]
   )
+
+  useEffect(() => {
+    if (!user?.username || typeof window === 'undefined') return
+    const openFileName = new URLSearchParams(window.location.search).get('open')
+    if (!openFileName || openRequestLoadedRef.current === openFileName) return
+
+    openRequestLoadedRef.current = openFileName
+    handleLoadRecentPdf(openFileName)
+  }, [handleLoadRecentPdf, user?.username])
 
   // Load recent PDFs from MongoDB on mount
   useEffect(() => {

@@ -85,13 +85,15 @@ export async function POST(request: Request) {
 
     const existing = await conn.db.collection('pdfs').findOne({ fileName, username: user.username })
     if (existing) {
+      const existingPageCount = toPositiveInt(existing.pageCount, 0)
+      const existingLastPage = Math.max(1, toPositiveInt(existing.lastPage, 1))
       await conn.db.collection('pdfs').updateOne(
         { _id: existing._id },
         {
           $set: {
             content,
-            pageCount: safePageCount,
-            lastPage: safeLastPage,
+            pageCount: Math.max(existingPageCount, safePageCount),
+            lastPage: Math.max(existingLastPage, safeLastPage),
             updatedAt: new Date(),
           },
         }

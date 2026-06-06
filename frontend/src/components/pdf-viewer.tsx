@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
 import { useAuth } from '@/context/auth-context'
 import { setActiveBook, setStoredBookPage, getStoredBookPage, getActiveBook } from '@/lib/reading-progress'
@@ -46,6 +46,7 @@ export function PDFViewer() {
   const readingLogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const sessionStartRef = useRef<number>(Date.now())
   const lastLoggedPageRef = useRef<number>(0)
+  const resumeScrollPageRef = useRef<number | null>(null)
   const { user } = useAuth()
   const username = user?.username
   const quota = useAIQuota(!!user)
@@ -133,6 +134,7 @@ export function PDFViewer() {
   useEffect(() => {
     if (!pdfDataUrl) {
       pdfDocRef.current = null
+      resumeScrollPageRef.current = null
       setTotalPages(0)
       // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset when pdf is unloaded
       setPdfReady(false)
@@ -142,6 +144,7 @@ export function PDFViewer() {
 
     const loadPDF = async () => {
       setIsLoading(true)
+      setPdfReady(false)
       try {
         const loadingTask = pdfjsLib.getDocument(pdfDataUrl)
         const pdf = await loadingTask.promise
@@ -162,10 +165,11 @@ export function PDFViewer() {
           const candidates = [stored, recentLastPage, requestedFromStore, 1].filter(
             (v): v is number => typeof v === 'number' && Number.isFinite(v) && v > 0
           )
-          restoredPage = Math.min(Math.max(1, candidates[0] ?? 1), pdf.numPages)
+          restoredPage = Math.min(Math.max(1, Math.max(...candidates)), pdf.numPages)
         } else {
           restoredPage = Math.min(Math.max(1, usePDFStore.getState().currentPage || 1), pdf.numPages)
         }
+        resumeScrollPageRef.current = usePDFStore.getState().scrollMode ? restoredPage : null
         setCurrentPage(restoredPage)
         if (pdfFileName) {
           const { addRecentPdf } = usePDFStore.getState()
@@ -689,6 +693,37 @@ export function PDFViewer() {
     }
   }, [zoomInput, scale, setScale])
 
+  useLayoutEffect(() => {
+    if (!scrollMode) {
+      resumeScrollPageRef.current = null
+      return
+    }
+    if (!pdfReady || !containerRef.current) return
+    const targetPage = resumeScrollPageRef.current
+    if (!targetPage || targetPage < 1 || targetPage > totalPages) return
+
+    let clearTimer: ReturnType<typeof setTimeout> | null = null
+    const frame = requestAnimationFrame(() => {
+      const target = containerRef.current?.querySelector(`[data-page="${targetPage}"]`)
+      if (!target) {
+        resumeScrollPageRef.current = null
+        return
+      }
+
+      ;(target as HTMLElement).scrollIntoView({ behavior: 'auto', block: 'start' })
+      clearTimer = setTimeout(() => {
+        if (resumeScrollPageRef.current === targetPage) {
+          resumeScrollPageRef.current = null
+        }
+      }, 150)
+    })
+
+    return () => {
+      cancelAnimationFrame(frame)
+      if (clearTimer) clearTimeout(clearTimer)
+    }
+  }, [currentPage, pdfDataUrl, pdfReady, scrollMode, totalPages])
+
   // Track current page in scroll mode via IntersectionObserver
   useEffect(() => {
     if (!scrollMode || !pdfReady || totalPages === 0) return
@@ -712,6 +747,7 @@ export function PDFViewer() {
             bestPage = page
           }
         }
+        if (resumeScrollPageRef.current) return
         if (bestPage && bestRatio > 0 && bestPage !== usePDFStore.getState().currentPage) {
           usePDFStore.getState().setCurrentPage(bestPage)
         }

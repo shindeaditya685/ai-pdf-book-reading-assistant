@@ -81,11 +81,29 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
           reader.readAsDataURL(file)
         })
         setProgress(100)
-        const restoredPage = getStoredBookPage(username, file.name) ?? 1
+        let existingLastPage = 0
+        let existingPageCount = 0
+        try {
+          const existingRes = await authFetch(`/api/db/pdf?fileName=${encodeURIComponent(file.name)}`)
+          if (existingRes.ok) {
+            const existingPdf = await existingRes.json()
+            existingLastPage = Number(existingPdf?.lastPage) || 0
+            existingPageCount = Number(existingPdf?.pageCount) || 0
+          }
+        } catch {
+          // Local progress is still enough to resume when the library lookup is unavailable.
+        }
+        const storedPage = getStoredBookPage(username, file.name) ?? 0
+        const restoredPage = Math.max(1, storedPage, existingLastPage)
         setCurrentPage(restoredPage)
         setPdfFile(file)
         setPdfDataUrl(dataUrl)
-        addRecentPdf({ fileName: file.name, timestamp: Date.now(), lastPage: restoredPage, pageCount: 0 })
+        addRecentPdf({
+          fileName: file.name,
+          timestamp: Date.now(),
+          lastPage: restoredPage,
+          pageCount: existingPageCount,
+        })
         setActiveBook(username, file.name)
         setStoredBookPage(username, file.name, restoredPage)
         clearOcrText()
@@ -93,7 +111,12 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
         authFetch('/api/db/pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ fileName: file.name, content: dataUrl, pageCount: 0, lastPage: restoredPage }),
+          body: JSON.stringify({
+            fileName: file.name,
+            content: dataUrl,
+            pageCount: existingPageCount,
+            lastPage: restoredPage,
+          }),
         }).catch(() => {})
       } catch (err) {
         console.error('Error reading PDF:', err)
