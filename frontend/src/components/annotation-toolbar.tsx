@@ -20,6 +20,7 @@ import { usePDFStore } from "@/store/use-pdf-store";
 import { Button } from "@/components/ui/button";
 import { motion, AnimatePresence } from "framer-motion";
 import { authFetch } from "@/lib/api";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 const HIGHLIGHT_COLORS = [
   {
@@ -80,6 +81,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
   const [summary, setSummary] = useState("");
   const [summarizing, setSummarizing] = useState(false);
   const toolbarRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
   // Close panel when clicking outside the toolbar
   useEffect(() => {
@@ -103,36 +105,47 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
 
   return (
     <div ref={toolbarRef} className="contents">
-      {/* Toggle button — fixed position, never shifts */}
-      <div className="fixed left-2 top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none sm:left-3">
-        <Button
-          variant="outline"
-          size="icon"
-          aria-label={isMinimized ? "Show toolbar" : "Hide toolbar"}
-          className="h-9 w-9 rounded-full bg-background/95 shadow-md border hover:bg-muted sm:h-8 sm:w-8"
-          onClick={() => {
-            setIsMinimized(!isMinimized);
-            setOpenPanel(null);
-          }}
-          title={isMinimized ? "Show Toolbar" : "Hide Toolbar"}
-        >
-          {isMinimized ? (
-            <ChevronRight className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
-          ) : (
-            <ChevronLeft className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
-          )}
-        </Button>
-      </div>
+      {/* ── TOGGLE BUTTON ──
+          Desktop only. On mobile the toolbar is a persistent bottom bar
+          (always reachable with the thumb, doesn't block reading). */}
+      {!isMobile && (
+        <div className="fixed left-2 top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none sm:left-3">
+          <Button
+            variant="outline"
+            size="icon"
+            aria-label={isMinimized ? "Show toolbar" : "Hide toolbar"}
+            className="h-9 w-9 rounded-full bg-background/95 shadow-md border hover:bg-muted sm:h-8 sm:w-8"
+            onClick={() => {
+              setIsMinimized(!isMinimized);
+              setOpenPanel(null);
+            }}
+            title={isMinimized ? "Show Toolbar" : "Hide Toolbar"}
+          >
+            {isMinimized ? (
+              <ChevronRight className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+            ) : (
+              <ChevronLeft className="h-3.5 w-3.5 sm:h-3 sm:w-3" />
+            )}
+          </Button>
+        </div>
+      )}
 
-      {/* Toolbar — sits just below the main toolbar, vertically anchored to the same center as the toggle button */}
+      {/* ── TOOLBAR BODY ──
+          Mobile:  fixed bottom bar (horizontal, safe-area aware, opens popovers upward)
+          Desktop: fixed vertical bar on the left (current layout) */}
       <AnimatePresence>
-        {!isMinimized && (
+        {(isMobile || !isMinimized) && (
           <motion.div
-            initial={{ opacity: 0, x: -12, scale: 0.95 }}
-            animate={{ opacity: 1, x: 0, scale: 1 }}
-            exit={{ opacity: 0, x: -12, scale: 0.95 }}
-            transition={{ duration: 0.15 }}
-            className="fixed left-[calc(0.75rem+28px+4px)] top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md"
+            key={isMobile ? "mobile-bar" : "desktop-bar"}
+            initial={isMobile ? { y: 80, opacity: 0 } : { opacity: 0, x: -12, scale: 0.95 }}
+            animate={isMobile ? { y: 0, opacity: 1 } : { opacity: 1, x: 0, scale: 1 }}
+            exit={isMobile ? { y: 80, opacity: 0 } : { opacity: 0, x: -12, scale: 0.95 }}
+            transition={{ duration: 0.2, ease: "easeOut" }}
+            className={
+              isMobile
+                ? "fixed inset-x-2 bottom-2 z-40 pointer-events-auto select-none flex items-center justify-center gap-0.5 overflow-x-auto rounded-2xl border border-border/70 bg-background/95 p-1 shadow-2xl backdrop-blur-md pb-[max(0.375rem,env(safe-area-inset-bottom))]"
+                : "fixed left-[calc(0.75rem+28px+4px)] top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md"
+            }
           >
             {/* ── 1. SELECT ── */}
             <ToolBtn
@@ -172,7 +185,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
 
               <AnimatePresence>
                 {openPanel === "highlight" && (
-                  <Popover>
+                  <Popover isMobile={isMobile}>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
                       Highlight colour
                     </p>
@@ -212,7 +225,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
 
               <AnimatePresence>
                 {openPanel === "pen" && (
-                  <Popover wide>
+                  <Popover wide isMobile={isMobile}>
                     <p className="text-[9px] font-bold uppercase tracking-widest text-muted-foreground mb-1.5">
                       Pen colour
                     </p>
@@ -277,14 +290,14 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
               <MessageSquarePlus className="h-4 w-4" />
             </ToolBtn>
 
-            <div className="my-0.5 border-t border-border/60" />
+            <div className="mx-0.5 h-6 w-px bg-border/60 sm:mx-0 sm:my-0.5 sm:h-auto sm:w-auto sm:border-t sm:border-border/60" />
 
             {/* Undo/Redo buttons */}
             <button
               onClick={undo}
               disabled={undoStack.length === 0}
               title="Undo last annotation (Ctrl+Z)"
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90 sm:h-9 sm:w-9"
             >
               <Undo2 className="h-4 w-4" />
             </button>
@@ -293,12 +306,12 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
               onClick={redo}
               disabled={redoStack.length === 0}
               title="Redo last annotation (Ctrl+Shift+Z)"
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90 sm:h-9 sm:w-9"
             >
               <Redo2 className="h-4 w-4" />
             </button>
 
-            <div className="my-0.5 border-t border-border/60" />
+            <div className="mx-0.5 h-6 w-px bg-border/60 sm:mx-0 sm:my-0.5 sm:h-auto sm:w-auto sm:border-t sm:border-border/60" />
 
             {/* ── 6. CLEAR ALL ── */}
             <button
@@ -307,7 +320,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                 setOpenPanel(null);
               }}
               title="Clear all page annotations"
-              className="flex h-9 w-9 items-center justify-center rounded-xl text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-all active:scale-90"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-all active:scale-90 sm:h-9 sm:w-9"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -316,11 +329,15 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
             <AnimatePresence>
               {showSummarizer && (
                 <motion.div
-                  initial={{ opacity: 0, x: -12, scale: 0.96 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: -12, scale: 0.96 }}
+                  initial={{ opacity: 0, scale: 0.96 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  exit={{ opacity: 0, scale: 0.96 }}
                   transition={{ duration: 0.14 }}
-                  className="absolute left-[calc(100%+10px)] top-0 z-50 w-72 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md"
+                  className={
+                    isMobile
+                      ? "absolute bottom-full left-1/2 mb-2 z-50 w-[calc(100vw-2rem)] max-w-xs -translate-x-1/2 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md"
+                      : "absolute left-[calc(100%+10px)] top-0 z-50 w-72 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md"
+                  }
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
                 >
@@ -438,7 +455,7 @@ function ToolBtn({
     <button
       onClick={onClick}
       title={title}
-      className={`flex h-9 w-9 items-center justify-center rounded-xl transition-all active:scale-90
+      className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all active:scale-90 sm:h-9 sm:w-9
         ${
           active
             ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/30"
@@ -455,17 +472,23 @@ function ToolBtn({
 function Popover({
   children,
   wide,
+  isMobile,
 }: {
   children: React.ReactNode;
   wide?: boolean;
+  isMobile?: boolean;
 }) {
   return (
     <motion.div
-      initial={{ opacity: 0, x: -6, scale: 0.96 }}
-      animate={{ opacity: 1, x: 0, scale: 1 }}
-      exit={{ opacity: 0, x: -6, scale: 0.96 }}
+      initial={isMobile ? { opacity: 0, y: 8, scale: 0.96 } : { opacity: 0, x: -6, scale: 0.96 }}
+      animate={{ opacity: 1, x: 0, y: 0, scale: 1 }}
+      exit={isMobile ? { opacity: 0, y: 8, scale: 0.96 } : { opacity: 0, x: -6, scale: 0.96 }}
       transition={{ duration: 0.14 }}
-      className={`absolute left-[calc(100%+10px)] top-0 z-50 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md ${wide ? "w-44" : "w-auto"}`}
+      className={
+        isMobile
+          ? `absolute bottom-full left-1/2 mb-2 z-50 -translate-x-1/2 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md ${wide ? "w-44" : "w-auto"}`
+          : `absolute left-[calc(100%+10px)] top-0 z-50 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md ${wide ? "w-44" : "w-auto"}`
+      }
       // Prevent clicks inside the popover from propagating to the PDF canvas
       onMouseDown={(e) => e.stopPropagation()}
       onClick={(e) => e.stopPropagation()}
