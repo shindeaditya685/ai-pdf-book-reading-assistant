@@ -12,6 +12,7 @@ import {
   Languages,
   Volume2,
   Check,
+  Loader2,
 } from 'lucide-react'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
@@ -59,6 +60,7 @@ export function SelectionContextMenu() {
   const [state, setState] = useState<ContextMenuState | null>(null)
   const [mounted, setMounted] = useState(false)
   const [flash, setFlash] = useState<string | null>(null)
+  const [loadingAction, setLoadingAction] = useState<string | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const closeTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const stateRef = useRef<ContextMenuState | null>(null)
@@ -76,6 +78,7 @@ export function SelectionContextMenu() {
   const close = useCallback(() => {
     setState(null)
     setFlash(null)
+    setLoadingAction(null)
   }, [])
 
   // Show a small "Saved!" / "Copied!" pill at the cursor, then close.
@@ -221,6 +224,8 @@ export function SelectionContextMenu() {
 
   const handleToggleQuote = useCallback(async () => {
     if (!state || !state.sentence || !state.pageNumber || !state.pdfFileName) return
+    if (loadingAction) return
+    setLoadingAction('quote')
     const store = usePDFStore.getState()
     if (state.isQuoteSaved) {
       const existing = store.quotes.find(
@@ -263,11 +268,15 @@ export function SelectionContextMenu() {
       }
     } catch {
       flashAndClose('Failed to save')
+    } finally {
+      setLoadingAction(null)
     }
-  }, [state, flashAndClose])
+  }, [state, flashAndClose, loadingAction])
 
   const handleToggleBookmark = useCallback(async () => {
     if (!state || !state.word || !state.pageNumber || !state.pdfFileName) return
+    if (loadingAction) return
+    setLoadingAction('bookmark')
     const store = usePDFStore.getState()
     if (state.isBookmarked) {
       const existing = store.bookmarks.find(
@@ -287,11 +296,14 @@ export function SelectionContextMenu() {
     }
     // Bookmarking without an explanation isn't possible in the existing flow
     // (bookmarks store meaning/translation). Open the meaning popup instead.
+    setLoadingAction(null)
     handleGetMeaning()
-  }, [state, flashAndClose, handleGetMeaning])
+  }, [state, flashAndClose, handleGetMeaning, loadingAction])
 
   const handleHighlight = useCallback(async (color: string) => {
     if (!state || !state.hasSelection) return
+    if (loadingAction) return
+    setLoadingAction('highlight')
     const store = usePDFStore.getState()
     const newId = `ann-${Date.now()}-${Math.random()}`
     const newHighlight = {
@@ -315,16 +327,19 @@ export function SelectionContextMenu() {
     } catch {
       // Keep the local highlight even if the server save fails.
       flashAndClose('Highlighted (offline)')
+    } finally {
+      setLoadingAction(null)
     }
-  }, [state, flashAndClose])
+  }, [state, flashAndClose, loadingAction])
 
   const handleCopy = useCallback(async () => {
     if (!state?.selectedText) return
+    if (loadingAction) return
+    setLoadingAction('copy')
     try {
       await navigator.clipboard.writeText(state.selectedText)
       flashAndClose('Copied!')
     } catch {
-      // Fallback for older browsers
       const ta = document.createElement('textarea')
       ta.value = state.selectedText
       document.body.appendChild(ta)
@@ -332,8 +347,10 @@ export function SelectionContextMenu() {
       try { document.execCommand('copy') } catch {}
       document.body.removeChild(ta)
       flashAndClose('Copied!')
+    } finally {
+      setLoadingAction(null)
     }
-  }, [state, flashAndClose])
+  }, [state, flashAndClose, loadingAction])
 
   const handleSimplify = useCallback(() => {
     if (!state) return
@@ -387,7 +404,7 @@ export function SelectionContextMenu() {
               <button
                 role="menuitem"
                 onClick={handleGetMeaning}
-                disabled={!state.word}
+                disabled={!state.word || !!loadingAction}
                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Sparkles className="h-3.5 w-3.5 text-emerald-500" />
@@ -398,25 +415,33 @@ export function SelectionContextMenu() {
               <button
                 role="menuitem"
                 onClick={handleToggleQuote}
-                disabled={!state.sentence}
+                disabled={!state.sentence || !!loadingAction}
                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <QuoteIcon
-                  className={`h-3.5 w-3.5 ${state.isQuoteSaved ? 'fill-yellow-500 text-yellow-600' : 'text-muted-foreground'}`}
-                />
-                <span>{state.isQuoteSaved ? 'Remove from Quotes' : 'Save as Quote'}</span>
+                {loadingAction === 'quote' ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                ) : (
+                  <QuoteIcon
+                    className={`h-3.5 w-3.5 ${state.isQuoteSaved ? 'fill-yellow-500 text-yellow-600' : 'text-muted-foreground'}`}
+                  />
+                )}
+                <span>{loadingAction === 'quote' ? 'Saving...' : state.isQuoteSaved ? 'Remove from Quotes' : 'Save as Quote'}</span>
               </button>
 
               <button
                 role="menuitem"
                 onClick={handleToggleBookmark}
-                disabled={!state.word}
+                disabled={!state.word || !!loadingAction}
                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Bookmark
-                  className={`h-3.5 w-3.5 ${state.isBookmarked ? 'fill-amber-500 text-amber-500' : 'text-muted-foreground'}`}
-                />
-                <span>{state.isBookmarked ? 'Remove Bookmark' : 'Bookmark'}</span>
+                {loadingAction === 'bookmark' ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                ) : (
+                  <Bookmark
+                    className={`h-3.5 w-3.5 ${state.isBookmarked ? 'fill-amber-500 text-amber-500' : 'text-muted-foreground'}`}
+                  />
+                )}
+                <span>{loadingAction === 'bookmark' ? 'Saving...' : state.isBookmarked ? 'Remove Bookmark' : 'Bookmark'}</span>
                 {!state.isBookmarked && (
                   <span className="ml-auto text-[10px] text-muted-foreground/60">needs meaning</span>
                 )}
@@ -425,11 +450,15 @@ export function SelectionContextMenu() {
               <div className="relative group/highlight" role="none">
                 <button
                   role="menuitem"
-                  disabled={!state.hasSelection}
+                  disabled={!state.hasSelection || !!loadingAction}
                   className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  <Highlighter className="h-3.5 w-3.5 text-muted-foreground" />
-                  <span>Highlight</span>
+                  {loadingAction === 'highlight' ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                  ) : (
+                    <Highlighter className="h-3.5 w-3.5 text-muted-foreground" />
+                  )}
+                  <span>{loadingAction === 'highlight' ? 'Highlighting...' : 'Highlight'}</span>
                   <span className="ml-auto text-muted-foreground/60">&#9656;</span>
                 </button>
                 <div
@@ -441,9 +470,14 @@ export function SelectionContextMenu() {
                       key={c.value}
                       role="menuitem"
                       onClick={() => handleHighlight(c.value)}
-                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted focus:bg-muted focus:outline-none rounded text-left"
+                      disabled={!!loadingAction}
+                      className="flex items-center gap-2 px-2 py-1.5 hover:bg-muted focus:bg-muted focus:outline-none rounded text-left disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      <span className={`h-4 w-4 rounded-full ${c.tailwind} border shadow-sm`} />
+                      {loadingAction === 'highlight' ? (
+                        <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground shrink-0" />
+                      ) : (
+                        <span className={`h-4 w-4 rounded-full ${c.tailwind} border shadow-sm shrink-0`} />
+                      )}
                       <span className="text-xs">{c.label}</span>
                     </button>
                   ))}
@@ -455,7 +489,7 @@ export function SelectionContextMenu() {
               <button
                 role="menuitem"
                 onClick={handleSimplify}
-                disabled={!state.sentence || state.sentence.split(/\s+/).length < 2}
+                disabled={!state.sentence || state.sentence.split(/\s+/).length < 2 || !!loadingAction}
                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Languages className="h-3.5 w-3.5 text-amber-500" />
@@ -465,7 +499,7 @@ export function SelectionContextMenu() {
               <button
                 role="menuitem"
                 onClick={handleReadAloud}
-                disabled={!state.sentence}
+                disabled={!state.sentence || !!loadingAction}
                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Volume2 className="h-3.5 w-3.5 text-emerald-500" />
@@ -475,11 +509,15 @@ export function SelectionContextMenu() {
               <button
                 role="menuitem"
                 onClick={handleCopy}
-                disabled={!state.selectedText}
+                disabled={!state.selectedText || !!loadingAction}
                 className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Copy className="h-3.5 w-3.5 text-muted-foreground" />
-                <span>Copy text</span>
+                {loadingAction === 'copy' ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-muted-foreground" />
+                ) : (
+                  <Copy className="h-3.5 w-3.5 text-muted-foreground" />
+                )}
+                <span>{loadingAction === 'copy' ? 'Copying...' : 'Copy text'}</span>
               </button>
             </>
           )}
