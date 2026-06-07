@@ -16,6 +16,7 @@ import {
 } from 'lucide-react'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
+import { cleanText } from '@/lib/quotes'
 
 const HIGHLIGHT_COLORS = [
   { value: 'rgba(253, 224, 71, 0.65)', label: 'Yellow', tailwind: 'bg-yellow-400 border-yellow-500' },
@@ -129,7 +130,9 @@ export function SelectionContextMenu() {
       let selectionRects: ContextMenuState['selectionRects'] = []
 
       if (hasSelection && sel) {
-        selectedText = sel.toString().trim()
+        // Normalize the selection text: strip control chars, collapse
+        // whitespace (pdfjs text-layer spans may have irregular spacing)
+        selectedText = cleanText(sel.toString().replace(/\s+/g, ' '))
         word = selectedText.split(/\s+/)[0] || ''
         sentence = selectedText
         // Compute canvas-relative rects so a later "Highlight" click can still
@@ -149,7 +152,8 @@ export function SelectionContextMenu() {
         }
       } else {
         const span = target.closest('span')
-        word = span?.textContent?.trim() || target.textContent?.trim() || ''
+        const raw = span?.textContent || target.textContent || ''
+        word = cleanText(raw) || ''
         sentence = word
         selectedText = word
       }

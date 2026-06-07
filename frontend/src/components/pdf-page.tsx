@@ -509,9 +509,16 @@ export function PdfPage({
       return
     }
 
-    const word = selectedText.split(/\s+/)[0]
+    // Drag-select of 2+ words → don't open the meaning popup.
+    // The right-click context menu handles Quote/Highlight/Copy
+    // for multi-word selections. Single-word clicks/double-clicks
+    // (wordCount === 1) still open the meaning popup as before.
+    const wordCount = selectedText.split(/\s+/).length
+    if (wordCount > 1) return
+
+    const word = selectedText
     const pageText = await getPageText(pageNumber)
-    const sentence = extractSentence(pageText, selectedText)
+    const sentence = extractSentence(pageText, word)
     const range = selection.getRangeAt(0)
     const rect = range.getBoundingClientRect()
     const position = { x: rect.left + rect.width / 2, y: rect.top - 10 }

@@ -6,6 +6,7 @@ import { X, Volume2, Loader2, Sparkles, Languages, Bookmark, Brain, GripVertical
 import { Button } from '@/components/ui/button'
 import { usePDFStore, LANGUAGE_LABELS } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
+import { cleanText } from '@/lib/quotes'
 
 const HIGHLIGHT_COLORS = [
   { value: 'rgba(253, 224, 71, 0.65)', label: 'Yellow', tailwind: 'bg-yellow-400 border-yellow-500' },
@@ -107,7 +108,7 @@ export function WordPopup() {
   // The popup's "Save Quote" button saves the full sentence (or the word
   // alone if no sentence is available). We deduplicate per (book, page,
   // text) so a user can't accidentally save the same line 5 times.
-  const quoteText = (selectedSentence && selectedSentence.trim()) || selectedWord || ''
+  const quoteText = cleanText((selectedSentence || selectedWord || ''))
   const isQuoteSaved = selectedPageNumber && quoteText
     ? quotes.some(
         (q) => q.pageNumber === selectedPageNumber && q.text === quoteText && q.pdfFileName === pdfFileName
@@ -239,7 +240,7 @@ export function WordPopup() {
     setQuoteStatus('saving')
     const draft = {
       text: quoteText.slice(0, 500),
-      context: (selectedSentence || '').slice(0, 1000),
+      context: cleanText((selectedSentence || '')).slice(0, 1000),
       noteText: '',
       pageNumber: selectedPageNumber,
       pdfFileName,
