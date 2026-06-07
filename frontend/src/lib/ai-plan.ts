@@ -1,7 +1,7 @@
 export const AI_PLANS = ['free', 'pro', 'beta', 'admin', 'founder'] as const
 export type AIPlan = (typeof AI_PLANS)[number]
 
-export const AI_FEATURES = ['summary', 'question', 'translation'] as const
+export const AI_FEATURES = ['summary', 'question', 'translation', 'quote_chat'] as const
 export type AIFeature = (typeof AI_FEATURES)[number]
 
 export interface AIUsage {
@@ -9,12 +9,14 @@ export interface AIUsage {
   summaries: number
   questions: number
   translations: number
+  /** Count of AI messages sent in the saved-quotes chat per day. */
+  quoteChats: number
   minute: string
   minuteCount: number
 }
 
 export const DAILY_QUOTAS: Record<Exclude<AIPlan, 'pro' | 'beta' | 'admin' | 'founder'>, Record<AIFeature, number>> = {
-  free: { summary: 5, question: 15, translation: 100 },
+  free: { summary: 5, question: 15, translation: 100, quote_chat: 50 },
 }
 
 export const PER_MINUTE_LIMITS: Record<Exclude<AIPlan, 'pro' | 'beta' | 'admin' | 'founder'>, number> = {
@@ -98,12 +100,13 @@ export function formatResetCountdown(): string {
 }
 
 export function emptyUsage(): AIUsage {
-  return { date: todayUtc(), summaries: 0, questions: 0, translations: 0, minute: currentMinuteUtc(), minuteCount: 0 }
+  return { date: todayUtc(), summaries: 0, questions: 0, translations: 0, quoteChats: 0, minute: currentMinuteUtc(), minuteCount: 0 }
 }
 
 export function getUsageForFeature(usage: AIUsage | null | undefined, feature: AIFeature): number {
   if (!usage || usage.date !== todayUtc()) return 0
   if (feature === 'summary') return usage.summaries
   if (feature === 'question') return usage.questions
+  if (feature === 'quote_chat') return usage.quoteChats ?? 0
   return usage.translations
 }

@@ -13,6 +13,7 @@ interface BookInfo {
   lastPage: number
   wordCount: number
   bookmarkCount: number
+  quoteCount: number
   totalPagesRead: number
   totalMinutes: number
   createdAt: string
@@ -167,7 +168,7 @@ export default function LibraryPage() {
                     </div>
 
                     {/* Stats */}
-                    <div className="mt-3 grid grid-cols-3 gap-2">
+                    <div className="mt-3 grid grid-cols-4 gap-2">
                       <div className="rounded-lg bg-muted/30 p-2 text-center">
                         <p className="text-xs font-bold text-foreground tabular-nums">{book.wordCount}</p>
                         <p className="text-[9px] text-muted-foreground/50">Words</p>
@@ -175,6 +176,10 @@ export default function LibraryPage() {
                       <div className="rounded-lg bg-muted/30 p-2 text-center">
                         <p className="text-xs font-bold text-foreground tabular-nums">{book.bookmarkCount}</p>
                         <p className="text-[9px] text-muted-foreground/50">Bookmarks</p>
+                      </div>
+                      <div className="rounded-lg bg-muted/30 p-2 text-center">
+                        <p className="text-xs font-bold text-foreground tabular-nums">{book.quoteCount ?? 0}</p>
+                        <p className="text-[9px] text-muted-foreground/50">Quotes</p>
                       </div>
                       <div className="rounded-lg bg-muted/30 p-2 text-center">
                         <p className="text-xs font-bold text-foreground tabular-nums">{book.totalMinutes}m</p>

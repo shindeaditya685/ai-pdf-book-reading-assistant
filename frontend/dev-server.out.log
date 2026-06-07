@@ -6,28 +6,21 @@
 - Local:         http://localhost:3000
 - Network:       http://172.20.10.6:3000
 - Environments: .env.local
-✓ Ready in 1400ms
+✓ Ready in 1111ms
 
-○ Compiling /profile ...
- GET /profile 200 in 15.1s (next.js: 14.6s, application-code: 555ms)
- GET /profile 200 in 60ms (next.js: 8ms, application-code: 52ms)
- GET /profile 200 in 48ms (next.js: 6ms, application-code: 42ms)
- GET /profile 200 in 48ms (next.js: 5ms, application-code: 43ms)
- GET /profile 200 in 49ms (next.js: 4ms, application-code: 44ms)
- GET /profile 200 in 47ms (next.js: 4ms, application-code: 43ms)
- GET /admin 200 in 2.3s (next.js: 2.1s, application-code: 184ms)
- GET /admin 200 in 76ms (next.js: 8ms, application-code: 67ms)
- GET /admin 200 in 59ms (next.js: 5ms, application-code: 53ms)
- GET /admin 200 in 73ms (next.js: 5ms, application-code: 67ms)
- GET /admin 200 in 65ms (next.js: 6ms, application-code: 58ms)
- GET /api/auth/me 401 in 2.2s (next.js: 2.1s, application-code: 56ms)
- GET /api/auth/me 401 in 17ms (next.js: 4ms, application-code: 12ms)
- GET /api/auth/me 401 in 14ms (next.js: 4ms, application-code: 10ms)
- GET /api/auth/me 401 in 12ms (next.js: 4ms, application-code: 8ms)
- GET /api/auth/me 401 in 14ms (next.js: 4ms, application-code: 10ms)
- GET /api/auth/me 401 in 15ms (next.js: 4ms, application-code: 11ms)
- GET /api/auth/me 401 in 14ms (next.js: 4ms, application-code: 10ms)
- GET /api/auth/me 401 in 15ms (next.js: 4ms, application-code: 11ms)
- GET /api/auth/me 401 in 17ms (next.js: 7ms, application-code: 10ms)
- GET /api/auth/me 401 in 19ms (next.js: 5ms, application-code: 14ms)
+○ Compiling /quotes ...
+ GET /quotes 200 in 7.0s (next.js: 6.6s, application-code: 423ms)
+ GET /quotes/chat 200 in 3.4s (next.js: 3.0s, application-code: 323ms)
+ GET /api/db/quotes 401 in 2.1s (next.js: 2.0s, application-code: 32ms)
+ GET /api/quote-chat/conversations 401 in 871ms (next.js: 854ms, application-code: 18ms)
+ GET /quotes/chat/test-id 200 in 2.8s (next.js: 2.5s, application-code: 312ms)
+ GET /api/db/quotes/test-id 405 in 2.5s (next.js: 2.5s, application-code: 18ms)
+○ Compiling /api/quote-chat/conversations/[id]/messages ...
+ GET /dashboard 200 in 10.2s (next.js: 9.2s, application-code: 1024ms)
+ POST /api/quote-chat/conversations/test-id/messages 401 in 10.2s (next.js: 10.1s, application-code: 41ms)
+[DB] Connecting to MongoDB...
+[DB] Connected to database: pdf-reader-ai
+ GET /api/auth/me 200 in 3.2s (next.js: 1916ms, application-code: 1325ms)
+ GET /api/reading-stats?days=1 200 in 2.1s (next.js: 1958ms, application-code: 120ms)
+ GET /api/db/pdf 200 in 3.2s (next.js: 1980ms, application-code: 1222ms)
 [?25h

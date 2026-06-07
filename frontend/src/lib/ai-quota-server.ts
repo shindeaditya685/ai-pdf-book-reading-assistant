@@ -77,6 +77,7 @@ export async function getQuotaStatus(userId: string): Promise<{
       summary: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'summary'),
       question: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'question'),
       translation: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'translation'),
+      quote_chat: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'quote_chat'),
     },
     resetAt: nextMidnightUtc(),
     perMinuteLimit: isUnlimited ? Number.POSITIVE_INFINITY : getPerMinuteLimit(plan),
@@ -107,7 +108,13 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
   const db = conn.db
   const today = todayUtc()
   const minute = currentMinuteUtc()
-  const usageField = feature === 'summary' ? 'summaries' : feature === 'question' ? 'questions' : 'translations'
+  const usageField = feature === 'summary'
+    ? 'summaries'
+    : feature === 'question'
+      ? 'questions'
+      : feature === 'quote_chat'
+        ? 'quoteChats'
+        : 'translations'
 
   // Fast-path: admins always allowed, no DB write needed
   const user = await db.collection('users').findOne(
@@ -157,9 +164,13 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
   // 2. If count < limit, increment
   // 3. Otherwise, no-op
   // Also: reset minute counter if minute is stale, then increment
-  const targetField: 'summaries' | 'questions' | 'translations' =
-    feature === 'summary' ? 'summaries' : feature === 'question' ? 'questions' : 'translations'
-  const incExpr = (field: 'summaries' | 'questions' | 'translations') =>
+  type UsageField = 'summaries' | 'questions' | 'translations' | 'quoteChats'
+  const targetField: UsageField =
+    feature === 'summary' ? 'summaries'
+      : feature === 'question' ? 'questions'
+        : feature === 'quote_chat' ? 'quoteChats'
+          : 'translations'
+  const incExpr = (field: UsageField) =>
     field === targetField
       ? { $add: [{ $ifNull: [`$aiUsage.${field}`, 0] }, 1] }
       : { $ifNull: [`$aiUsage.${field}`, 0] }
@@ -192,6 +203,7 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
                 summaries: incExpr('summaries'),
                 questions: incExpr('questions'),
                 translations: incExpr('translations'),
+                quoteChats: incExpr('quoteChats'),
                 minute: minute,
                 minuteCount: minuteIncExpr(),
               },
@@ -200,6 +212,7 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
                 summaries: feature === 'summary' ? 1 : 0,
                 questions: feature === 'question' ? 1 : 0,
                 translations: feature === 'translation' ? 1 : 0,
+                quoteChats: feature === 'quote_chat' ? 1 : 0,
                 minute: minute,
                 minuteCount: 1,
               },
@@ -212,7 +225,7 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
   )
 
   if (updated) {
-    const used = (updated.aiUsage as AIUsage)?.[usageField] ?? 1
+    const used = (updated.aiUsage as Partial<AIUsage>)?.[usageField as keyof AIUsage] as number ?? 1
     return {
       allowed: true,
       remaining: Math.max(0, limit - used),
@@ -229,7 +242,7 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
     { projection: { aiUsage: 1 } }
   )
   const usage = freshUsageIfStale(current?.aiUsage as AIUsage | undefined)
-  const used = usage[usageField as keyof AIUsage] as number
+  const used = (usage as unknown as Record<string, number>)[usageField] ?? 0
   return {
     allowed: false,
     remaining: 0,
@@ -237,7 +250,7 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
     plan,
     isUnlimited: false,
     resetAt,
-    reason: `Daily limit of ${limit} ${feature}s reached. Resets at midnight UTC.`,
+    reason: `Daily limit of ${limit} ${feature === 'quote_chat' ? 'messages' : `${feature}s`} reached. Resets at midnight UTC.`,
   }
 }
 
@@ -250,7 +263,13 @@ export async function refundQuota(userId: string, feature: AIFeature): Promise<v
   if (!conn) return
   let objectId: ObjectId
   try { objectId = new ObjectId(userId) } catch { return }
-  const usageField = feature === 'summary' ? 'summaries' : feature === 'question' ? 'questions' : 'translations'
+  const usageField = feature === 'summary'
+    ? 'summaries'
+    : feature === 'question'
+      ? 'questions'
+      : feature === 'quote_chat'
+        ? 'quoteChats'
+        : 'translations'
   await conn.db.collection('users').updateOne(
     { _id: objectId, [`aiUsage.${usageField}`]: { $gt: 0 } },
     { $inc: { [`aiUsage.${usageField}`]: -1 } }

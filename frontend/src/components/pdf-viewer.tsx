@@ -27,12 +27,14 @@ import {
   AlignJustify,
   BookOpen,
   MoreHorizontal,
+  Quote as QuoteIcon,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { SearchBar } from '@/components/search-bar'
 import { AnnotationToolbar } from '@/components/annotation-toolbar'
 import { WordConfirmTooltip } from '@/components/word-confirm-tooltip'
+import { SelectionContextMenu } from '@/components/selection-context-menu'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -105,6 +107,7 @@ export function PDFViewer() {
     toggleSearch,
     toggleHistory,
     toggleBookmarks,
+    toggleQuotes,
     toggleFlashcards,
     toggleReadingStats,
     toggleSharePanel,
@@ -148,7 +151,7 @@ export function PDFViewer() {
       pdfDocRef.current = null
       resumeScrollPageRef.current = null
       setTotalPages(0)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset when pdf is unloaded
+       
       setPdfReady(false)
       pageTextCacheRef.current.clear()
       return
@@ -641,6 +644,34 @@ export function PDFViewer() {
     setPendingWord(null)
   }, [pendingWord, setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, fetchExplanation])
 
+  // Listen for "Get meaning" requests from the right-click selection context
+  // menu. The menu dispatches a CustomEvent with the word + cursor coords
+  // captured at right-click time; we run the same flow as handleConfirmMeaning.
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent<{ word: string; sentence: string; pageNumber: number; x: number; y: number }>).detail
+      if (!detail || !detail.word) return
+      setSelectedWord(detail.word)
+      setSelectedSentence(detail.sentence || detail.word)
+      setSelectedPageNumber(detail.pageNumber)
+      setPopupPosition({ x: detail.x, y: detail.y })
+      fetchExplanation(detail.word, detail.sentence || detail.word, detail.pageNumber)
+      // We're opening the real meaning popup, so the confirm-tooltip is no
+      // longer needed.
+      setPendingWord(null)
+    }
+    window.addEventListener('pdf-get-meaning', handler)
+    return () => window.removeEventListener('pdf-get-meaning', handler)
+  }, [setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, fetchExplanation])
+
+  // The right-click selection context menu dispatches this when it opens so
+  // the "Get meaning?" tooltip from the prior left-mouse mouseup is dismissed.
+  useEffect(() => {
+    const handler = () => setPendingWord(null)
+    window.addEventListener('pdf-clear-pending-word', handler)
+    return () => window.removeEventListener('pdf-clear-pending-word', handler)
+  }, [])
+
   const handleReadAloud = useCallback(async () => {
     ;(window as any).__ttsStop?.()
     const sel = window.getSelection()
@@ -678,7 +709,7 @@ export function PDFViewer() {
   // and only commit to navigation on Enter / blur (like Adobe Acrobat).
   // Synced with `currentPage` when it changes externally (prev/next, follow mode, etc.)
   const [pageInput, setPageInput] = useState<string>(String(currentPage))
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional external-state sync
+   
   useEffect(() => { setPageInput(String(currentPage)) }, [currentPage])
   const commitPageInput = useCallback(() => {
     const parsed = parseInt(pageInput, 10)
@@ -693,7 +724,7 @@ export function PDFViewer() {
   const ZOOM_MIN = 50
   const ZOOM_MAX = 300
   const [zoomInput, setZoomInput] = useState<string>(String(Math.round(scale * 100)))
-  // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional external-state sync
+   
   useEffect(() => { setZoomInput(String(Math.round(scale * 100))) }, [scale])
   const commitZoomInput = useCallback(() => {
     const parsed = parseInt(zoomInput, 10)
@@ -879,6 +910,16 @@ export function PDFViewer() {
           <Button
             variant="ghost"
             size="icon"
+            className="hidden h-8 w-8 rounded-lg text-muted-foreground hover:text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950/30 sm:inline-flex"
+            onClick={toggleQuotes}
+            title="Saved Quotes (Q)"
+            aria-label="Saved quotes"
+          >
+            <QuoteIcon className="h-3.5 w-3.5" />
+          </Button>
+          <Button
+            variant="ghost"
+            size="icon"
             className="hidden h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 sm:inline-flex"
             onClick={toggleHistory}
             title="Word History (H)"
@@ -977,6 +1018,9 @@ export function PDFViewer() {
               <DropdownMenuLabel className="text-xs text-muted-foreground">Reading Tools</DropdownMenuLabel>
               <DropdownMenuItem onSelect={() => toggleBookmarks()}>
                 <Bookmark className="h-3.5 w-3.5" /> Bookmarks <span className="ml-auto text-[10px] text-muted-foreground/60">B</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => toggleQuotes()}>
+                <QuoteIcon className="h-3.5 w-3.5" /> Saved Quotes <span className="ml-auto text-[10px] text-muted-foreground/60">Q</span>
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => toggleHistory()}>
                 <Clock className="h-3.5 w-3.5" /> Word History <span className="ml-auto text-[10px] text-muted-foreground/60">H</span>
@@ -1161,6 +1205,8 @@ export function PDFViewer() {
         state={quota}
         onRequested={() => quota.refresh()}
       />
+
+      <SelectionContextMenu />
     </div>
   )
 }

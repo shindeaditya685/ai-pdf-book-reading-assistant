@@ -10,6 +10,7 @@ import { UploadZone } from '@/components/upload-zone'
 import { WordPopup } from '@/components/word-popup'
 import { SettingsPanel } from '@/components/settings-panel'
 import { HistoryPanel } from '@/components/history-panel'
+import { QuotesPanel } from '@/components/quotes-panel'
 import { TtsControls } from '@/components/tts-controls'
 import { ReadingTimer } from '@/components/reading-timer'
 import { BookmarksPanel } from '@/components/bookmarks-panel'
@@ -620,6 +621,7 @@ export default function DashboardPage() {
           <div className={`transition-opacity duration-300 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
             <HistoryPanel />
             <BookmarksPanel />
+            <QuotesPanel />
             <FlashcardReview />
             <ReadingAnalytics />
             <QuestionGeneratorPanel />

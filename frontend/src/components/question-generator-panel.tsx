@@ -56,14 +56,14 @@ export function QuestionGeneratorPanel() {
   const [shortAnswerInput, setShortAnswerInput] = useState('')
 
   // Sync start/end page with currentPage when panel is opened or page changes
-  /* eslint-disable react-hooks/set-state-in-effect */
+   
   useEffect(() => {
     if (showQuestionGenerator && scope === 'current') {
       setStartPage(currentPage || 1)
       setEndPage(currentPage || 1)
     }
   }, [currentPage, showQuestionGenerator, scope])
-  /* eslint-enable react-hooks/set-state-in-effect */
+   
 
   // Helper to extract text from a range of pages
   const extractText = async (start: number, end: number): Promise<string> => {

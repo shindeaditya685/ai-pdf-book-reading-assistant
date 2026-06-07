@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { authFetch } from "@/lib/api";
+import type { Quote, QuoteConversation, QuoteMessage } from "@/lib/quotes";
 
 export interface WordExplanation {
   word: string;
@@ -412,6 +413,16 @@ interface PDFState {
   // Bookmarks
   bookmarks: Bookmark[];
 
+  // Saved Quotes
+  quotes: Quote[];
+  showQuotes: boolean;
+  /** Conversation list (sidebar / page). */
+  quoteConversations: QuoteConversation[];
+  /** Currently open conversation's messages (chat page). */
+  quoteMessages: QuoteMessage[];
+  /** Loading state for the chat send request. */
+  quoteChatLoading: boolean;
+
   // Search
   searchQuery: string;
   searchResults: SearchResult[];
@@ -532,6 +543,25 @@ interface PDFState {
   addBookmark: (bookmark: Bookmark) => void;
   removeBookmark: (id: string) => void;
   isPageBookmarked: (page: number) => boolean;
+
+  // Quote actions
+  setQuotes: (quotes: Quote[]) => void;
+  addQuote: (quote: Quote) => void;
+  updateQuote: (id: string, patch: Partial<Quote>) => void;
+  removeQuote: (id: string) => void;
+  setShowQuotes: (show: boolean) => void;
+  toggleQuotes: () => void;
+  /** Remove all quotes tied to a deleted book. */
+  removeQuotesForFile: (pdfFileName: string) => void;
+
+  // Quote conversation actions
+  setQuoteConversations: (convs: QuoteConversation[]) => void;
+  addQuoteConversation: (conv: QuoteConversation) => void;
+  updateQuoteConversation: (id: string, patch: Partial<QuoteConversation>) => void;
+  removeQuoteConversation: (id: string) => void;
+  setQuoteMessages: (messages: QuoteMessage[]) => void;
+  appendQuoteMessage: (message: QuoteMessage) => void;
+  setQuoteChatLoading: (loading: boolean) => void;
 
   // Recent PDF actions
   addRecentPdf: (pdf: RecentPdf) => void;
@@ -713,6 +743,11 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
 
   wordHistory: [],
   bookmarks: [],
+  quotes: [],
+  showQuotes: false,
+  quoteConversations: [],
+  quoteMessages: [],
+  quoteChatLoading: false,
   recentPdfs: [],
   searchQuery: "",
   searchResults: [],
@@ -908,6 +943,37 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
     })),
   isPageBookmarked: (page) =>
     get().bookmarks.some((b) => b.pageNumber === page),
+
+  setQuotes: (quotes) => set({ quotes }),
+  addQuote: (quote) => set((s) => ({ quotes: [quote, ...s.quotes] })),
+  updateQuote: (id, patch) =>
+    set((s) => ({
+      quotes: s.quotes.map((q) => (q.id === id ? { ...q, ...patch } : q)),
+    })),
+  removeQuote: (id) =>
+    set((s) => ({
+      quotes: s.quotes.filter((q) => q.id !== id),
+    })),
+  setShowQuotes: (show) => set({ showQuotes: show }),
+  toggleQuotes: () => set((s) => ({ showQuotes: !s.showQuotes })),
+  removeQuotesForFile: (pdfFileName) =>
+    set((s) => ({
+      quotes: s.quotes.filter((q) => q.pdfFileName !== pdfFileName),
+    })),
+
+  setQuoteConversations: (quoteConversations) => set({ quoteConversations }),
+  addQuoteConversation: (conv) => set((s) => ({ quoteConversations: [conv, ...s.quoteConversations] })),
+  updateQuoteConversation: (id, patch) =>
+    set((s) => ({
+      quoteConversations: s.quoteConversations.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+    })),
+  removeQuoteConversation: (id) =>
+    set((s) => ({
+      quoteConversations: s.quoteConversations.filter((c) => c.id !== id),
+    })),
+  setQuoteMessages: (quoteMessages) => set({ quoteMessages }),
+  appendQuoteMessage: (message) => set((s) => ({ quoteMessages: [...s.quoteMessages, message] })),
+  setQuoteChatLoading: (quoteChatLoading) => set({ quoteChatLoading }),
 
   addRecentPdf: (pdf) =>
     set((s) => ({

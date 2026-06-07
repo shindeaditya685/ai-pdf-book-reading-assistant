@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Volume2, Loader2, Sparkles, Languages, Bookmark, Brain, GripVertical } from 'lucide-react'
+import { X, Volume2, Loader2, Sparkles, Languages, Bookmark, Brain, GripVertical, Quote as QuoteIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePDFStore, LANGUAGE_LABELS } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
@@ -31,6 +31,10 @@ export function WordPopup() {
     addBookmark,
     removeBookmark,
     bookmarks,
+    addQuote,
+    removeQuote,
+    quotes,
+    setShowQuotes,
     flashcards,
     setExplanation,
     setIsExplaining,
@@ -85,7 +89,7 @@ export function WordPopup() {
   // Reset drag offset and flashcard state when a new word is selected
   useEffect(() => {
     historyAddedRef.current = false
-    // eslint-disable-next-line react-hooks/set-state-in-effect -- intentional reset when selectedWord changes
+     
     setDragOffset({ x: 0, y: 0 })
     if (selectedWord && pdfFileName && flashcards.some((f) => f.word === selectedWord && f.pdfFileName === pdfFileName)) {
       setFlashcardStatus('exists')
@@ -99,6 +103,18 @@ export function WordPopup() {
         (b) => b.pageNumber === selectedPageNumber && b.word === selectedWord
       )
     : false
+
+  // The popup's "Save Quote" button saves the full sentence (or the word
+  // alone if no sentence is available). We deduplicate per (book, page,
+  // text) so a user can't accidentally save the same line 5 times.
+  const quoteText = (selectedSentence && selectedSentence.trim()) || selectedWord || ''
+  const isQuoteSaved = selectedPageNumber && quoteText
+    ? quotes.some(
+        (q) => q.pageNumber === selectedPageNumber && q.text === quoteText && q.pdfFileName === pdfFileName
+      )
+    : false
+
+  const [quoteStatus, setQuoteStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
 
   const handleCreateFlashcard = useCallback(async () => {
     if (!selectedWord || !explanation || !pdfFileName) return
@@ -201,6 +217,64 @@ export function WordPopup() {
       }).catch(() => {})
     }
   }, [selectedPageNumber, explanation, selectedWord, selectedSentence, addBookmark, removeBookmark, bookmarks, isBookmarked, pdfFileName])
+
+  const handleSaveQuote = useCallback(async () => {
+    if (!selectedPageNumber || !quoteText || !pdfFileName) return
+    if (isQuoteSaved) {
+      // Unsave the existing matching quote
+      const existing = quotes.find(
+        (q) => q.pageNumber === selectedPageNumber && q.text === quoteText && q.pdfFileName === pdfFileName
+      )
+      if (existing) {
+        removeQuote(existing.id)
+        try {
+          await authFetch(`/api/db/quotes/${encodeURIComponent(existing.id)}`, { method: 'DELETE' })
+        } catch {
+          // Re-add on failure so the UI doesn't lie
+          addQuote(existing)
+        }
+      }
+      return
+    }
+    setQuoteStatus('saving')
+    const draft = {
+      text: quoteText.slice(0, 500),
+      context: (selectedSentence || '').slice(0, 1000),
+      noteText: '',
+      pageNumber: selectedPageNumber,
+      pdfFileName,
+      rects: [],
+      color: 'rgba(253, 224, 71, 0.65)',
+      timestamp: Date.now(),
+    }
+    try {
+      const res = await authFetch('/api/db/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(draft),
+      })
+      const data = await res.json()
+      if (data.success && data.quote) {
+        addQuote(data.quote)
+        setQuoteStatus('saved')
+        // Auto-revert indicator after a moment so the user can re-save edits
+        setTimeout(() => setQuoteStatus('idle'), 1500)
+      } else {
+        setQuoteStatus('idle')
+      }
+    } catch {
+      setQuoteStatus('idle')
+    }
+  }, [
+    selectedPageNumber,
+    quoteText,
+    pdfFileName,
+    isQuoteSaved,
+    quotes,
+    removeQuote,
+    addQuote,
+    selectedSentence,
+  ])
 
   const handleSimplify = useCallback(async () => {
     if (!selectedSentence) return
@@ -437,9 +511,19 @@ export function WordPopup() {
           >
             <div className="flex items-center gap-1 flex-1 min-w-0">
               <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
-              <h3 className="text-base font-bold text-foreground">
-                {selectedWord}
-              </h3>
+              <div className="flex-1 min-w-0">
+                <h3 className="text-base font-bold text-foreground truncate" title={selectedWord || ''}>
+                  {selectedWord}
+                </h3>
+                {selectedSentence && selectedSentence.trim() !== (selectedWord || '').trim() && (
+                  <p
+                    className="text-[11px] text-muted-foreground/80 italic truncate -mt-0.5"
+                    title={selectedSentence}
+                  >
+                    &ldquo;{selectedSentence.length > 60 ? selectedSentence.slice(0, 60).trimEnd() + '\u2026' : selectedSentence}&rdquo;
+                  </p>
+                )}
+              </div>
               {explanation?.pronunciation && !isExplaining && (
                 <div className="mt-0.5 flex items-center gap-1.5">
                   <button
@@ -475,11 +559,37 @@ export function WordPopup() {
                   />
                 </Button>
               )}
+              {selectedPageNumber && quoteText && (
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className={
+                    isQuoteSaved
+                      ? 'h-6 w-6 text-yellow-600 hover:text-yellow-700'
+                      : 'text-muted-foreground hover:text-yellow-600'
+                  }
+                  onClick={handleSaveQuote}
+                  disabled={quoteStatus === 'saving'}
+                  title={isQuoteSaved ? 'Remove from quotes' : 'Save this sentence as a quote'}
+                  aria-label={isQuoteSaved ? 'Remove from quotes' : 'Save quote'}
+                >
+                  <QuoteIcon
+                    className={`h-3.5 w-3.5 ${isQuoteSaved ? 'fill-yellow-500 text-yellow-600' : ''}`}
+                  />
+                </Button>
+              )}
               <Button
                 variant="ghost"
                 size="icon"
                 className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                onClick={clearSelection}
+                onClick={() => {
+                  if (isQuoteSaved) {
+                    // Hint at where the saved quotes live so the user can
+                    // open the panel after closing the popup.
+                    setShowQuotes(true)
+                  }
+                  clearSelection()
+                }}
               >
                 <X className="h-3.5 w-3.5" />
               </Button>

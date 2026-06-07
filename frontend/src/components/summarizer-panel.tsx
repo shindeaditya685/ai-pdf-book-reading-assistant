@@ -44,14 +44,14 @@ export function SummarizerPanel() {
   const [checkedTakeaways, setCheckedTakeaways] = useState<Record<number, boolean>>({})
 
   // Sync start/end page with currentPage when panel is opened or page changes
-  /* eslint-disable react-hooks/set-state-in-effect */
+   
   useEffect(() => {
     if (showSummarizer && scope === 'current') {
       setStartPage(currentPage || 1)
       setEndPage(currentPage || 1)
     }
   }, [currentPage, showSummarizer, scope])
-  /* eslint-enable react-hooks/set-state-in-effect */
+   
 
   // Helper to extract text from a range of pages
   const extractText = async (start: number, end: number): Promise<string> => {

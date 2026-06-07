@@ -143,9 +143,9 @@ export default function ProfilePage() {
   }
 
   useEffect(() => {
-    /* eslint-disable react-hooks/set-state-in-effect */
+     
     loadPendingRequest()
-    /* eslint-enable react-hooks/set-state-in-effect */
+     
   }, [])
 
   // Tick every minute so the cooldown countdown stays fresh

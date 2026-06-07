@@ -200,9 +200,9 @@ export default function AdminPage() {
   const paginatedUsers = filteredUsers.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   // Reset to page 1 when search changes
-  /* eslint-disable react-hooks/set-state-in-effect */
+   
   useEffect(() => { setPage(1) }, [search])
-  /* eslint-enable react-hooks/set-state-in-effect */
+   
 
   if (authLoading || loading) {
     return (

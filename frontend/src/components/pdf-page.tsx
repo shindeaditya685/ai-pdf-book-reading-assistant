@@ -468,7 +468,10 @@ export function PdfPage({
   }
 
   // Mouse up selection handler (text selection → word meaning)
-  const handleMouseUp = useCallback(async () => {
+  const handleMouseUp = useCallback(async (e?: React.MouseEvent) => {
+    // Skip right-click release — the right-click context menu handles its
+    // own actions, and we don't want a second onWordPicked call firing.
+    if (e && e.button === 2) return
     const selection = window.getSelection()
     if (!selection || selection.isCollapsed || !selection.toString().trim()) return
     const selectedText = selection.toString().trim()

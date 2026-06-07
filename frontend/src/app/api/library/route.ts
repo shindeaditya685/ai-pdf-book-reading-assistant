@@ -18,9 +18,10 @@ export async function GET(request: Request) {
 
     const books = await Promise.all(
       pdfs.map(async (pdf) => {
-        const [wordCount, bookmarkCount, readingStats] = await Promise.all([
+        const [wordCount, bookmarkCount, quoteCount, readingStats] = await Promise.all([
           conn.db.collection('wordHistory').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
           conn.db.collection('bookmarks').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
+          conn.db.collection('quotes').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
           conn.db
             .collection('readingStats')
             .aggregate([
@@ -38,6 +39,7 @@ export async function GET(request: Request) {
           lastPage: pdf.lastPage || 1,
           wordCount,
           bookmarkCount,
+          quoteCount,
           totalPagesRead: Math.round(stats.pages || 0),
           totalMinutes: Math.round(stats.minutes || 0),
           createdAt: pdf.createdAt,
