@@ -19,6 +19,10 @@ export default function RegisterPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+    if (!/^[a-zA-Z0-9][a-zA-Z0-9._]*[a-zA-Z0-9]$/.test(username) || /\.{2,}|_{2,}/.test(username)) {
+      setError('Letters, numbers, dots, underscores only — no spaces or consecutive dots/underscores')
+      return
+    }
     if (password !== confirm) { setError('Passwords do not match'); return }
     setLoading(true)
     const err = await register(username, password)
@@ -54,10 +58,13 @@ export default function RegisterPage() {
               <input
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9._]/g, ''))}
                 className="mt-1.5 w-full rounded-xl border border-border/60 bg-background/80 px-3.5 py-3 text-base outline-none transition-all placeholder:text-muted-foreground/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 sm:py-2.5 sm:text-sm"
                 placeholder="Choose a username"
                 minLength={3}
+                maxLength={30}
+                pattern="[a-zA-Z0-9][a-zA-Z0-9._]*[a-zA-Z0-9]"
+                title="Letters, numbers, dots, and underscores — no spaces or consecutive dots/underscores"
                 autoComplete="username"
                 required
               />
@@ -66,16 +73,19 @@ export default function RegisterPage() {
             <div>
               <label className="text-xs font-semibold text-foreground/80">Password</label>
               <div className="relative mt-1.5">
-                <input
-                  type={showPassword ? 'text' : 'password'}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full rounded-xl border border-border/60 bg-background/80 px-3.5 py-3 pr-10 text-base outline-none transition-all placeholder:text-muted-foreground/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 sm:py-2.5 sm:text-sm"
-                  placeholder="At least 6 characters"
-                  minLength={6}
-                  autoComplete="new-password"
-                  required
-                />
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full rounded-xl border border-border/60 bg-background/80 px-3.5 py-3 pr-10 text-base outline-none transition-all placeholder:text-muted-foreground/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 sm:py-2.5 sm:text-sm"
+                    placeholder="At least 8 characters"
+                    minLength={8}
+                    autoComplete="new-password"
+                    required
+                  />
+                  <div className="mt-1.5 text-[10px] text-muted-foreground/50 leading-relaxed">
+                    Minimum 8 characters
+                  </div>
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}

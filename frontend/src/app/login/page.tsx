@@ -52,7 +52,7 @@ export default function LoginPage() {
               <input
                 type="text"
                 value={username}
-                onChange={(e) => setUsername(e.target.value)}
+                onChange={(e) => setUsername(e.target.value.replace(/[^a-zA-Z0-9._]/g, ''))}
                 className="mt-1.5 w-full rounded-xl border border-border/60 bg-background/80 px-3.5 py-3 text-base outline-none transition-all placeholder:text-muted-foreground/30 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 sm:py-2.5 sm:text-sm"
                 placeholder="your_username"
                 autoComplete="username"

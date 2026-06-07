@@ -19,9 +19,42 @@ export interface User {
 
 const PASSWORD_RULES = {
   minLength: 8,
-  requireUppercase: true,
-  requireLowercase: true,
-  requireDigit: true,
+  requireUppercase: false,
+  requireLowercase: false,
+  requireDigit: false,
+}
+
+const USERNAME_RULES = {
+  minLength: 3,
+  maxLength: 30,
+  /** Letters, numbers, periods, underscores — like Instagram. */
+  pattern: /^[a-zA-Z0-9][a-zA-Z0-9._]*[a-zA-Z0-9]$/,
+  consecutiveDots: /\.{2,}/,
+  consecutiveUnderscores: /_{2,}/,
+  consecutiveMix: /[._]{2,}/,
+}
+
+function validateUsername(username: string): string | null {
+  const u = username.trim()
+  if (u.length < USERNAME_RULES.minLength) {
+    return `Username must be at least ${USERNAME_RULES.minLength} characters`
+  }
+  if (u.length > USERNAME_RULES.maxLength) {
+    return `Username must be at most ${USERNAME_RULES.maxLength} characters`
+  }
+  if (/\s/.test(u)) {
+    return 'Username must not contain spaces'
+  }
+  if (u.startsWith('.') || u.startsWith('_') || u.endsWith('.') || u.endsWith('_')) {
+    return 'Username cannot start or end with a dot or underscore'
+  }
+  if (USERNAME_RULES.consecutiveDots.test(u) || USERNAME_RULES.consecutiveUnderscores.test(u)) {
+    return 'Username cannot have consecutive dots or underscores'
+  }
+  if (!USERNAME_RULES.pattern.test(u)) {
+    return 'Use letters, numbers, dots, and underscores only'
+  }
+  return null
 }
 
 export function validatePassword(password: string): string | null {
@@ -116,4 +149,4 @@ export function getUserFromRequest(request: Request) {
   return verifyToken(auth.slice(7))
 }
 
-export { PASSWORD_RULES }
+export { PASSWORD_RULES, USERNAME_RULES, validateUsername }

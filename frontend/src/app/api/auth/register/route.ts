@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server'
-import { createUser, generateToken, validatePassword } from '@/lib/auth'
+import { createUser, generateToken, validatePassword, validateUsername } from '@/lib/auth'
 import { checkRateLimit } from '@/lib/rate-limit'
 
 export async function POST(request: Request) {
@@ -18,8 +18,9 @@ export async function POST(request: Request) {
     if (!username || !password) {
       return NextResponse.json({ error: 'Username and password required' }, { status: 400 })
     }
-    if (username.length < 3) {
-      return NextResponse.json({ error: 'Username must be at least 3 characters' }, { status: 400 })
+    const usernameError = validateUsername(username)
+    if (usernameError) {
+      return NextResponse.json({ error: usernameError }, { status: 400 })
     }
 
     const passwordError = validatePassword(password)
