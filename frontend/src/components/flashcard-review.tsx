@@ -114,9 +114,9 @@ export function FlashcardReview() {
         const data = await res.json()
         if (data.success) {
           updateFlashcard(cardId, {
-            ef: data.ef,
+            stability: data.stability,
+            difficulty: data.difficulty,
             interval: data.interval,
-            repetitions: data.repetitions,
             nextReview: data.nextReview,
             totalReviews: data.totalReviews,
           })
@@ -203,6 +203,8 @@ export function FlashcardReview() {
           pageNumber: fc.pageNumber || 1,
           pdfFileName,
           ef: 2.5,
+          stability: 0,
+          difficulty: 4.93,
           interval: 0,
           repetitions: 0,
           nextReview: new Date().toISOString(),

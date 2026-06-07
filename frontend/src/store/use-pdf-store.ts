@@ -293,6 +293,8 @@ export interface Flashcard {
   ef: number;
   interval: number;
   repetitions: number;
+  stability: number;
+  difficulty: number;
   nextReview: string;
   lastReview: string | null;
   totalReviews: number;

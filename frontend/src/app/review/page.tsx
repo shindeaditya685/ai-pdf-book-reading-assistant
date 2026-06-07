@@ -17,6 +17,8 @@ interface ReviewCard {
   pageNumber: number
   pdfFileName: string
   ef: number
+  stability?: number
+  difficulty?: number
   interval: number
   repetitions: number
   nextReview: string
@@ -283,7 +285,7 @@ export default function ReviewPage() {
 
             {/* Card info footer */}
             <div className="text-center text-[10px] text-muted-foreground/30">
-              Reviewed {card.totalReviews} time{card.totalReviews !== 1 ? 's' : ''} · Interval: {card.interval}d · EF: {card.ef.toFixed(1)}
+              Reviewed {card.totalReviews} time{card.totalReviews !== 1 ? 's' : ''} · Interval: {card.interval}d · Stability: {card.stability?.toFixed(1) || card.ef?.toFixed(1)}
             </div>
           </div>
         )}

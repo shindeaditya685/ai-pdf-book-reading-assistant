@@ -1,43 +1,7 @@
 import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
 import { getUserFromRequest } from '@/lib/auth'
-
-const DEFAULT_EF = 2.5
-const DEFAULT_INTERVAL = 0
-const DEFAULT_REPETITIONS = 0
-
-function getNextReview(
-  grade: number,
-  ef: number,
-  interval: number,
-  repetitions: number
-): { ef: number; interval: number; repetitions: number; nextReview: Date } {
-  let newEf = ef + (0.1 - (5 - grade) * (0.08 + (5 - grade) * 0.02))
-  if (newEf < 1.3) newEf = 1.3
-
-  let newInterval: number
-  let newRepetitions: number
-
-  if (grade < 3) {
-    newInterval = 1
-    newRepetitions = 0
-  } else {
-    newRepetitions = repetitions + 1
-    if (newRepetitions === 1) {
-      newInterval = 1
-    } else if (newRepetitions === 2) {
-      newInterval = 6
-    } else {
-      newInterval = Math.round(interval * newEf)
-    }
-  }
-
-  const nextReview = new Date()
-  nextReview.setDate(nextReview.getDate() + newInterval)
-  nextReview.setHours(0, 0, 0, 0)
-
-  return { ef: newEf, interval: newInterval, repetitions: newRepetitions, nextReview }
-}
+import { getNextReview, migrateFromSM2, newCardDefaults } from '@/lib/fsrs'
 
 export async function GET(request: Request) {
   const user = getUserFromRequest(request)
@@ -95,6 +59,7 @@ export async function POST(request: Request) {
       }
 
       const now = new Date()
+      const defaults = newCardDefaults()
       const doc = {
         bookmarkId: bookmarkId || '',
         word,
@@ -105,12 +70,14 @@ export async function POST(request: Request) {
         pageNumber: pageNumber || 0,
         pdfFileName,
         username: user.username,
-        ef: DEFAULT_EF,
-        interval: DEFAULT_INTERVAL,
-        repetitions: DEFAULT_REPETITIONS,
-        nextReview: now,
-        lastReview: null,
-        totalReviews: 0,
+        ef: defaults.ef,
+        stability: defaults.stability,
+        difficulty: defaults.difficulty,
+        interval: defaults.interval,
+        repetitions: defaults.repetitions,
+        nextReview: defaults.nextReview,
+        lastReview: defaults.lastReview,
+        totalReviews: defaults.totalReviews,
         createdAt: now,
         updatedAt: now,
       }
@@ -133,22 +100,18 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: 'Flashcard not found' })
       }
 
-      const { ef, interval, repetitions, nextReview } = getNextReview(
-        grade,
-        card.ef || DEFAULT_EF,
-        card.interval || DEFAULT_INTERVAL,
-        card.repetitions || DEFAULT_REPETITIONS
-      )
-
       const now = new Date()
+      const migrated = migrateFromSM2(card as unknown as { ef?: number; interval?: number; repetitions?: number; stability?: number; difficulty?: number })
+      const result = getNextReview(grade, migrated)
+
       await conn.db.collection('flashcards').updateOne(
         { _id: new ObjectId(id) },
         {
           $set: {
-            ef,
-            interval,
-            repetitions,
-            nextReview,
+            stability: result.stability,
+            difficulty: result.difficulty,
+            interval: result.interval,
+            nextReview: result.nextReview,
             lastReview: now,
             updatedAt: now,
           },
@@ -158,10 +121,10 @@ export async function POST(request: Request) {
 
       return NextResponse.json({
         success: true,
-        ef,
-        interval,
-        repetitions,
-        nextReview,
+        stability: result.stability,
+        difficulty: result.difficulty,
+        interval: result.interval,
+        nextReview: result.nextReview,
         totalReviews: (card.totalReviews || 0) + 1,
       })
     }
