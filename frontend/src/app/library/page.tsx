@@ -77,11 +77,11 @@ export default function LibraryPage() {
           <Link href="/dashboard" className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-all hover:border-muted-foreground/20 hover:bg-muted/50 hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
           </Link>
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 shadow-md shadow-amber-500/20 ring-1 ring-amber-500/20">
+          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-500/20">
             <BookOpen className="h-4 w-4 text-white" />
           </div>
           <span className="text-sm font-bold text-foreground">Library</span>
-          <span className="rounded-full bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
             {books.length} books
           </span>
         </div>
@@ -118,14 +118,14 @@ export default function LibraryPage() {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             placeholder="Search your books..."
-            className="h-10 w-full max-w-md rounded-lg border border-border/60 bg-background/80 pl-9 pr-3 text-base outline-none transition-all focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15 sm:h-9 sm:text-sm"
+            className="h-10 w-full max-w-md rounded-lg border border-border/60 bg-background/80 pl-9 pr-3 text-base outline-none transition-all focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15 sm:h-9 sm:text-sm"
           />
         </div>
 
         {/* ── BOOK GRID ── */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-amber-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-20 text-center">
@@ -135,7 +135,7 @@ export default function LibraryPage() {
             </p>
             <p className="text-xs text-muted-foreground/40">Upload a PDF to start building your library</p>
             {!search && (
-              <Link href="/dashboard" className="mt-2 rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-white hover:bg-amber-600 transition-colors">
+              <Link href="/dashboard" className="mt-2 rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors">
                 Go to Dashboard
               </Link>
             )}
@@ -147,7 +147,7 @@ export default function LibraryPage() {
               return (
                 <div
                   key={book.fileName}
-                  className="group relative rounded-xl border border-border/60 bg-background/60 shadow-sm backdrop-blur-sm transition-all hover:border-amber-200 hover:shadow-md dark:hover:border-amber-800/30"
+                  className="group relative rounded-xl border border-border/60 bg-background/60 shadow-sm backdrop-blur-sm transition-all hover:border-emerald-200 hover:shadow-md dark:hover:border-emerald-800/30"
                 >
                   <button
                     onClick={() => handleOpen(book.fileName)}
@@ -155,8 +155,8 @@ export default function LibraryPage() {
                   >
                     {/* Header */}
                     <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500/20 to-amber-600/10">
-                        <BookText className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500/20 to-emerald-600/10">
+                        <BookText className="h-5 w-5 text-emerald-600 dark:text-emerald-400" />
                       </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-bold text-foreground truncate">{book.fileName.split('/').pop() || book.fileName}</p>
@@ -164,7 +164,7 @@ export default function LibraryPage() {
                           Added {new Date(book.createdAt).toLocaleDateString()}
                         </p>
                       </div>
-                      <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground/20 group-hover:text-amber-500 transition-colors" />
+                      <ChevronRight className="mt-1 h-4 w-4 shrink-0 text-muted-foreground/20 group-hover:text-emerald-500 transition-colors" />
                     </div>
 
                     {/* Stats */}
@@ -199,7 +199,7 @@ export default function LibraryPage() {
                         </div>
                         <div className="mt-1 h-1.5 w-full rounded-full bg-muted/50">
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-amber-500 to-amber-400 transition-all"
+                            className="h-full rounded-full bg-gradient-to-r from-emerald-500 to-emerald-400 transition-all"
                             style={{ width: `${progress}%` }}
                           />
                         </div>
