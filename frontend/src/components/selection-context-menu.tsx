@@ -213,11 +213,10 @@ export function SelectionContextMenu() {
   const handleGetMeaning = useCallback(() => {
     if (!state) return
     setState(null)
-    // pdf-viewer listens for this event and triggers the same flow as
-    // handleConfirmMeaning.
+    const lookupWord = state.hasSelection && state.selectedText ? state.selectedText : state.word
     window.dispatchEvent(new CustomEvent('pdf-get-meaning', {
       detail: {
-        word: state.word,
+        word: lookupWord,
         sentence: state.sentence,
         pageNumber: state.pageNumber,
         x: state.x,
