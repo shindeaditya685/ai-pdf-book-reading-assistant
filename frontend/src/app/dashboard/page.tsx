@@ -147,7 +147,7 @@ export default function DashboardPage() {
         if (!res.ok) return
 
         const pdf = await res.json()
-        if (pdf?.content) {
+        if (pdf) {
           const existingMeta = usePDFStore
             .getState()
             .recentPdfs.find((item) => item.fileName === fileName)
@@ -162,7 +162,6 @@ export default function DashboardPage() {
           clearOcrText()
           setCurrentPage(Math.max(1, Number(restoredPage) || 1))
           setPdfFileName(fileName)
-          setPdfDataUrl(pdf.content)
           addRecentPdf({
             fileName,
             timestamp: Date.now(),
@@ -179,6 +178,14 @@ export default function DashboardPage() {
             for (const [page, data] of Object.entries(pdf.ocrText)) {
               setOcrText(Number(page), data as any)
             }
+          }
+
+          // Fetch PDF file from the file-serving API route
+          const fileRes = await authFetch(`/api/db/pdf/file?fileName=${encodeURIComponent(fileName)}`)
+          if (fileRes.ok) {
+            const blob = await fileRes.blob()
+            const objectUrl = URL.createObjectURL(blob)
+            setPdfDataUrl(objectUrl)
           }
         }
       } catch {

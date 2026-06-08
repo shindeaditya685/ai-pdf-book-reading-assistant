@@ -107,17 +107,21 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
         setActiveBook(username, file.name)
         setStoredBookPage(username, file.name, restoredPage)
         clearOcrText()
-        // Save PDF to MongoDB
-        authFetch('/api/db/pdf', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            fileName: file.name,
-            content: dataUrl,
-            pageCount: existingPageCount,
-            lastPage: restoredPage,
-          }),
-        }).catch(() => {})
+        // Save PDF to MongoDB (fire-and-forget style but with error logging)
+        try {
+          await authFetch('/api/db/pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              fileName: file.name,
+              content: dataUrl,
+              pageCount: existingPageCount,
+              lastPage: restoredPage,
+            }),
+          })
+        } catch {
+          console.warn('UploadZone: POST /api/db/pdf failed — book not saved to library')
+        }
       } catch (err) {
         console.error('Error reading PDF:', err)
         alert('Failed to read PDF file')
