@@ -365,9 +365,10 @@ export function SelectionContextMenu() {
 
   const handleReadAloud = useCallback(() => {
     if (!state) return
-    setState(null)
     const text = state.selectedText || state.sentence
     if (!text.trim()) return
+    setState(null)
+    ;(window as any).__ttsStop?.()
     ;(window as any).__ttsStart?.(text.trim())
   }, [state])
 
