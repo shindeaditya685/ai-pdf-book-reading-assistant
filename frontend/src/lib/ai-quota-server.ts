@@ -271,7 +271,12 @@ export async function refundQuota(userId: string, feature: AIFeature): Promise<v
         ? 'quoteChats'
         : 'translations'
   await conn.db.collection('users').updateOne(
-    { _id: objectId, [`aiUsage.${usageField}`]: { $gt: 0 } },
-    { $inc: { [`aiUsage.${usageField}`]: -1 } }
+    { _id: objectId, [`aiUsage.${usageField}`]: { $gt: 0 }, 'aiUsage.minuteCount': { $gt: 0 } },
+    {
+      $inc: {
+        [`aiUsage.${usageField}`]: -1,
+        'aiUsage.minuteCount': -1,
+      },
+    }
   )
 }

@@ -97,7 +97,6 @@ export function quotaTotals(state: Pick<QuotaState, 'usage' | 'limits' | 'isUnli
   return { used, limit, remaining: Math.max(0, limit - used) }
 }
 
-export function quotaBadgeLabel(state: Pick<QuotaState, 'plan' | 'isUnlimited' | 'usage' | 'limits'>): string {
-  if (state.isUnlimited) return PLAN_LABELS[state.plan]
+export function quotaBadgeLabel(state: Pick<QuotaState, 'plan'>): string {
   return PLAN_LABELS[state.plan]
 }
