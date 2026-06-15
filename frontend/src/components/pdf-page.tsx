@@ -469,6 +469,9 @@ export function PdfPage({
 
   // Mouse up selection handler (text selection → word meaning)
   const handleMouseUp = useCallback(async (e?: React.MouseEvent) => {
+    // Suppress after long-press context menu or mobile page turn
+    if ((window as any).__supressNextClick) return
+
     // Skip right-click release — the right-click context menu handles its
     // own actions, and we don't want a second onWordPicked call firing.
     if (e && e.button === 2) return
@@ -537,6 +540,9 @@ export function PdfPage({
 
   const handleClick = useCallback(
     async (e: React.MouseEvent) => {
+      // Suppress click after long-press context menu on mobile
+      if ((window as any).__supressNextClick) return
+
       if (annotationMode !== 'select') return
       const target = e.target as HTMLElement
       if (target.tagName !== 'SPAN' || !target.textContent) return

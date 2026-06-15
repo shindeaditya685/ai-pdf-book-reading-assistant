@@ -63,6 +63,37 @@ export function PDFViewer() {
   const quota = useAIQuota(!!user)
   const [quotaModalOpen, setQuotaModalOpen] = useState(false)
   const lastSavedPageRef = useRef<{ page: number; fileName: string | null }>({ page: 0, fileName: null })
+
+  // Mobile reading improvements
+  const [mobileToolbarVisible, setMobileToolbarVisible] = useState(true)
+  const autoHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const touchStartXRef = useRef(0)
+  const touchStartYRef = useRef(0)
+  const touchStartTimeRef = useRef(0)
+  const SWIPE_THRESHOLD = 40
+  const SWIPE_TIME_MAX = 300
+  const AUTO_HIDE_DELAY = 3000
+  const [isMobile, setIsMobile] = useState(false)
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 640)
+    check()
+    window.addEventListener('resize', check)
+    return () => {
+      window.removeEventListener('resize', check)
+      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current)
+    }
+  }, [])
+
+  const showToolbarTemp = useCallback(() => {
+    setMobileToolbarVisible(true)
+    if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current)
+    if (isMobile) {
+      autoHideTimerRef.current = setTimeout(() => {
+        setMobileToolbarVisible(false)
+      }, AUTO_HIDE_DELAY)
+    }
+  }, [isMobile])
   const quotaReady = !quota.loading && !quota.error
   const questionQuotaBlocked = quotaReady && !quota.isUnlimited && remainingFor(quota, 'question') === 0
   const summaryQuotaBlocked = quotaReady && !quota.isUnlimited && remainingFor(quota, 'summary') === 0
@@ -136,6 +167,20 @@ export function PDFViewer() {
     followMode,
     remotePages,
   } = usePDFStore()
+
+  // Auto-hide toolbar on mobile after inactivity
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileToolbarVisible(true)
+      return
+    }
+    autoHideTimerRef.current = setTimeout(() => {
+      setMobileToolbarVisible(false)
+    }, AUTO_HIDE_DELAY)
+    return () => {
+      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current)
+    }
+  }, [isMobile, currentPage])
 
   // Pending word confirmation state
   const [pendingWord, setPendingWord] = useState<{
@@ -835,6 +880,57 @@ export function PDFViewer() {
     }
   }, [clearSelection])
 
+  // Mobile: swipe left/right + tap edges to turn pages
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length !== 1) return
+    touchStartXRef.current = e.touches[0].clientX
+    touchStartYRef.current = e.touches[0].clientY
+    touchStartTimeRef.current = Date.now()
+  }, [])
+
+  const handleTouchEnd = useCallback((e: React.TouchEvent) => {
+    if (e.changedTouches.length !== 1) return
+    const dt = Date.now() - touchStartTimeRef.current
+    const dx = e.changedTouches[0].clientX - touchStartXRef.current
+    const dy = e.changedTouches[0].clientY - touchStartYRef.current
+    const x = e.changedTouches[0].clientX
+    const target = e.target as HTMLElement
+    const isOnText = !!target.closest('.pdf-text-layer')
+
+    // Quick horizontal swipe → page turn (works on text too)
+    if (dt < SWIPE_TIME_MAX && Math.abs(dx) > SWIPE_THRESHOLD && Math.abs(dx) > Math.abs(dy) * 2) {
+      e.preventDefault()
+      if (dx > 0) goToPrevPage()
+      else goToNextPage()
+      showToolbarTemp()
+      return
+    }
+
+    if (dt > 300) return // Not a tap
+
+    const vw = window.innerWidth
+
+    // Center tap → toggle toolbar (only on empty space)
+    if (x > vw * 0.3 && x < vw * 0.7 && !isOnText) {
+      setMobileToolbarVisible(v => !v)
+      return
+    }
+
+    // Edge tap → page turn (only on empty space, not text)
+    if (!isOnText) {
+      if (x < vw * 0.3) {
+        goToPrevPage()
+        showToolbarTemp()
+        return
+      }
+      if (x > vw * 0.7) {
+        goToNextPage()
+        showToolbarTemp()
+        return
+      }
+    }
+  }, [goToPrevPage, goToNextPage, showToolbarTemp])
+
   if (!pdfDataUrl) {
     return (
       <div className="flex h-full items-center justify-center bg-gradient-to-b from-background to-muted/20">
@@ -853,7 +949,9 @@ export function PDFViewer() {
 
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-background to-muted/10">
-      <div className="flex items-center justify-between gap-1 border-b bg-background/80 px-2 py-1 backdrop-blur-lg shadow-sm sm:px-3 sm:py-1.5">
+      <div className={`flex items-center justify-between gap-1 border-b bg-background/80 px-2 py-1 backdrop-blur-lg shadow-sm transition-all duration-300 sm:px-3 sm:py-1.5 ${
+        isMobile && !mobileToolbarVisible ? '-translate-y-full -mb-12 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
+      }`}>
         <div className="flex items-center gap-0.5 sm:gap-1">
           <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={goToPrevPage} disabled={currentPage <= 1} aria-label="Previous page">
             <ChevronLeft className="h-4 w-4" />
@@ -1143,6 +1241,8 @@ export function PDFViewer() {
           onClick={handleContainerClick}
           onMouseMove={(e) => setMousePosition(e.clientX, e.clientY)}
           onContextMenu={(e) => e.preventDefault()}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
         >
           {isLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm pointer-events-none">

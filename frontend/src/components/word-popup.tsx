@@ -419,329 +419,380 @@ export function WordPopup() {
   }
 
   // Manual drag handlers (replaces framer-motion's `drag` to avoid transform/style.left conflicts)
-  const handleHeaderMouseDown = useCallback((e: React.MouseEvent) => {
-    if (e.button !== 0) return
-    const target = e.target as HTMLElement
-    if (target.closest('button, a, input, [role="button"]')) return
-    e.preventDefault()
+  const handleHeaderPointerDown = useCallback((clientX: number, clientY: number) => {
     setIsDragging(true)
     dragStateRef.current = {
-      startX: e.clientX,
-      startY: e.clientY,
+      startX: clientX,
+      startY: clientY,
       baseX: dragOffset.x,
       baseY: dragOffset.y,
     }
   }, [dragOffset])
 
+  const handleHeaderMouseDown = useCallback((e: React.MouseEvent) => {
+    if (e.button !== 0) return
+    const target = e.target as HTMLElement
+    if (target.closest('button, a, input, [role="button"]')) return
+    e.preventDefault()
+    handleHeaderPointerDown(e.clientX, e.clientY)
+  }, [handleHeaderPointerDown])
+
+  const handleHeaderTouchStart = useCallback((e: React.TouchEvent) => {
+    const target = e.target as HTMLElement
+    if (target.closest('button, a, input, [role="button"]')) return
+    if (e.touches.length !== 1) return
+    handleHeaderPointerDown(e.touches[0].clientX, e.touches[0].clientY)
+  }, [handleHeaderPointerDown])
+
   useEffect(() => {
     if (!isDragging) return
-    const onMouseMove = (e: MouseEvent) => {
+    const onPointerMove = (clientX: number, clientY: number) => {
       if (!dragStateRef.current) return
       const { startX, startY, baseX, baseY } = dragStateRef.current
       setDragOffset({
-        x: baseX + (e.clientX - startX),
-        y: baseY + (e.clientY - startY),
+        x: baseX + (clientX - startX),
+        y: baseY + (clientY - startY),
       })
     }
-    const onMouseUp = () => {
+    const onMouseMove = (e: MouseEvent) => onPointerMove(e.clientX, e.clientY)
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return
+      onPointerMove(e.touches[0].clientX, e.touches[0].clientY)
+    }
+    const onPointerUp = () => {
       setIsDragging(false)
       dragStateRef.current = null
       document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseup', onMouseUp)
+      document.removeEventListener('mouseup', onPointerUp)
+      document.removeEventListener('touchmove', onTouchMove)
+      document.removeEventListener('touchend', onPointerUp)
     }
     document.addEventListener('mousemove', onMouseMove)
-    document.addEventListener('mouseup', onMouseUp)
+    document.addEventListener('mouseup', onPointerUp)
+    document.addEventListener('touchmove', onTouchMove, { passive: false })
+    document.addEventListener('touchend', onPointerUp)
     return () => {
       document.removeEventListener('mousemove', onMouseMove)
-      document.removeEventListener('mouseup', onMouseUp)
+      document.removeEventListener('mouseup', onPointerUp)
+      document.removeEventListener('touchmove', onTouchMove)
+      document.removeEventListener('touchend', onPointerUp)
     }
   }, [isDragging])
 
   if (!selectedWord || !popupPosition) return null
 
-  // Calculate popup position - viewport-relative
-  const popupWidth = 320
-  const popupHeight = 300
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1000
   const vh = typeof window !== 'undefined' ? window.innerHeight : 800
+  const isMobile = vw < 640
+  const popupWidth = isMobile ? Math.min(360, vw - 24) : 320
+  const popupHeight = 300
 
+  // Desktop floating popup layout
   let popupX = popupPosition.x - popupWidth / 2
   let popupY = popupPosition.y
 
-  // Clamp X to viewport
-  popupX = Math.max(12, Math.min(popupX, vw - popupWidth - 12))
+  if (!isMobile) {
+    popupX = Math.max(12, Math.min(popupX, vw - popupWidth - 12))
+  }
 
-  // Determine if popup should show above or below based on available space
   const spaceAbove = popupY
   const spaceBelow = vh - popupY
-  const showAbove = spaceAbove > spaceBelow && spaceAbove > popupHeight
+  const showAbove = !isMobile && spaceAbove > spaceBelow && spaceAbove > popupHeight
 
-  // Position top/bottom edge (no CSS transform, to avoid conflict with drag)
   const popupTop = showAbove
     ? Math.max(8, popupY - popupHeight)
     : Math.min(popupY + 20, vh - 60)
 
-  // Clamp the FINAL (post-drag) position so the popup can't go off-screen
   const maxX = vw - popupWidth - 12
   const maxY = vh - popupHeight - 12
   const clampedLeft = Math.max(12, Math.min(popupX + dragOffset.x, maxX))
   const clampedTop = Math.max(8, Math.min(popupTop + dragOffset.y, maxY))
 
-  return (
-    <AnimatePresence>
-      <motion.div
-        data-popup
-        className="fixed z-50"
-        style={{
-          left: clampedLeft,
-          top: clampedTop,
-          width: popupWidth,
-        }}
-        initial={{ opacity: 0, y: showAbove ? 10 : -10, scale: 0.95 }}
-        animate={{ opacity: 1, y: 0, scale: 1 }}
-        exit={{ opacity: 0, y: showAbove ? 5 : -5, scale: 0.95 }}
-        transition={{ duration: 0.15, ease: 'easeOut' }}
+  // Shared content (used by both desktop popup and mobile bottom sheet)
+  const popupContent = (
+    <div className="rounded-xl border border-border bg-background shadow-2xl overflow-hidden">
+      {/* Header - drag handle */}
+      <div
+        onMouseDown={isMobile ? undefined : handleHeaderMouseDown}
+        onTouchStart={isMobile ? undefined : handleHeaderTouchStart}
+        className={`flex items-start justify-between border-b px-3 pt-3 pb-2 select-none ${
+          isMobile ? 'cursor-default' : isDragging ? 'cursor-grabbing' : 'cursor-grab'
+        }`}
       >
-        <div className="rounded-xl border border-border bg-background shadow-2xl">
-          {/* Header - drag handle */}
-          <div
-            onMouseDown={handleHeaderMouseDown}
-            className={`flex items-start justify-between border-b px-3 pt-3 pb-2 select-none ${
-              isDragging ? 'cursor-grabbing' : 'cursor-grab'
-            }`}
-          >
-            <div className="flex items-center gap-1 flex-1 min-w-0">
-              <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
-              <div className="flex-1 min-w-0">
-                <h3 className="text-base font-bold text-foreground truncate" title={selectedWord || ''}>
-                  {selectedWord}
-                </h3>
-                {selectedSentence && selectedSentence.trim() !== (selectedWord || '').trim() && (
-                  <p
-                    className="text-[11px] text-muted-foreground/80 italic truncate -mt-0.5"
-                    title={selectedSentence}
-                  >
-                    &ldquo;{selectedSentence.length > 60 ? selectedSentence.slice(0, 60).trimEnd() + '\u2026' : selectedSentence}&rdquo;
-                  </p>
-                )}
-              </div>
-              {explanation?.pronunciation && !isExplaining && (
-                <div className="mt-0.5 flex items-center gap-1.5">
-                  <button
-                    onClick={() => {
-                      const utterance = new SpeechSynthesisUtterance(selectedWord)
-                        utterance.lang = accent
-                      utterance.rate = 0.85
-                      speechSynthesis.cancel()
-                      speechSynthesis.speak(utterance)
-                    }}
-                    className="cursor-pointer text-emerald-500 hover:text-emerald-600 transition-colors"
-                    title="Click to hear pronunciation"
-                  >
-                    <Volume2 className="h-3 w-3" />
-                  </button>
-                  <p className="text-xs italic text-muted-foreground">
-                    {explanation.pronunciation}
-                  </p>
-                </div>
-              )}
-            </div>
-            <div className="flex items-center gap-0.5">
-              {selectedPageNumber && explanation && !isExplaining && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={`h-6 w-6 ${isBookmarked ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-amber-500'}`}
-                  onClick={handleBookmark}
-                  title={isBookmarked ? 'Remove bookmark' : 'Bookmark this word'}
-                >
-                  <Bookmark
-                    className={`h-3.5 w-3.5 ${isBookmarked ? 'fill-amber-500' : ''}`}
-                  />
-                </Button>
-              )}
-              {selectedPageNumber && quoteText && (
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className={
-                    isQuoteSaved
-                      ? 'h-6 w-6 text-yellow-600 hover:text-yellow-700'
-                      : 'text-muted-foreground hover:text-yellow-600'
-                  }
-                  onClick={handleSaveQuote}
-                  disabled={quoteStatus === 'saving'}
-                  title={isQuoteSaved ? 'Remove from quotes' : 'Save this sentence as a quote'}
-                  aria-label={isQuoteSaved ? 'Remove from quotes' : 'Save quote'}
-                >
-                  <QuoteIcon
-                    className={`h-3.5 w-3.5 ${isQuoteSaved ? 'fill-yellow-500 text-yellow-600' : ''}`}
-                  />
-                </Button>
-              )}
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-6 w-6 text-muted-foreground hover:text-foreground"
-                onClick={() => {
-                  if (isQuoteSaved) {
-                    // Hint at where the saved quotes live so the user can
-                    // open the panel after closing the popup.
-                    setShowQuotes(true)
-                  }
-                  clearSelection()
-                }}
+        <div className="flex items-center gap-1 flex-1 min-w-0">
+          {!isMobile && <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />}
+          <div className="flex-1 min-w-0">
+            <h3 className="text-base font-bold text-foreground truncate" title={selectedWord || ''}>
+              {selectedWord}
+            </h3>
+            {selectedSentence && selectedSentence.trim() !== (selectedWord || '').trim() && (
+              <p
+                className="text-[11px] text-muted-foreground/80 italic truncate -mt-0.5"
+                title={selectedSentence}
               >
-                <X className="h-3.5 w-3.5" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Content */}
-          <div className="max-h-[60vh] overflow-y-auto px-4 py-3">
-            {isExplaining ? (
-              <div className="flex items-center gap-2 py-2">
-                <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
-                <span className="text-sm text-muted-foreground">
-                  Analyzing context...
-                </span>
-              </div>
-            ) : explanation ? (
-              <div className="space-y-3">
-                {/* Meaning */}
-                <div>
-                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                    {isOfflineResult ? 'Dictionary Meaning' : 'Contextual Meaning'}
-                  </p>
-                  <p className="mt-1 text-sm leading-relaxed text-foreground">
-                    {explanation.meaning}
-                  </p>
-                  {explanation.example && (
-                    <p className="mt-1.5 text-xs italic text-muted-foreground/80 border-l-2 border-muted-foreground/20 pl-2">
-                      e.g., {explanation.example}
-                    </p>
-                  )}
-                  {isOfflineResult && !explanation.translation && selectedSentence && !isExplaining && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="mt-2 h-7 gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
-                      onClick={handleGetAIContext}
-                    >
-                      <Sparkles className="h-3 w-3" />
-                      Get AI Context
-                    </Button>
-                  )}
-                </div>
-
-                {/* Translation */}
-                {explanation.translation && (
-                  <div className="rounded-lg bg-emerald-50 p-2.5 dark:bg-emerald-950/20">
-                    <div className="flex items-center gap-1.5">
-                      <Languages className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
-                      <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                        {LANGUAGE_LABELS[translationLanguage]}
-                      </p>
-                    </div>
-                    <p className="mt-1 text-sm font-medium text-foreground">
-                      {explanation.translation}
-                    </p>
-                  </div>
-                )}
-
-                {/* Simplify sentence */}
-                {selectedSentence && (
-                  <div className="border-t pt-2">
-                    {!showSimplified ? (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
-                        onClick={handleSimplify}
-                      >
-                        <Sparkles className="h-3 w-3" />
-                        Simplify this sentence
-                      </Button>
-                    ) : isSimplifying ? (
-                      <div className="flex items-center gap-2 py-1">
-                        <Loader2 className="h-3 w-3 animate-spin text-amber-500" />
-                        <span className="text-xs text-muted-foreground">
-                          Simplifying...
-                        </span>
-                      </div>
-                    ) : (
-                      <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                          Simplified Sentence
-                        </p>
-                        <p className="mt-1 text-sm leading-relaxed text-foreground">
-                          {simplified}
-                        </p>
-                      </div>
-                    )}
-                  </div>
-                )}
-
-                {/* Highlight Options */}
-                {selectedPageNumber && explanation && !isExplaining && (
-                  <div className="flex items-center justify-between border-t border-border/80 pt-2.5 mt-2">
-                    <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Highlight Selection</span>
-                    <div className="flex items-center gap-1.5">
-                      {HIGHLIGHT_COLORS.map((color) => (
-                        <button
-                          key={color.value}
-                          onClick={() => handleHighlightFromPopup(color.value)}
-                          className={`h-5 w-5 rounded-full ${color.tailwind} transition-all hover:scale-125 border border-border shadow-sm active:scale-95`}
-                          title={`Highlight as ${color.label}`}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Flashcard */}
-                {selectedPageNumber && explanation && !isExplaining && (
-                  <div className="border-t border-border/80 pt-2.5 mt-2">
-                    <button
-                      onClick={handleCreateFlashcard}
-                      disabled={flashcardStatus === 'creating' || flashcardStatus === 'created' || flashcardStatus === 'exists'}
-                      className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[10px] font-semibold transition-all ${
-                        flashcardStatus === 'created' || flashcardStatus === 'exists'
-                          ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
-                          : 'bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/20 dark:text-violet-300 dark:hover:bg-violet-950/30'
-                      }`}
-                    >
-                      {flashcardStatus === 'creating' ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Brain className="h-3 w-3" />
-                      )}
-                      {flashcardStatus === 'created'
-                        ? 'Flashcard created!'
-                        : flashcardStatus === 'exists'
-                          ? 'Already a flashcard'
-                          : 'Create Flashcard'}
-                    </button>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <p className="py-2 text-sm text-muted-foreground">
-                No explanation available
+                &ldquo;{selectedSentence.length > 60 ? selectedSentence.slice(0, 60).trimEnd() + '\u2026' : selectedSentence}&rdquo;
               </p>
             )}
           </div>
-        </div>
-
-        {/* Arrow */}
-        <div className="flex justify-center">
-          {showAbove ? (
-            <div className="h-0 w-0 border-l-[8px] border-r-[8px] border-t-[8px] border-l-transparent border-r-transparent border-t-border" />
-          ) : (
-            <div className="h-0 w-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-border" />
+          {explanation?.pronunciation && !isExplaining && (
+            <div className="mt-0.5 flex items-center gap-1.5">
+              <button
+                onClick={() => {
+                  const utterance = new SpeechSynthesisUtterance(selectedWord)
+                    utterance.lang = accent
+                  utterance.rate = 0.85
+                  speechSynthesis.cancel()
+                  speechSynthesis.speak(utterance)
+                }}
+                className="cursor-pointer text-emerald-500 hover:text-emerald-600 transition-colors"
+                title="Click to hear pronunciation"
+              >
+                <Volume2 className="h-3 w-3" />
+              </button>
+              <p className="text-xs italic text-muted-foreground">
+                {explanation.pronunciation}
+              </p>
+            </div>
           )}
         </div>
-      </motion.div>
+        <div className="flex items-center gap-0.5">
+          {selectedPageNumber && explanation && !isExplaining && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={`h-6 w-6 ${isBookmarked ? 'text-amber-500 hover:text-amber-600' : 'text-muted-foreground hover:text-amber-500'}`}
+              onClick={handleBookmark}
+              title={isBookmarked ? 'Remove bookmark' : 'Bookmark this word'}
+            >
+              <Bookmark
+                className={`h-3.5 w-3.5 ${isBookmarked ? 'fill-amber-500' : ''}`}
+              />
+            </Button>
+          )}
+          {selectedPageNumber && quoteText && (
+            <Button
+              variant="ghost"
+              size="icon"
+              className={
+                isQuoteSaved
+                  ? 'h-6 w-6 text-yellow-600 hover:text-yellow-700'
+                  : 'text-muted-foreground hover:text-yellow-600'
+              }
+              onClick={handleSaveQuote}
+              disabled={quoteStatus === 'saving'}
+              title={isQuoteSaved ? 'Remove from quotes' : 'Save this sentence as a quote'}
+              aria-label={isQuoteSaved ? 'Remove from quotes' : 'Save quote'}
+            >
+              <QuoteIcon
+                className={`h-3.5 w-3.5 ${isQuoteSaved ? 'fill-yellow-500 text-yellow-600' : ''}`}
+              />
+            </Button>
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              if (isQuoteSaved) {
+                setShowQuotes(true)
+              }
+              clearSelection()
+            }}
+          >
+            <X className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      </div>
+
+      {/* Content */}
+      <div className="max-h-[60vh] overflow-y-auto px-4 py-3">
+        {isExplaining ? (
+          <div className="flex items-center gap-2 py-2">
+            <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
+            <span className="text-sm text-muted-foreground">
+              Analyzing context...
+            </span>
+          </div>
+        ) : explanation ? (
+          <div className="space-y-3">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                {isOfflineResult ? 'Dictionary Meaning' : 'Contextual Meaning'}
+              </p>
+              <p className="mt-1 text-sm leading-relaxed text-foreground">
+                {explanation.meaning}
+              </p>
+              {explanation.example && (
+                <p className="mt-1.5 text-xs italic text-muted-foreground/80 border-l-2 border-muted-foreground/20 pl-2">
+                  e.g., {explanation.example}
+                </p>
+              )}
+              {isOfflineResult && !explanation.translation && selectedSentence && !isExplaining && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="mt-2 h-7 gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                  onClick={handleGetAIContext}
+                >
+                  <Sparkles className="h-3 w-3" />
+                  Get AI Context
+                </Button>
+              )}
+            </div>
+
+            {explanation.translation && (
+              <div className="rounded-lg bg-emerald-50 p-2.5 dark:bg-emerald-950/20">
+                <div className="flex items-center gap-1.5">
+                  <Languages className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
+                  <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                    {LANGUAGE_LABELS[translationLanguage]}
+                  </p>
+                </div>
+                <p className="mt-1 text-sm font-medium text-foreground">
+                  {explanation.translation}
+                </p>
+              </div>
+            )}
+
+            {selectedSentence && (
+              <div className="border-t pt-2">
+                {!showSimplified ? (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    onClick={handleSimplify}
+                  >
+                    <Sparkles className="h-3 w-3" />
+                    Simplify this sentence
+                  </Button>
+                ) : isSimplifying ? (
+                  <div className="flex items-center gap-2 py-1">
+                    <Loader2 className="h-3 w-3 animate-spin text-amber-500" />
+                    <span className="text-xs text-muted-foreground">
+                      Simplifying...
+                    </span>
+                  </div>
+                ) : (
+                  <div>
+                    <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+                      Simplified Sentence
+                    </p>
+                    <p className="mt-1 text-sm leading-relaxed text-foreground">
+                      {simplified}
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {selectedPageNumber && explanation && !isExplaining && (
+              <div className="flex items-center justify-between border-t border-border/80 pt-2.5 mt-2">
+                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Highlight Selection</span>
+                <div className="flex items-center gap-1.5">
+                  {HIGHLIGHT_COLORS.map((color) => (
+                    <button
+                      key={color.value}
+                      onClick={() => handleHighlightFromPopup(color.value)}
+                      className={`h-5 w-5 rounded-full ${color.tailwind} transition-all hover:scale-125 border border-border shadow-sm active:scale-95`}
+                      title={`Highlight as ${color.label}`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {selectedPageNumber && explanation && !isExplaining && (
+              <div className="border-t border-border/80 pt-2.5 mt-2">
+                <button
+                  onClick={handleCreateFlashcard}
+                  disabled={flashcardStatus === 'creating' || flashcardStatus === 'created' || flashcardStatus === 'exists'}
+                  className={`flex w-full items-center justify-center gap-1.5 rounded-lg py-1.5 text-[10px] font-semibold transition-all ${
+                    flashcardStatus === 'created' || flashcardStatus === 'exists'
+                      ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400'
+                      : 'bg-violet-50 text-violet-700 hover:bg-violet-100 dark:bg-violet-950/20 dark:text-violet-300 dark:hover:bg-violet-950/30'
+                  }`}
+                >
+                  {flashcardStatus === 'creating' ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Brain className="h-3 w-3" />
+                  )}
+                  {flashcardStatus === 'created'
+                    ? 'Flashcard created!'
+                    : flashcardStatus === 'exists'
+                      ? 'Already a flashcard'
+                      : 'Create Flashcard'}
+                </button>
+              </div>
+            )}
+          </div>
+        ) : (
+          <p className="py-2 text-sm text-muted-foreground">
+            No explanation available
+          </p>
+        )}
+      </div>
+    </div>
+  )
+
+  return (
+    <AnimatePresence>
+      {/* Mobile bottom sheet backdrop */}
+      {selectedWord && popupPosition && isMobile && (
+        <motion.div
+          key="popup-backdrop"
+          className="fixed inset-0 z-40 bg-black/30"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.15 }}
+          onClick={() => clearSelection()}
+        />
+      )}
+      {/* Mobile bottom sheet */}
+      {selectedWord && popupPosition && isMobile && (
+        <motion.div
+          key="popup-sheet"
+          data-popup
+          className="fixed bottom-0 left-0 right-0 z-50"
+          initial={{ y: '100%' }}
+          animate={{ y: 0 }}
+          exit={{ y: '100%' }}
+          transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+        >
+          <div className="mx-auto my-2 flex w-10 h-1.5 rounded-full bg-muted-foreground/30" />
+          {popupContent}
+        </motion.div>
+      )}
+      {/* Desktop floating popup */}
+      {selectedWord && popupPosition && !isMobile && (
+        <motion.div
+          key="popup"
+          data-popup
+          className="fixed z-50"
+          style={{
+            left: clampedLeft,
+            top: clampedTop,
+            width: popupWidth,
+          }}
+          initial={{ opacity: 0, y: showAbove ? 10 : -10, scale: 0.95 }}
+          animate={{ opacity: 1, y: 0, scale: 1 }}
+          exit={{ opacity: 0, y: showAbove ? 5 : -5, scale: 0.95 }}
+          transition={{ duration: 0.15, ease: 'easeOut' }}
+        >
+          {popupContent}
+
+          {/* Arrow */}
+          <div className="flex justify-center">
+            {showAbove ? (
+              <div className="h-0 w-0 border-l-[8px] border-r-[8px] border-t-[8px] border-l-transparent border-r-transparent border-t-border" />
+            ) : (
+              <div className="h-0 w-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-border" />
+            )}
+          </div>
+        </motion.div>
+      )}
     </AnimatePresence>
   )
 }

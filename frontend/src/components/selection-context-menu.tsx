@@ -92,6 +92,79 @@ export function SelectionContextMenu() {
     }, 900)
   }, [])
 
+  // Open the context menu at a given position (shared by right-click and long-press)
+  const openContextMenu = useCallback((clientX: number, clientY: number) => {
+    const target = document.elementFromPoint(clientX, clientY) as HTMLElement | null
+    if (!target) return
+    const textLayer = target.closest('.pdf-text-layer')
+    if (!textLayer) return
+
+    const mode = usePDFStore.getState().annotationMode
+    if (mode !== 'select') return
+
+    window.dispatchEvent(new CustomEvent('pdf-clear-pending-word'))
+
+    const pageWrapper = target.closest('[data-page]')
+    const pageNumber = pageWrapper ? Number(pageWrapper.getAttribute('data-page')) : 0
+    if (!pageNumber) return
+
+    const store = usePDFStore.getState()
+    const pdfFileName = store.pdfFileName || 'unknown'
+
+    const sel = window.getSelection()
+    const hasSelection = !!(sel && !sel.isCollapsed && sel.toString().trim())
+    let word = ''
+    let sentence = ''
+    let selectedText = ''
+    let selectionRects: ContextMenuState['selectionRects'] = []
+
+    if (hasSelection && sel) {
+      selectedText = cleanText(sel.toString().replace(/\s+/g, ' '))
+      word = selectedText.split(/\s+/)[0] || ''
+      sentence = selectedText
+      const canvasElement = textLayer.parentElement?.querySelector('canvas')
+      if (canvasElement) {
+        const canvasRect = canvasElement.getBoundingClientRect()
+        const range = sel.getRangeAt(0)
+        const rects = Array.from(range.getClientRects())
+        const scale = store.scale || 1
+        selectionRects = rects.map((r) => ({
+          left: (r.left - canvasRect.left) / scale,
+          top: (r.top - canvasRect.top) / scale,
+          width: r.width / scale,
+          height: r.height / scale,
+        }))
+      }
+    } else {
+      const span = target.closest('span')
+      const raw = span?.textContent || target.textContent || ''
+      word = cleanText(raw) || ''
+      sentence = word
+      selectedText = word
+    }
+
+    const isBookmarked = !!(word && store.bookmarks.some(
+      (b) => b.pageNumber === pageNumber && b.word === word
+    ))
+    const isQuoteSaved = !!(sentence && store.quotes.some(
+      (q) => q.pageNumber === pageNumber && q.text === sentence && q.pdfFileName === pdfFileName
+    ))
+
+    setState({
+      x: clientX,
+      y: clientY,
+      word,
+      sentence,
+      selectedText,
+      pageNumber,
+      pdfFileName,
+      selectionRects,
+      isBookmarked,
+      isQuoteSaved,
+      hasSelection: !!hasSelection,
+    })
+  }, [])
+
   // Listen for contextmenu on the document (event delegation).
   useEffect(() => {
     const handleContextMenu = (e: MouseEvent) => {
@@ -99,85 +172,52 @@ export function SelectionContextMenu() {
       if (!target) return
       const textLayer = target.closest('.pdf-text-layer')
       if (!textLayer) return
-
-      // Don't intercept while a non-select annotation tool is active.
       const mode = usePDFStore.getState().annotationMode
       if (mode !== 'select') return
-
       e.preventDefault()
+      openContextMenu(e.clientX, e.clientY)
+    }
 
-      // The left-mouse mouseup that completed the text selection just fired
-      // handleMouseUp, which set `pendingWord` in pdf-viewer and shows the
-      // "Get meaning?" tooltip. The context menu is the only menu the user
-      // should see on a right-click, so dismiss the tooltip immediately.
-      window.dispatchEvent(new CustomEvent('pdf-clear-pending-word'))
+    // Long-press for mobile: hold 500ms on text to open context menu
+    const LONG_PRESS_MS = 500
+    const MOVE_THRESHOLD = 10
+    let longPressTimer: ReturnType<typeof setTimeout> | null = null
+    let touchStartX = 0
+    let touchStartY = 0
 
-      // Find the page number from the closest [data-page] wrapper.
-      const pageWrapper = target.closest('[data-page]')
-      const pageNumber = pageWrapper ? Number(pageWrapper.getAttribute('data-page')) : 0
-      if (!pageNumber) return
+    const handleTouchStart = (e: TouchEvent) => {
+      if (e.touches.length !== 1) return
+      const target = e.target as HTMLElement | null
+      if (!target || !target.closest('.pdf-text-layer')) return
+      const mode = usePDFStore.getState().annotationMode
+      if (mode !== 'select') return
+      touchStartX = e.touches[0].clientX
+      touchStartY = e.touches[0].clientY
+      longPressTimer = setTimeout(() => {
+        openContextMenu(touchStartX, touchStartY)
 
-      const store = usePDFStore.getState()
-      const pdfFileName = store.pdfFileName || 'unknown'
+        // Suppress the subsequent click so it doesn't also trigger word popup
+        ;(window as any).__supressNextClick = true
+        setTimeout(() => { (window as any).__supressNextClick = false }, 300)
+      }, LONG_PRESS_MS)
+    }
 
-      // Resolve the selection: prefer the current window selection; fall back
-      // to the word under the cursor.
-      const sel = window.getSelection()
-      const hasSelection = !!(sel && !sel.isCollapsed && sel.toString().trim())
-      let word = ''
-      let sentence = ''
-      let selectedText = ''
-      let selectionRects: ContextMenuState['selectionRects'] = []
-
-      if (hasSelection && sel) {
-        // Normalize the selection text: strip control chars, collapse
-        // whitespace (pdfjs text-layer spans may have irregular spacing)
-        selectedText = cleanText(sel.toString().replace(/\s+/g, ' '))
-        word = selectedText.split(/\s+/)[0] || ''
-        sentence = selectedText
-        // Compute canvas-relative rects so a later "Highlight" click can still
-        // draw the highlight even if the live selection has been cleared.
-        const canvasElement = textLayer.parentElement?.querySelector('canvas')
-        if (canvasElement) {
-          const canvasRect = canvasElement.getBoundingClientRect()
-          const range = sel.getRangeAt(0)
-          const rects = Array.from(range.getClientRects())
-          const scale = store.scale || 1
-          selectionRects = rects.map((r) => ({
-            left: (r.left - canvasRect.left) / scale,
-            top: (r.top - canvasRect.top) / scale,
-            width: r.width / scale,
-            height: r.height / scale,
-          }))
-        }
-      } else {
-        const span = target.closest('span')
-        const raw = span?.textContent || target.textContent || ''
-        word = cleanText(raw) || ''
-        sentence = word
-        selectedText = word
+    const handleTouchMove = (e: TouchEvent) => {
+      if (!longPressTimer) return
+      if (e.touches.length !== 1) return
+      const dx = Math.abs(e.touches[0].clientX - touchStartX)
+      const dy = Math.abs(e.touches[0].clientY - touchStartY)
+      if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
+        clearTimeout(longPressTimer)
+        longPressTimer = null
       }
+    }
 
-      const isBookmarked = !!(word && store.bookmarks.some(
-        (b) => b.pageNumber === pageNumber && b.word === word
-      ))
-      const isQuoteSaved = !!(sentence && store.quotes.some(
-        (q) => q.pageNumber === pageNumber && q.text === sentence && q.pdfFileName === pdfFileName
-      ))
-
-      setState({
-        x: e.clientX,
-        y: e.clientY,
-        word,
-        sentence,
-        selectedText,
-        pageNumber,
-        pdfFileName,
-        selectionRects,
-        isBookmarked,
-        isQuoteSaved,
-        hasSelection: !!hasSelection,
-      })
+    const handleTouchEnd = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer)
+        longPressTimer = null
+      }
     }
 
     // Dismiss on any of these events.
@@ -195,6 +235,9 @@ export function SelectionContextMenu() {
 
     document.addEventListener('contextmenu', handleContextMenu)
     document.addEventListener('mousedown', handleMouseDown)
+    document.addEventListener('touchstart', handleTouchStart, { passive: true })
+    document.addEventListener('touchmove', handleTouchMove, { passive: true })
+    document.addEventListener('touchend', handleTouchEnd, { passive: true })
     window.addEventListener('scroll', handleScroll, true)
     window.addEventListener('resize', handleResize)
     document.addEventListener('keydown', handleKey)
@@ -202,11 +245,15 @@ export function SelectionContextMenu() {
     return () => {
       document.removeEventListener('contextmenu', handleContextMenu)
       document.removeEventListener('mousedown', handleMouseDown)
+      document.removeEventListener('touchstart', handleTouchStart)
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('touchend', handleTouchEnd)
       window.removeEventListener('scroll', handleScroll, true)
       window.removeEventListener('resize', handleResize)
       document.removeEventListener('keydown', handleKey)
+      if (longPressTimer) clearTimeout(longPressTimer)
     }
-  }, [close])
+  }, [close, openContextMenu])
 
   // -- Action handlers --
 
