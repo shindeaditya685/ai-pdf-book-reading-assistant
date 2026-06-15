@@ -38,6 +38,7 @@ interface ContextMenuState {
   isBookmarked: boolean
   isQuoteSaved: boolean
   hasSelection: boolean
+  highlightIdToDelete?: string
 }
 
 const MENU_WIDTH = 240
@@ -150,6 +151,30 @@ export function SelectionContextMenu() {
       (q) => q.pageNumber === pageNumber && q.text === sentence && q.pdfFileName === pdfFileName
     ))
 
+    let highlightIdToDelete: string | undefined = undefined
+    const canvasElement = textLayer.parentElement?.querySelector('canvas')
+    if (canvasElement) {
+      const canvasRect = canvasElement.getBoundingClientRect()
+      const px = (clientX - canvasRect.left) / store.scale
+      const py = (clientY - canvasRect.top) / store.scale
+
+      const clickedHighlight = store.annotations.find((ann) => {
+        if (ann.pageNumber !== pageNumber || ann.type !== 'highlight' || !ann.rects) return false
+        return ann.rects.some((rect) => {
+          const padding = 6 // generous padding for clicking
+          return (
+            px >= rect.left - padding &&
+            px <= rect.left + rect.width + padding &&
+            py >= rect.top - padding &&
+            py <= rect.top + rect.height + padding
+          )
+        })
+      })
+      if (clickedHighlight) {
+        highlightIdToDelete = clickedHighlight.id
+      }
+    }
+
     setState({
       x: clientX,
       y: clientY,
@@ -162,6 +187,7 @@ export function SelectionContextMenu() {
       isBookmarked,
       isQuoteSaved,
       hasSelection: !!hasSelection,
+      highlightIdToDelete,
     })
   }, [])
 
@@ -382,6 +408,24 @@ export function SelectionContextMenu() {
     }
   }, [state, flashAndClose, loadingAction])
 
+  const handleDeleteHighlight = useCallback(async () => {
+    if (!state || !state.highlightIdToDelete) return
+    if (loadingAction) return
+    setLoadingAction('delete-highlight')
+    const store = usePDFStore.getState()
+    store.removeAnnotation(state.highlightIdToDelete)
+    try {
+      await authFetch(`/api/db/annotations?id=${encodeURIComponent(state.highlightIdToDelete)}`, {
+        method: 'DELETE',
+      })
+      flashAndClose('Highlight deleted')
+    } catch {
+      flashAndClose('Failed to delete')
+    } finally {
+      setLoadingAction(null)
+    }
+  }, [state, flashAndClose, loadingAction])
+
   const handleCopy = useCallback(async () => {
     if (!state?.selectedText) return
     if (loadingAction) return
@@ -450,6 +494,24 @@ export function SelectionContextMenu() {
                 <div className="px-3 py-1.5 text-[11px] text-muted-foreground border-b border-border/60 truncate" title={state.selectedText}>
                   &ldquo;{truncate(state.selectedText, 60)}&rdquo;
                 </div>
+              )}
+
+              {state.highlightIdToDelete && (
+                <button
+                  role="menuitem"
+                  onClick={handleDeleteHighlight}
+                  disabled={!!loadingAction}
+                  className="w-full flex items-center gap-2 px-3 py-2 text-rose-500 hover:bg-rose-50 focus:bg-rose-50 dark:hover:bg-rose-950/20 dark:focus:bg-rose-950/20 focus:outline-none transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed border-b border-border/40"
+                >
+                  {loadingAction === 'delete-highlight' ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                  )}
+                  <span className="font-medium">Delete Highlight</span>
+                </button>
               )}
 
               <button
