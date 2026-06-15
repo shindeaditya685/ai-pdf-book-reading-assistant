@@ -621,58 +621,6 @@ export function PDFViewer() {
     }
   }, [annotations, currentPage, removeAnnotation, deleteAnnotationFromDb])
 
-  // Keyboard shortcuts for annotation tools
-  // 1=Select, 2=Highlight, 3=Pen, 4=Eraser, 5=Sticky note, Ctrl/Cmd+Z=Undo, Ctrl/Cmd+Shift+Z=Redo
-  useEffect(() => {
-    if (!pdfDataUrl) return
-    const handler = (e: KeyboardEvent) => {
-      const target = e.target as HTMLElement
-      const isInput =
-        target.tagName === 'INPUT' ||
-        target.tagName === 'TEXTAREA' ||
-        target.isContentEditable
-      if (isInput) return
-
-      const mod = e.ctrlKey || e.metaKey
-
-      // Undo / Redo
-      if (mod && !e.altKey && e.key.toLowerCase() === 'z') {
-        e.preventDefault()
-        if (e.shiftKey) redo()
-        else undo()
-        return
-      }
-
-      // Skip letter shortcuts when modifier is held
-      if (mod || e.altKey) return
-
-      switch (e.key) {
-        case '1':
-          e.preventDefault()
-          setAnnotationMode('select')
-          break
-        case '2':
-          e.preventDefault()
-          setAnnotationMode('highlight')
-          break
-        case '3':
-          e.preventDefault()
-          setAnnotationMode('pen')
-          break
-        case '4':
-          e.preventDefault()
-          setAnnotationMode('eraser')
-          break
-        case '5':
-          e.preventDefault()
-          setAnnotationMode('note')
-          break
-      }
-    }
-    window.addEventListener('keydown', handler)
-    return () => window.removeEventListener('keydown', handler)
-  }, [pdfDataUrl, setAnnotationMode, undo, redo])
-
   // Word-picked callback from PdfPage
   const handleWordPicked = useCallback(
     (word: string, sentence: string, pageNumber: number, position: { x: number; y: number }) => {
@@ -892,6 +840,66 @@ export function PDFViewer() {
 
   const zoomIn = useCallback(() => { setScale(Math.min(scale + 0.25, 3)) }, [scale, setScale])
   const zoomOut = useCallback(() => { setScale(Math.max(scale - 0.25, 0.5)) }, [scale, setScale])
+
+  // Keyboard shortcuts: Arrow keys for page navigation
+  // 1=Select, 2=Highlight, 3=Pen, 4=Eraser, 5=Sticky note, Ctrl/Cmd+Z=Undo, Ctrl/Cmd+Shift+Z=Redo
+  useEffect(() => {
+    if (!pdfDataUrl) return
+    const handler = (e: KeyboardEvent) => {
+      const target = e.target as HTMLElement
+      const isInput =
+        target.tagName === 'INPUT' ||
+        target.tagName === 'TEXTAREA' ||
+        target.isContentEditable
+      if (isInput) return
+
+      const mod = e.ctrlKey || e.metaKey
+
+      // Undo / Redo
+      if (mod && !e.altKey && e.key.toLowerCase() === 'z') {
+        e.preventDefault()
+        if (e.shiftKey) redo()
+        else undo()
+        return
+      }
+
+      // Skip letter shortcuts when modifier is held
+      if (mod || e.altKey) return
+
+      switch (e.key) {
+        case 'ArrowLeft':
+          e.preventDefault()
+          goToPrevPage()
+          break
+        case 'ArrowRight':
+          e.preventDefault()
+          goToNextPage()
+          break
+        case '1':
+          e.preventDefault()
+          setAnnotationMode('select')
+          break
+        case '2':
+          e.preventDefault()
+          setAnnotationMode('highlight')
+          break
+        case '3':
+          e.preventDefault()
+          setAnnotationMode('pen')
+          break
+        case '4':
+          e.preventDefault()
+          setAnnotationMode('eraser')
+          break
+        case '5':
+          e.preventDefault()
+          setAnnotationMode('note')
+          break
+      }
+    }
+    window.addEventListener('keydown', handler)
+    return () => window.removeEventListener('keydown', handler)
+  }, [pdfDataUrl, setAnnotationMode, undo, redo, goToPrevPage, goToNextPage])
 
   // Clear selection when clicking outside the text layer
   const handleContainerClick = useCallback((e: React.MouseEvent) => {
