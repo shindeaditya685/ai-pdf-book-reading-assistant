@@ -346,7 +346,7 @@ export function PdfPage({
   // Eraser helper: erase drawing stroke near (px, py)
   const eraseDrawingAtPoint = useCallback(
     (px: number, py: number) => {
-      const drawings = annotations.filter(
+      const pageAnns = annotations.filter(
         (a) => a.pageNumber === pageNumber && a.type === 'drawing'
       )
 
@@ -376,33 +376,12 @@ export function PdfPage({
         return Math.sqrt(dx * dx + dy * dy) < threshold
       }
 
-      for (const ann of drawings) {
+      for (const ann of pageAnns) {
         if (!ann.points) continue
         for (let i = 0; i < ann.points.length - 1; i++) {
           const p1 = ann.points[i]
           const p2 = ann.points[i + 1]
           if (isPointNearLine(px, py, p1.x, p1.y, p2.x, p2.y, 10 / scale)) {
-            removeAnnotation(ann.id)
-            deleteAnnotationFromDb(ann.id)
-            return
-          }
-        }
-      }
-
-      // Also check highlights
-      const highlights = annotations.filter(
-        (a) => a.pageNumber === pageNumber && a.type === 'highlight'
-      )
-      for (const ann of highlights) {
-        if (!ann.rects) continue
-        for (const rect of ann.rects) {
-          const padding = 2
-          if (
-            px >= rect.left - padding &&
-            px <= rect.left + rect.width + padding &&
-            py >= rect.top - padding &&
-            py <= rect.top + rect.height + padding
-          ) {
             removeAnnotation(ann.id)
             deleteAnnotationFromDb(ann.id)
             return
