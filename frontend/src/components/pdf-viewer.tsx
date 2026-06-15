@@ -875,6 +875,23 @@ export function PDFViewer() {
         return
       }
 
+      // Zoom: Ctrl+= / Ctrl++ / Ctrl+-
+      if (mod && (e.key === '=' || e.key === '+')) {
+        e.preventDefault()
+        zoomIn()
+        return
+      }
+      if (mod && e.key === '-') {
+        e.preventDefault()
+        zoomOut()
+        return
+      }
+      if (mod && !e.shiftKey && e.key === '0') {
+        e.preventDefault()
+        setScale(1)
+        return
+      }
+
       // Skip letter shortcuts when modifier is held
       if (mod || e.altKey) return
 
