@@ -58,6 +58,7 @@ export function PDFViewer() {
   const sessionStartRef = useRef<number>(Date.now())
   const lastLoggedPageRef = useRef<number>(0)
   const resumeScrollPageRef = useRef<number | null>(null)
+  const prevScaleRef = useRef(0)
   const { user } = useAuth()
   const username = user?.username
   const quota = useAIQuota(!!user)
@@ -167,6 +168,8 @@ export function PDFViewer() {
     followMode,
     remotePages,
   } = usePDFStore()
+
+  if (prevScaleRef.current === 0) prevScaleRef.current = scale
 
   // Auto-hide toolbar on mobile after inactivity
   useEffect(() => {
@@ -813,8 +816,27 @@ export function PDFViewer() {
     }
   }, [currentPage, pdfDataUrl, pdfReady, scrollMode, totalPages])
 
-  // Track current page in scroll mode via IntersectionObserver
-  useEffect(() => {
+  // Re-center current page when zoom changes in scroll mode, so the
+  // IntersectionObserver doesn't pick a different page after resize.
+  useLayoutEffect(() => {
+    if (!scrollMode || !pdfReady || !containerRef.current) return
+    const zoomChanged = prevScaleRef.current !== scale
+    prevScaleRef.current = scale
+    if (!zoomChanged) return
+
+    const target = containerRef.current.querySelector(`[data-page="${currentPage}"]`)
+    if (target) {
+      ;(target as HTMLElement).scrollIntoView({ behavior: 'auto', block: 'start' })
+    }
+  }, [scale, scrollMode, pdfReady, currentPage])
+
+  // Track current page in scroll mode via IntersectionObserver.
+  // Must be useLayoutEffect so the old observer is disconnected
+  // BEFORE paint; otherwise the old observer's callback fires after
+  // paint (between useLayoutEffect and useEffect) and overwrites
+  // currentPage with whichever page happens to be most visible after
+  // the zoom resize — before our scroll correction takes effect.
+  useLayoutEffect(() => {
     if (!scrollMode || !pdfReady || totalPages === 0) return
     const container = containerRef.current
     if (!container) return
@@ -847,7 +869,7 @@ export function PDFViewer() {
     const wrappers = container.querySelectorAll('[data-page]')
     wrappers.forEach((el) => observer.observe(el))
     return () => observer.disconnect()
-  }, [scrollMode, pdfReady, totalPages])
+  }, [scrollMode, pdfReady, totalPages, scale])
 
   // Follow mode: auto-navigate when leader changes page
   useEffect(() => {
