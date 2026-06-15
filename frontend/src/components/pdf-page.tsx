@@ -95,6 +95,7 @@ export function PdfPage({
   const [isVisible, setIsVisible] = useState(!lazy)
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawing, setIsDrawing] = useState(false)
+  const [pageSize, setPageSize] = useState<{ width: number; height: number } | null>(null)
 
   // Lazy render: only render canvas when the wrapper is in (or near) the viewport
   useEffect(() => {
@@ -117,6 +118,8 @@ export function PdfPage({
 
   // Placeholder height: rough A4 ratio (1:1.414) scaled to current scale (derived)
   const placeholderHeight = lazy && !isVisible ? 800 * 1.414 * scale : null
+  const width = pageSize ? pageSize.width * scale : null
+  const height = pageSize ? pageSize.height * scale : null
 
   // Get full page text (uses shared cache + ocrText)
   const getPageText = useCallback(
@@ -172,6 +175,13 @@ export function PdfPage({
       let renderTask: pdfjsLib.RenderTask | null = null
       try {
         const page = await pdf.getPage(pageNumber)
+        const viewport1 = page.getViewport({ scale: 1 })
+        setPageSize(prev => {
+          if (prev && prev.width === viewport1.width && prev.height === viewport1.height) {
+            return prev
+          }
+          return { width: viewport1.width, height: viewport1.height }
+        })
         // HiDPI: render at scale × devicePixelRatio (capped at 2x to keep memory safe)
         // and use CSS to display the canvas at the original `scale` size. Without
         // this, mobile (DPR 2-3) upscales the 1x canvas with bilinear filtering,
@@ -585,7 +595,11 @@ export function PdfPage({
       ref={wrapperRef}
       data-page={pageNumber}
       className={`pdf-page-wrapper relative mx-auto my-3 shadow-xl ${lazy && !isVisible ? 'rounded-md bg-muted/20' : ''}`}
-      style={lazy && !isVisible ? { width: '70%', maxWidth: 800, height: placeholderHeight ?? 1000 } : undefined}
+      style={{
+        width: width ? `${width}px` : (lazy && !isVisible ? '70%' : undefined),
+        maxWidth: width ? `${width}px` : (lazy && !isVisible ? 800 : undefined),
+        height: height ? `${height}px` : (placeholderHeight ? `${placeholderHeight}px` : '1000px'),
+      }}
       onMouseUp={lazy && !isVisible ? undefined : handleMouseUp}
     >
       {lazy && !isVisible ? (

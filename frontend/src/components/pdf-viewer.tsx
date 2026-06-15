@@ -59,6 +59,8 @@ export function PDFViewer() {
   const lastLoggedPageRef = useRef<number>(0)
   const resumeScrollPageRef = useRef<number | null>(null)
   const prevScaleRef = useRef(0)
+  const isZoomingRef = useRef(false)
+  const zoomTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const { user } = useAuth()
   const username = user?.username
   const quota = useAIQuota(!!user)
@@ -772,6 +774,13 @@ export function PDFViewer() {
     prevScaleRef.current = scale
     if (!zoomChanged) return
 
+    // Set zooming flag to ignore IntersectionObserver updates during transition
+    isZoomingRef.current = true
+    if (zoomTimeoutRef.current) clearTimeout(zoomTimeoutRef.current)
+    zoomTimeoutRef.current = setTimeout(() => {
+      isZoomingRef.current = false
+    }, 1000)
+
     const target = containerRef.current.querySelector(`[data-page="${currentPage}"]`)
     if (target) {
       ;(target as HTMLElement).scrollIntoView({ behavior: 'auto', block: 'start' })
@@ -792,6 +801,9 @@ export function PDFViewer() {
     const visibility = new Map<number, number>()
     const observer = new IntersectionObserver(
       (entries) => {
+        // If we are currently zooming, ignore intersection changes to prevent jumping pages
+        if (isZoomingRef.current) return
+
         for (const entry of entries) {
           const page = Number((entry.target as HTMLElement).dataset.page)
           if (!page) continue
