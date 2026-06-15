@@ -63,6 +63,10 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
             .find({ sessionId, updatedAt: { $gt: since } }).sort({ createdAt: -1 }).toArray()
           if (flashcards.length > 0) send('flashcards', flashcards)
 
+          const quotes = await conn.db.collection('sharedQuotes')
+            .find({ sessionId, updatedAt: { $gt: since } }).sort({ timestamp: -1 }).toArray()
+          if (quotes.length > 0) send('quotes', quotes)
+
           const chatMsgs = await conn.db.collection('sessionChat')
             .find({ sessionId, createdAt: { $gt: since } }).sort({ createdAt: 1 }).toArray()
           for (const m of chatMsgs) send('chat-message', m)
@@ -72,6 +76,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
           for (const ev of events) {
             if (ev.type === 'bookmark-deleted') send('bookmark-deleted', { bookmarkId: ev.bookmarkId })
             else if (ev.type === 'flashcard-deleted') send('flashcard-deleted', { flashcardId: ev.flashcardId })
+            else if (ev.type === 'quote-deleted') send('quote-deleted', { quoteId: ev.quoteId })
             else if (ev.type === 'annotation-deleted') send('annotation-deleted', { annotationId: ev.annotationId })
           }
 

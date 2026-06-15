@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { Users, Link2, Copy, Plus, LogIn, Trash2, MessageSquare, AtSign, Check, Loader2, UserPlus, RefreshCw, MessageCircle, Timer, Volume2, UserCheck, Wifi, ThumbsUp, Heart, Laugh, PartyPopper, Send, Play, Pause, RotateCcw } from 'lucide-react'
 import { toast } from 'sonner'
 import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
-import { usePDFStore, type ShareSession, type SharedAnnotation, type SharedComment } from '@/store/use-pdf-store'
+import { usePDFStore, type ShareSession, type SharedAnnotation, type SharedComment, type SharedQuote } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 import { useAuth } from '@/context/auth-context'
 
@@ -23,8 +23,13 @@ export function ShareSessionPanel() {
     sharedAnnotations,
     sharedBookmarks,
     sharedFlashcards,
+    sharedQuotes,
     setSharedBookmarks,
     setSharedFlashcards,
+    setSharedQuotes,
+    addSharedQuote,
+    removeSharedQuote,
+    quotes,
     pdfFileName,
     currentPage,
     pdfDataUrl,
@@ -46,7 +51,7 @@ export function ShareSessionPanel() {
   const [copied, setCopied] = useState(false)
   const [commentText, setCommentText] = useState('')
   const [commentingOn, setCommentingOn] = useState<string | null>(null)
-  const [subTab, setSubTab] = useState<'annotations' | 'bookmarks' | 'flashcards' | 'chat'>('annotations')
+  const [subTab, setSubTab] = useState<'annotations' | 'bookmarks' | 'flashcards' | 'quotes' | 'chat'>('annotations')
   const [chatText, setChatText] = useState('')
   const [sendingChat, setSendingChat] = useState(false)
 
@@ -108,6 +113,27 @@ export function ShareSessionPanel() {
             sentence: fc.sentence,
             pageNumber: fc.pageNumber,
             pdfFileName: fc.pdfFileName,
+          }),
+        }).then(() => {}),
+      )
+    }
+
+    for (const q of quotes) {
+      if (q.pdfFileName !== pdfFileName) continue
+      promises.push(
+        authFetch('/api/share/quotes', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: q.id,
+            sessionId,
+            text: q.text,
+            context: q.context,
+            noteText: q.noteText,
+            pageNumber: q.pageNumber,
+            pdfFileName: q.pdfFileName,
+            rects: q.rects,
+            color: q.color,
           }),
         }).then(() => {}),
       )
@@ -198,15 +224,22 @@ export function ShareSessionPanel() {
   const handleLeave = async () => {
     if (!shareSession) return
     try {
-      await authFetch(`/api/share/session/${shareSession._id}`, {
+      const res = await authFetch(`/api/share/session/${shareSession._id}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ action: 'leave' }),
       })
+      if (!res.ok) {
+        toast.error('Failed to leave session')
+        return
+      }
+      toast.success('Left session')
       clearShareState()
       setTab('sessions')
       loadSessions()
-    } catch { /* ignore */ }
+    } catch {
+      toast.error('Network error — could not leave session')
+    }
   }
 
   const handleDelete = async () => {
@@ -228,6 +261,7 @@ export function ShareSessionPanel() {
       loadAnnotations(session._id),
       loadSharedBookmarks(session._id),
       loadSharedFlashcards(session._id),
+      loadSharedQuotes(session._id),
     ])
   }
 
@@ -265,6 +299,7 @@ export function ShareSessionPanel() {
       loadAnnotations(shareSession._id)
       loadSharedBookmarks(shareSession._id)
       loadSharedFlashcards(shareSession._id)
+      loadSharedQuotes(shareSession._id)
     }
   }
 
@@ -284,6 +319,16 @@ export function ShareSessionPanel() {
       if (res.ok) {
         const data = await res.json()
         setSharedFlashcards(data)
+      }
+    } catch { /* ignore */ }
+  }
+
+  const loadSharedQuotes = async (sessionId: string) => {
+    try {
+      const res = await authFetch(`/api/share/quotes?sessionId=${encodeURIComponent(sessionId)}`)
+      if (res.ok) {
+        const data = await res.json()
+        setSharedQuotes(data)
       }
     } catch { /* ignore */ }
   }
@@ -466,12 +511,24 @@ export function ShareSessionPanel() {
             </div>
           </div>
         ) : shareSession ? (
-          <div className="p-4 space-y-4">
+            <div className="p-4 space-y-4">
             {/* Session Header */}
             <div className="rounded-xl border border-border/60 p-3 space-y-2">
               <div className="flex items-start justify-between">
                 <div>
-                  <p className="text-sm font-bold text-foreground">{shareSession.name}</p>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => setTab('sessions')}
+                      className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+                      title="Back to sessions"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                      </svg>
+                      Back
+                    </button>
+                  </div>
+                  <p className="text-sm font-bold text-foreground mt-1">{shareSession.name}</p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-[10px] font-mono bg-muted px-1.5 py-0.5 rounded font-bold tracking-wider">
                       {shareSession.inviteCode}
@@ -648,6 +705,14 @@ export function ShareSessionPanel() {
                   }`}
                 >
                   Flashcards ({sharedFlashcards.length})
+                </button>
+                <button
+                  onClick={() => setSubTab('quotes')}
+                  className={`flex-1 rounded-md px-2 py-1 text-xs font-semibold transition-colors ${
+                    subTab === 'quotes' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                  }`}
+                >
+                  Quotes ({sharedQuotes.length})
                 </button>
                 <button
                   onClick={() => setSubTab('chat')}
@@ -848,6 +913,97 @@ export function ShareSessionPanel() {
                             )}
                             {fc.sentence && (
                               <p className="text-[11px] text-muted-foreground/60 italic mt-1">"{fc.sentence}"</p>
+                            )}
+                          </div>
+                        )
+                      })}
+                    </div>
+                  )}
+                </>
+              )}
+
+              {subTab === 'quotes' && (
+                <>
+                  {/* Import personal quotes */}
+                  {quotes.filter((q) => q.pdfFileName === pdfFileName).length > 0 && (
+                    <button
+                      onClick={async () => {
+                        const personalQuotes = quotes.filter((q) => q.pdfFileName === pdfFileName)
+                        let imported = 0
+                        for (const q of personalQuotes) {
+                          const alreadyShared = sharedQuotes.some((sq) => sq.quoteId === q.id)
+                          if (alreadyShared) continue
+                          try {
+                            const res = await authFetch('/api/share/quotes', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                id: q.id,
+                                sessionId: shareSession._id,
+                                text: q.text,
+                                context: q.context,
+                                noteText: q.noteText,
+                                pageNumber: q.pageNumber,
+                                pdfFileName: q.pdfFileName,
+                                rects: q.rects,
+                                color: q.color,
+                              }),
+                            })
+                            if (res.ok) {
+                              const data = await res.json()
+                              addSharedQuote(data)
+                              imported++
+                            }
+                          } catch {}
+                        }
+                        if (imported > 0) toast.success(`Imported ${imported} quote${imported > 1 ? 's' : ''} to session`)
+                        else toast.message('No new quotes to import')
+                      }}
+                      className="w-full flex items-center justify-center gap-2 rounded-lg bg-yellow-500/10 px-3 py-2 text-xs font-semibold text-yellow-600 dark:text-yellow-400 hover:bg-yellow-500/20 transition-colors mb-3"
+                    >
+                      <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
+                      </svg>
+                      Import personal quotes ({quotes.filter((q) => q.pdfFileName === pdfFileName).length})
+                    </button>
+                  )}
+
+                  {sharedQuotes.length === 0 ? (
+                    <p className="text-xs text-muted-foreground/50 text-center py-6">
+                      No shared quotes yet. Group members' quotes will appear here.
+                    </p>
+                  ) : (
+                    <div className="space-y-2">
+                      {sharedQuotes.map((q) => {
+                        const member = shareSession.members.find((m) => m.username === q.author)
+                        const canDelete = q.author === user?.username
+                        return (
+                          <div key={q.quoteId} className="rounded-xl border border-border/60 p-3">
+                            <div className="flex items-center gap-2 mb-1">
+                              <div className="h-2 w-2 rounded-full" style={{ backgroundColor: member?.color || '#888' }} />
+                              <span className="text-xs font-semibold text-foreground flex-1">{q.author}</span>
+                              <span className="text-[10px] text-muted-foreground/50">Pg {q.pageNumber}</span>
+                              {canDelete && (
+                                <button
+                                  onClick={async () => {
+                                    const res = await authFetch(`/api/share/quotes?id=${encodeURIComponent(q.quoteId)}&sessionId=${encodeURIComponent(shareSession._id)}`, { method: 'DELETE' })
+                                    if (res.ok) removeSharedQuote(q.quoteId)
+                                  }}
+                                  className="text-muted-foreground/50 hover:text-red-500 transition-colors"
+                                  title="Delete quote"
+                                >
+                                  <Trash2 className="h-3 w-3" />
+                                </button>
+                              )}
+                            </div>
+                            <p className="text-xs leading-relaxed text-foreground line-clamp-4 bg-muted/30 rounded-lg px-2 py-1 mt-1">
+                              &ldquo;{q.text}&rdquo;
+                            </p>
+                            {q.noteText && (
+                              <p className="text-[11px] text-muted-foreground italic mt-1">Note: {q.noteText}</p>
+                            )}
+                            {q.context && (
+                              <p className="text-[11px] text-muted-foreground/60 mt-1">{q.context}</p>
                             )}
                           </div>
                         )

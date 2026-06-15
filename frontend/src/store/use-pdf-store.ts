@@ -381,6 +381,20 @@ export interface SharedFlashcard {
   createdAt: string;
 }
 
+export interface SharedQuote {
+  quoteId: string;
+  sessionId: string;
+  text: string;
+  context: string;
+  noteText: string;
+  pageNumber: number;
+  pdfFileName: string;
+  rects: { left: number; top: number; width: number; height: number }[];
+  color: string;
+  author: string;
+  timestamp: string;
+}
+
 interface PDFState {
   // PDF file state
   pdfFile: File | null;
@@ -484,6 +498,7 @@ interface PDFState {
   sharedAnnotations: SharedAnnotation[];
   sharedBookmarks: SharedBookmark[];
   sharedFlashcards: SharedFlashcard[];
+  sharedQuotes: SharedQuote[];
   shareSessions: ShareSession[];
 
   // Real-time collaboration
@@ -651,6 +666,9 @@ interface PDFState {
   setSharedFlashcards: (flashcards: SharedFlashcard[]) => void;
   addSharedFlashcard: (flashcard: SharedFlashcard) => void;
   removeSharedFlashcard: (flashcardId: string) => void;
+  setSharedQuotes: (quotes: SharedQuote[]) => void;
+  addSharedQuote: (quote: SharedQuote) => void;
+  removeSharedQuote: (quoteId: string) => void;
   setShareSessions: (sessions: ShareSession[]) => void;
   clearShareState: () => void;
 
@@ -789,6 +807,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   sharedAnnotations: [],
   sharedBookmarks: [],
   sharedFlashcards: [],
+  sharedQuotes: [],
   shareSessions: [],
   remoteCursors: {},
   remotePages: {},
@@ -1248,6 +1267,18 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
         (f) => f.flashcardId !== flashcardId,
       ),
     })),
+  setSharedQuotes: (quotes) => set({ sharedQuotes: quotes }),
+  addSharedQuote: (quote) =>
+    set((s) => ({
+      sharedQuotes: [
+        quote,
+        ...s.sharedQuotes.filter((q) => q.quoteId !== quote.quoteId),
+      ],
+    })),
+  removeSharedQuote: (quoteId) =>
+    set((s) => ({
+      sharedQuotes: s.sharedQuotes.filter((q) => q.quoteId !== quoteId),
+    })),
   setShareSessions: (sessions) => set({ shareSessions: sessions }),
   clearShareState: () =>
     set({
@@ -1256,6 +1287,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       sharedAnnotations: [],
       sharedBookmarks: [],
       sharedFlashcards: [],
+      sharedQuotes: [],
       shareSessions: [],
       remoteCursors: {},
       remotePages: {},
