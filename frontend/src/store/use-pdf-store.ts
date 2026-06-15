@@ -957,7 +957,18 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       quotes: s.quotes.filter((q) => q.id !== id),
     })),
   setShowQuotes: (show) => set({ showQuotes: show }),
-  toggleQuotes: () => set((s) => ({ showQuotes: !s.showQuotes })),
+  toggleQuotes: () =>
+    set((s) => ({
+      showQuotes: !s.showQuotes,
+      showHistory: false,
+      showBookmarks: false,
+      showSearch: false,
+      showQuestionGenerator: false,
+      showSummarizer: false,
+      showFlashcards: false,
+      showSharePanel: false,
+      showReadingStats: false,
+    })),
   removeQuotesForFile: (pdfFileName) =>
     set((s) => ({
       quotes: s.quotes.filter((q) => q.pdfFileName !== pdfFileName),
@@ -1022,11 +1033,44 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
     }),
 
   setShowHistory: (show) => set({ showHistory: show }),
-  toggleHistory: () => set((s) => ({ showHistory: !s.showHistory })),
+  toggleHistory: () =>
+    set((s) => ({
+      showHistory: !s.showHistory,
+      showBookmarks: false,
+      showSearch: false,
+      showQuestionGenerator: false,
+      showSummarizer: false,
+      showFlashcards: false,
+      showSharePanel: false,
+      showReadingStats: false,
+      showQuotes: false,
+    })),
   setShowBookmarks: (show) => set({ showBookmarks: show }),
-  toggleBookmarks: () => set((s) => ({ showBookmarks: !s.showBookmarks })),
+  toggleBookmarks: () =>
+    set((s) => ({
+      showBookmarks: !s.showBookmarks,
+      showHistory: false,
+      showSearch: false,
+      showQuestionGenerator: false,
+      showSummarizer: false,
+      showFlashcards: false,
+      showSharePanel: false,
+      showReadingStats: false,
+      showQuotes: false,
+    })),
   setShowSearch: (show) => set({ showSearch: show }),
-  toggleSearch: () => set((s) => ({ showSearch: !s.showSearch })),
+  toggleSearch: () =>
+    set((s) => ({
+      showSearch: !s.showSearch,
+      showHistory: false,
+      showBookmarks: false,
+      showQuestionGenerator: false,
+      showSummarizer: false,
+      showFlashcards: false,
+      showSharePanel: false,
+      showReadingStats: false,
+      showQuotes: false,
+    })),
   setShowQuestionGenerator: (show) => set({ showQuestionGenerator: show }),
   toggleQuestionGenerator: () =>
     set((s) => ({
@@ -1077,7 +1121,17 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
     }),
   setShowReadingStats: (show) => set({ showReadingStats: show }),
   toggleReadingStats: () =>
-    set((s) => ({ showReadingStats: !s.showReadingStats })),
+    set((s) => ({
+      showReadingStats: !s.showReadingStats,
+      showHistory: false,
+      showBookmarks: false,
+      showSearch: false,
+      showQuestionGenerator: false,
+      showSummarizer: false,
+      showFlashcards: false,
+      showSharePanel: false,
+      showQuotes: false,
+    })),
   setShowReadingAnalytics: (show) => set({ showReadingAnalytics: show }),
 
   setFlashcards: (flashcards) => set({ flashcards }),
@@ -1103,13 +1157,35 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       ),
     })),
   setShowFlashcards: (show) => set({ showFlashcards: show }),
-  toggleFlashcards: () => set((s) => ({ showFlashcards: !s.showFlashcards })),
+  toggleFlashcards: () =>
+    set((s) => ({
+      showFlashcards: !s.showFlashcards,
+      showHistory: false,
+      showBookmarks: false,
+      showSearch: false,
+      showQuestionGenerator: false,
+      showSummarizer: false,
+      showSharePanel: false,
+      showReadingStats: false,
+      showQuotes: false,
+    })),
 
   setFocusMode: (mode) => set({ focusMode: mode }),
   toggleFocusMode: () => set((s) => ({ focusMode: !s.focusMode })),
 
   setShowSharePanel: (show) => set({ showSharePanel: show }),
-  toggleSharePanel: () => set((s) => ({ showSharePanel: !s.showSharePanel })),
+  toggleSharePanel: () =>
+    set((s) => ({
+      showSharePanel: !s.showSharePanel,
+      showHistory: false,
+      showBookmarks: false,
+      showSearch: false,
+      showQuestionGenerator: false,
+      showSummarizer: false,
+      showFlashcards: false,
+      showReadingStats: false,
+      showQuotes: false,
+    })),
   setShareSession: (session) => set({ shareSession: session }),
   setSharedAnnotations: (annotations) =>
     set({ sharedAnnotations: annotations }),
