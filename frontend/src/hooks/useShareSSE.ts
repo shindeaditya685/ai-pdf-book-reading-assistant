@@ -165,7 +165,8 @@ export function useShareSSE() {
       const uname = userRef.current
       if (!sid || !uname) return
 
-      const es = new EventSource(`/api/share/session/${sid}/events`)
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null
+      const es = new EventSource(`/api/share/session/${sid}/events${token ? `?token=${encodeURIComponent(token)}` : ''}`)
       esRef.current = es
 
       es.addEventListener('open', () => {

@@ -1,13 +1,23 @@
 import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
-import { getUserFromRequest } from '@/lib/auth'
+import { getUserFromRequest, verifyToken } from '@/lib/auth'
 import { ObjectId } from 'mongodb'
 
 const POLL_INTERVAL_MS = 500
 const PRESENCE_TIMEOUT_MS = 5000
 
+function getUser(request: Request) {
+  let user = getUserFromRequest(request)
+  if (!user) {
+    const { searchParams } = new URL(request.url)
+    const token = searchParams.get('token')
+    if (token) user = verifyToken(token)
+  }
+  return user
+}
+
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
-  const user = getUserFromRequest(request)
+  const user = getUser(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id: sessionId } = await params
   const conn = await connectToDatabase()

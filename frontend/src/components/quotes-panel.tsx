@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Quote as QuoteIcon, Trash2, BookOpen, Loader2, MessageSquarePlus, Search, X, Check, Sparkles } from 'lucide-react'
+import { Quote as QuoteIcon, Trash2, BookOpen, Loader2, MessageSquarePlus, Search, X, Check, Sparkles, Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
+import { useAuth } from '@/context/auth-context'
 import type { Quote } from '@/lib/quotes'
 
 export function QuotesPanel() {
@@ -19,16 +20,21 @@ export function QuotesPanel() {
     removeQuote,
     addQuote,
     addQuoteConversation,
+    shareSession,
+    sharedQuotes,
+    removeSharedQuote,
   } = usePDFStore()
 
+  const { user } = useAuth()
   const router = useRouter()
   const [search, setSearch] = useState('')
   const [selected, setSelected] = useState<Set<string>>(new Set())
   const [creating, setCreating] = useState(false)
   const [deletingId, setDeletingId] = useState<string | null>(null)
   const [dbQuotes, setDbQuotes] = useState<Quote[]>([])
+  const [subTab, setSubTab] = useState<'personal' | 'shared'>('personal')
+  const [importingQuoteId, setImportingQuoteId] = useState<string | null>(null)
 
-  // Filter to the current book (and any unsynced local ones)
   const visibleQuotes = useMemo(() => {
     const all = [...quotes, ...dbQuotes.filter((q) => !quotes.some((q2) => q2.id === q.id))]
     const forBook = pdfFileName ? all.filter((q) => q.pdfFileName === pdfFileName) : all
@@ -43,13 +49,10 @@ export function QuotesPanel() {
     return filtered.sort((a, b) => b.timestamp - a.timestamp)
   }, [quotes, dbQuotes, pdfFileName, search])
 
-  // Reset selection when the panel is closed or the book changes
   useEffect(() => {
     if (!showQuotes) setSelected(new Set())
   }, [showQuotes, pdfFileName])
 
-  // Hydrate from server when the panel opens (keeps the local store in sync
-  // if another tab/AI added a quote while this one was closed).
   useEffect(() => {
     if (!showQuotes) return
     let cancelled = false
@@ -87,14 +90,56 @@ export function QuotesPanel() {
       setDbQuotes((arr) => arr.filter((q) => q.id !== id))
       try {
         await authFetch(`/api/db/quotes/${encodeURIComponent(id)}`, { method: 'DELETE' })
+        if (shareSession) {
+          await authFetch(`/api/share/quotes?id=${encodeURIComponent(id)}&sessionId=${encodeURIComponent(shareSession._id)}`, { method: 'DELETE' })
+          removeSharedQuote(id)
+        }
       } catch {
         if (prev) addQuote(prev)
       } finally {
         setDeletingId(null)
       }
     },
-    [quotes, removeQuote, addQuote]
+    [quotes, removeQuote, addQuote, shareSession, removeSharedQuote]
   )
+
+  const handleDeleteSharedQuote = useCallback(async (quoteId: string) => {
+    if (!shareSession) return
+    try {
+      await authFetch(`/api/share/quotes?id=${encodeURIComponent(quoteId)}&sessionId=${encodeURIComponent(shareSession._id)}`, { method: 'DELETE' })
+      removeSharedQuote(quoteId)
+    } catch (err) {
+      console.error('Failed to delete shared quote:', err)
+    }
+  }, [shareSession, removeSharedQuote])
+
+  const handleImportQuote = useCallback(async (sq: any) => {
+    if (!pdfFileName) return
+    setImportingQuoteId(sq.quoteId)
+    try {
+      const res = await authFetch('/api/db/quotes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          text: sq.text,
+          context: sq.context || '',
+          noteText: sq.noteText || '',
+          pageNumber: sq.pageNumber || 0,
+          pdfFileName,
+          rects: sq.rects || [],
+          color: sq.color || 'rgba(253, 224, 71, 0.65)',
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        addQuote(data.quote)
+      }
+    } catch (err) {
+      console.error('Failed to import quote:', err)
+    } finally {
+      setImportingQuoteId(null)
+    }
+  }, [pdfFileName, addQuote])
 
   const handleCreateChat = useCallback(async () => {
     if (selected.size === 0) return
@@ -136,7 +181,9 @@ export function QuotesPanel() {
           iconClassName="text-yellow-500"
           title="Saved Quotes"
           badge={
-            <span className="text-[10px] text-muted-foreground">({visibleQuotes.length})</span>
+            <span className="text-[10px] text-muted-foreground">
+              ({shareSession ? visibleQuotes.length + sharedQuotes.filter((q) => !pdfFileName || q.pdfFileName === pdfFileName).length : visibleQuotes.length})
+            </span>
           }
           onClose={() => setShowQuotes(false)}
         />
@@ -223,85 +270,195 @@ export function QuotesPanel() {
           </div>
         </div>
 
-        {visibleQuotes.length === 0 ? (
-          <div className="flex flex-1 items-center justify-center p-8 text-center">
-            <div>
-              <QuoteIcon className="mx-auto h-8 w-8 text-muted-foreground/30" />
-              <p className="mt-3 text-sm text-muted-foreground">
-                {search ? 'No quotes match your search' : 'No quotes saved yet'}
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground/60">
-                Open a quote in the word popup and tap the quote icon to save it
-              </p>
-            </div>
+        {shareSession && (
+          <div className="mx-4 mt-3 flex gap-0.5 rounded-lg bg-muted/40 p-0.5">
+            <button
+              onClick={() => setSubTab('personal')}
+              className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
+                subTab === 'personal' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              My Quotes ({visibleQuotes.length})
+            </button>
+            <button
+              onClick={() => setSubTab('shared')}
+              className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
+                subTab === 'shared' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+              }`}
+            >
+              Session ({sharedQuotes.filter((q) => !pdfFileName || q.pdfFileName === pdfFileName).length})
+            </button>
           </div>
-        ) : (
-          <div className="flex-1 overflow-y-auto">
-            {visibleQuotes.map((q) => {
-              const isSelected = selected.has(q.id)
-              return (
-                <div
-                  key={q.id}
-                  className={`group relative cursor-pointer border-b px-3 py-3 transition-colors ${
-                    isSelected ? 'bg-yellow-50 dark:bg-yellow-950/20' : 'hover:bg-muted/30'
-                  }`}
-                  onClick={() => toggleSelected(q.id)}
-                >
-                  <div className="flex items-start gap-2">
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        toggleSelected(q.id)
-                      }}
-                      className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
-                        isSelected
-                          ? 'border-yellow-500 bg-yellow-500 text-white'
-                          : 'border-border/60 bg-background/50 text-transparent group-hover:border-yellow-500/50'
-                      }`}
-                      aria-pressed={isSelected}
-                      aria-label={isSelected ? 'Deselect quote' : 'Select quote'}
-                    >
-                      <Check className="h-3 w-3" />
-                    </button>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm leading-relaxed text-foreground line-clamp-4">
-                        &ldquo;{q.text}&rdquo;
-                      </p>
-                      {q.noteText && (
-                        <p className="mt-1.5 text-xs italic text-muted-foreground line-clamp-2">
-                          Note: {q.noteText}
+        )}
+
+        {(!shareSession || subTab === 'personal') ? (
+          visibleQuotes.length === 0 ? (
+            <div className="flex flex-1 items-center justify-center p-8 text-center">
+              <div>
+                <QuoteIcon className="mx-auto h-8 w-8 text-muted-foreground/30" />
+                <p className="mt-3 text-sm text-muted-foreground">
+                  {search ? 'No quotes match your search' : 'No quotes saved yet'}
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground/60">
+                  Open a quote in the word popup and tap the quote icon to save it
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto">
+              {visibleQuotes.map((q) => {
+                const isSelected = selected.has(q.id)
+                return (
+                  <div
+                    key={q.id}
+                    className={`group relative cursor-pointer border-b px-3 py-3 transition-colors ${
+                      isSelected ? 'bg-yellow-50 dark:bg-yellow-950/20' : 'hover:bg-muted/30'
+                    }`}
+                    onClick={() => toggleSelected(q.id)}
+                  >
+                    <div className="flex items-start gap-2">
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          toggleSelected(q.id)
+                        }}
+                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                          isSelected
+                            ? 'border-yellow-500 bg-yellow-500 text-white'
+                            : 'border-border/60 bg-background/50 text-transparent group-hover:border-yellow-500/50'
+                        }`}
+                        aria-pressed={isSelected}
+                        aria-label={isSelected ? 'Deselect quote' : 'Select quote'}
+                      >
+                        <Check className="h-3 w-3" />
+                      </button>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-sm leading-relaxed text-foreground line-clamp-4">
+                          &ldquo;{q.text}&rdquo;
                         </p>
-                      )}
-                      <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
-                        <BookOpen className="h-3 w-3 shrink-0" />
-                        <span className="truncate">{q.pdfFileName}</span>
-                        <span>·</span>
-                        <span>Page {q.pageNumber || '?'}</span>
+                        {q.noteText && (
+                          <p className="mt-1.5 text-xs italic text-muted-foreground line-clamp-2">
+                            Note: {q.noteText}
+                          </p>
+                        )}
+                        <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
+                          <BookOpen className="h-3 w-3 shrink-0" />
+                          <span className="truncate">{q.pdfFileName}</span>
+                          <span>·</span>
+                          <span>Page {q.pageNumber || '?'}</span>
+                        </div>
+                      </div>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-red-500"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          handleDelete(q.id)
+                        }}
+                        disabled={deletingId === q.id}
+                        aria-label="Delete quote"
+                      >
+                        {deletingId === q.id ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          <Trash2 className="h-3 w-3" />
+                        )}
+                      </Button>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+          )
+        ) : (
+          sharedQuotes.filter((q) => !pdfFileName || q.pdfFileName === pdfFileName).length === 0 ? (
+            <div className="flex flex-1 items-center justify-center p-8 text-center">
+              <div>
+                <QuoteIcon className="mx-auto h-8 w-8 text-muted-foreground/30" />
+                <p className="mt-3 text-sm text-muted-foreground">
+                  No session quotes yet
+                </p>
+                <p className="mt-1 text-xs text-muted-foreground/60">
+                  Quotes added by group members will appear here
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex-1 overflow-y-auto">
+              {[...sharedQuotes]
+                .filter((q) => !pdfFileName || q.pdfFileName === pdfFileName)
+                .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
+                .map((q) => {
+                  const member = shareSession?.members.find((m) => m.username === q.author)
+                  const authorColor = member?.color || '#888'
+                  const inPersonal = quotes.some((pq) => pq.id === q.quoteId)
+                  const isImporting = importingQuoteId === q.quoteId
+
+                  return (
+                    <div
+                      key={q.quoteId}
+                      className="group relative border-b px-4 py-3 transition-colors hover:bg-muted/30"
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: authorColor }} />
+                            <span className="text-xs font-semibold" style={{ color: authorColor }}>
+                              {q.author} {q.author === user?.username && '(you)'}
+                            </span>
+                            <span className="text-[10px] text-muted-foreground/50 ml-auto">Pg {q.pageNumber}</span>
+                          </div>
+                          <p className="text-sm leading-relaxed text-foreground line-clamp-4">
+                            &ldquo;{q.text}&rdquo;
+                          </p>
+                          {q.noteText && (
+                            <p className="mt-1 text-xs italic text-muted-foreground line-clamp-2">Note: {q.noteText}</p>
+                          )}
+                        </div>
+
+                        <div className="flex items-center gap-1 shrink-0 mt-6">
+                          {inPersonal ? (
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">
+                              <Check className="h-2.5 w-2.5" />
+                              Saved
+                            </span>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-6 gap-1 px-2 text-[9px] font-bold"
+                              onClick={() => handleImportQuote(q)}
+                              disabled={isImporting}
+                            >
+                              {isImporting ? (
+                                <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                              ) : (
+                                <Plus className="h-2.5 w-2.5" />
+                              )}
+                              Import
+                            </Button>
+                          )}
+
+                          {q.author === user?.username && (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-6 w-6 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                              onClick={() => handleDeleteSharedQuote(q.quoteId)}
+                              aria-label="Delete shared quote"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
                       </div>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      className="h-7 w-7 shrink-0 text-muted-foreground hover:text-red-500"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        handleDelete(q.id)
-                      }}
-                      disabled={deletingId === q.id}
-                      aria-label="Delete quote"
-                    >
-                      {deletingId === q.id ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : (
-                        <Trash2 className="h-3 w-3" />
-                      )}
-                    </Button>
-                  </div>
-                </div>
-              )
-            })}
-          </div>
+                  )
+                })}
+            </div>
+          )
         )}
 
         <div className="border-t px-3 py-2">
