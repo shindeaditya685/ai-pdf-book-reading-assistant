@@ -53,6 +53,8 @@ function getWordAtPoint(target: HTMLElement, clientX: number, clientY: number): 
   return ((matchBefore?.[1] || '') + (matchAfter?.[1] || '')).trim()
 }
 
+const measureCanvas = typeof document !== 'undefined' ? document.createElement('canvas') : null
+
 export function PdfPage({
   pageNumber,
   pdfDocRef,
@@ -170,6 +172,7 @@ export function PdfPage({
 
       const pdf = pdfDocRef.current
       if (!pdf || !canvasRef.current) return
+      const measureCtx = measureCanvas?.getContext('2d')
 
       setIsLoading(true)
       let renderTask: pdfjsLib.RenderTask | null = null
@@ -241,6 +244,15 @@ export function PdfPage({
               span.style.fontFamily = 'sans-serif'
               span.style.transformOrigin = '0% 0%'
 
+              if (measureCtx) {
+                measureCtx.font = `${fontSize}px sans-serif`
+                const measuredWidth = measureCtx.measureText(word.text).width
+                if (measuredWidth > 0) {
+                  const sX = (word.width * scaleX) / measuredWidth
+                  span.style.transform = `scaleX(${sX})`
+                }
+              }
+
               if (searchQuery && word.text.toLowerCase().includes(searchQuery.toLowerCase())) {
                 const highlight = document.createElement('mark')
                 highlight.className = 'pdf-search-highlight'
@@ -268,6 +280,15 @@ export function PdfPage({
               span.style.fontSize = `${fontSize}px`
               span.style.fontFamily = 'sans-serif'
               span.style.transformOrigin = '0% 0%'
+
+              if (measureCtx) {
+                measureCtx.font = `${fontSize}px sans-serif`
+                const measuredWidth = measureCtx.measureText(item.str).width
+                if (measuredWidth > 0) {
+                  const scaleX = (item.width * scale) / measuredWidth
+                  span.style.transform = `scaleX(${scaleX})`
+                }
+              }
 
               if (searchQuery && item.str.toLowerCase().includes(searchQuery.toLowerCase())) {
                 const highlight = document.createElement('mark')
