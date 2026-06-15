@@ -985,7 +985,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
           ...pdf,
         },
         ...s.recentPdfs.filter((p) => p.fileName !== pdf.fileName),
-      ].slice(0, 10),
+      ],
     })),
   removeRecentPdf: (fileName) =>
     set((s) => ({

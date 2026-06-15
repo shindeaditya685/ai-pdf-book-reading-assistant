@@ -53,7 +53,6 @@ export async function GET(request: Request) {
       .collection('pdfs')
       .find({ username: user.username }, { projection: { content: 0, ocrText: 0 } })
       .sort({ updatedAt: -1 })
-      .limit(10)
       .toArray()
 
     const pdfsWithStats = await Promise.all(
