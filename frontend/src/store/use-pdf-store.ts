@@ -421,7 +421,7 @@ interface PDFState {
   accent: PronunciationAccent;
   scrollMode: boolean;
   theme: "light" | "dark";
-  themeAccent: "emerald" | "violet" | "amber" | "rose" | "blue";
+  themeAccent: "emerald" | "violet" | "amber" | "rose" | "blue" | "purple" | "cyan" | "orange" | "pink";
 
   // Word History
   wordHistory: WordHistoryEntry[];
@@ -547,7 +547,7 @@ interface PDFState {
   setScrollMode: (mode: boolean) => void;
   setTheme: (theme: "light" | "dark") => void;
   toggleTheme: () => void;
-  setThemeAccent: (accent: "emerald" | "violet" | "amber" | "rose" | "blue") => void;
+  setThemeAccent: (accent: "emerald" | "violet" | "amber" | "rose" | "blue" | "purple" | "cyan" | "orange" | "pink") => void;
   clearSelection: () => void;
   reset: () => void;
 
@@ -886,7 +886,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   },
   setThemeAccent: (accent) => {
     if (typeof window !== "undefined") {
-      document.documentElement.classList.remove("accent-emerald", "accent-violet", "accent-amber", "accent-rose", "accent-blue");
+      document.documentElement.classList.remove("accent-emerald", "accent-violet", "accent-amber", "accent-rose", "accent-blue", "accent-purple", "accent-cyan", "accent-orange", "accent-pink");
       document.documentElement.classList.add(`accent-${accent}`);
       localStorage.setItem("pdf-reader-ai-theme-accent", accent);
     }

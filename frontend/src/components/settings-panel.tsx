@@ -18,6 +18,10 @@ const ACCENT_OPTIONS = [
   { value: 'amber' as const, label: 'Amber', className: 'bg-amber-500' },
   { value: 'rose' as const, label: 'Rose', className: 'bg-rose-500' },
   { value: 'blue' as const, label: 'Blue', className: 'bg-blue-500' },
+  { value: 'purple' as const, label: 'Purple', className: 'bg-purple-500' },
+  { value: 'cyan' as const, label: 'Cyan', className: 'bg-cyan-500' },
+  { value: 'orange' as const, label: 'Orange', className: 'bg-orange-500' },
+  { value: 'pink' as const, label: 'Pink', className: 'bg-pink-500' },
 ]
 
 export function SettingsPanel() {
@@ -103,13 +107,13 @@ export function SettingsPanel() {
                 Theme Color
               </label>
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               {ACCENT_OPTIONS.map((opt) => (
                 <button
                   key={opt.value}
                   onClick={() => setThemeAccent(opt.value)}
                   className={`h-7 w-7 rounded-full ${opt.className} transition-all hover:scale-110 hover:shadow-md ${
-                    themeAccent === opt.value ? 'ring-2 ring-offset-2 ring-offset-background ring-emerald-500 scale-110' : 'ring-1 ring-border/40'
+                    themeAccent === opt.value ? 'ring-2 ring-offset-2 ring-offset-background ring-foreground/30 scale-110' : 'ring-1 ring-border/40'
                   }`}
                   title={opt.label}
                 />

@@ -298,6 +298,106 @@ html {
   --accent-selection: rgba(59, 130, 246, 0.3);
 }
 
+.accent-purple {
+  --color-emerald-50: #faf5ff;
+  --color-emerald-100: #f3e8ff;
+  --color-emerald-200: #e9d5ff;
+  --color-emerald-300: #d8b4fe;
+  --color-emerald-400: #c084fc;
+  --color-emerald-500: #a855f7;
+  --color-emerald-600: #9333ea;
+  --color-emerald-700: #7e22ce;
+  --color-emerald-800: #6b21a8;
+  --color-emerald-900: #581c87;
+  --color-violet-50: #eef2ff;
+  --color-violet-100: #e0e7ff;
+  --color-violet-200: #c7d2fe;
+  --color-violet-300: #a5b4fc;
+  --color-violet-400: #818cf8;
+  --color-violet-500: #6366f1;
+  --color-violet-600: #4f46e5;
+  --color-violet-700: #4338ca;
+  --color-violet-800: #3730a3;
+  --color-violet-900: #312e81;
+  --accent-search: rgba(168, 85, 247, 0.5);
+  --accent-selection: rgba(168, 85, 247, 0.3);
+}
+
+.accent-cyan {
+  --color-emerald-50: #ecfeff;
+  --color-emerald-100: #cffafe;
+  --color-emerald-200: #a5f3fc;
+  --color-emerald-300: #67e8f9;
+  --color-emerald-400: #22d3ee;
+  --color-emerald-500: #06b6d4;
+  --color-emerald-600: #0891b2;
+  --color-emerald-700: #0e7490;
+  --color-emerald-800: #155e75;
+  --color-emerald-900: #164e63;
+  --color-violet-50: #f0f9ff;
+  --color-violet-100: #e0f2fe;
+  --color-violet-200: #bae6fd;
+  --color-violet-300: #7dd3fc;
+  --color-violet-400: #38bdf8;
+  --color-violet-500: #0ea5e9;
+  --color-violet-600: #0284c7;
+  --color-violet-700: #0369a1;
+  --color-violet-800: #075985;
+  --color-violet-900: #0c4a6e;
+  --accent-search: rgba(6, 182, 212, 0.5);
+  --accent-selection: rgba(6, 182, 212, 0.3);
+}
+
+.accent-orange {
+  --color-emerald-50: #fff7ed;
+  --color-emerald-100: #ffedd5;
+  --color-emerald-200: #fed7aa;
+  --color-emerald-300: #fdba74;
+  --color-emerald-400: #fb923c;
+  --color-emerald-500: #f97316;
+  --color-emerald-600: #ea580c;
+  --color-emerald-700: #c2410c;
+  --color-emerald-800: #9a3412;
+  --color-emerald-900: #7c2d12;
+  --color-violet-50: #fffbeb;
+  --color-violet-100: #fef3c7;
+  --color-violet-200: #fde68a;
+  --color-violet-300: #fcd34d;
+  --color-violet-400: #fbbf24;
+  --color-violet-500: #f59e0b;
+  --color-violet-600: #d97706;
+  --color-violet-700: #b45309;
+  --color-violet-800: #92400e;
+  --color-violet-900: #78350f;
+  --accent-search: rgba(249, 115, 22, 0.5);
+  --accent-selection: rgba(249, 115, 22, 0.3);
+}
+
+.accent-pink {
+  --color-emerald-50: #fdf2f8;
+  --color-emerald-100: #fce7f3;
+  --color-emerald-200: #fbcfe8;
+  --color-emerald-300: #f9a8d4;
+  --color-emerald-400: #f472b6;
+  --color-emerald-500: #ec4899;
+  --color-emerald-600: #db2777;
+  --color-emerald-700: #be185d;
+  --color-emerald-800: #9d174d;
+  --color-emerald-900: #831843;
+  --color-violet-50: #fdf4ff;
+  --color-violet-100: #fae8ff;
+  --color-violet-200: #f5d0fe;
+  --color-violet-300: #f0abfc;
+  --color-violet-400: #e879f9;
+  --color-violet-500: #d946ef;
+  --color-violet-600: #c026d3;
+  --color-violet-700: #a21caf;
+  --color-violet-800: #86198f;
+  --color-violet-900: #701a75;
+  --accent-search: rgba(236, 72, 153, 0.5);
+  --accent-selection: rgba(236, 72, 153, 0.3);
+}
+
 .pdf-search-highlight-current {
   background: var(--accent-search);
   border-radius: 2px;
