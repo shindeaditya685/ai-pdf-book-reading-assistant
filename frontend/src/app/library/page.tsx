@@ -1,8 +1,9 @@
 'use client'
 
-import { useEffect, useState, useMemo } from 'react'
+import { useEffect, useState, useMemo, useRef } from 'react'
 import { useRouter } from 'next/navigation'
-import { Loader2 } from 'lucide-react'
+import Link from 'next/link'
+import { ArrowLeft, Loader2, Camera } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 
@@ -15,6 +16,7 @@ interface BookInfo {
   quoteCount: number
   totalPagesRead: number
   totalMinutes: number
+  coverImage: string | null
   createdAt: string
   updatedAt: string
 }
@@ -84,6 +86,9 @@ export default function LibraryPage() {
   const [loading, setLoading] = useState(true)
   const [search, setSearch] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
+  const [uploadingCover, setUploadingCover] = useState<string | null>(null)
+  const coverInputRef = useRef<HTMLInputElement>(null)
+  const coverTargetRef = useRef<string | null>(null)
   const cols = useColumnCount()
 
   useEffect(() => {
@@ -134,6 +139,42 @@ export default function LibraryPage() {
     handleDelete(deleteConfirm)
   }
 
+  const handleCoverClick = (fileName: string) => {
+    coverTargetRef.current = fileName
+    coverInputRef.current?.click()
+  }
+
+  const handleCoverFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    const target = coverTargetRef.current
+    if (!file || !target) return
+
+    setUploadingCover(target)
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      const res = await authFetch('/api/cover', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: target, coverImage: dataUrl }),
+      })
+
+      if (res.ok) {
+        setBooks((prev) => prev.map((b) =>
+          b.fileName === target ? { ...b, coverImage: dataUrl } : b
+        ))
+      }
+    } catch { /* ignore */ }
+    setUploadingCover(null)
+    coverTargetRef.current = null
+    if (e.target) e.target.value = ''
+  }
+
   const pendingTitle = deleteConfirm ? titleOf(deleteConfirm) : ''
 
   type Tile = { kind: 'book'; book: BookInfo } | { kind: 'add' }
@@ -158,16 +199,25 @@ export default function LibraryPage() {
     >
       {/* Masthead */}
       <header className="mx-auto mb-16 flex max-w-7xl flex-col justify-between gap-6 md:flex-row md:items-end">
-        <div className="min-w-0">
-          <h1 className="mb-2 text-5xl italic tracking-tight md:text-6xl" style={{ fontFamily: 'var(--font-geist-serif)' }}>
-            Libris
-          </h1>
-          <p
-            className="text-xs uppercase tracking-widest"
-            style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}
+        <div className="flex items-start gap-4 min-w-0">
+          <Link
+            href="/dashboard"
+            className="mt-1 flex size-9 shrink-0 items-center justify-center border transition-all hover:bg-black/5"
+            style={{ borderColor: 'var(--paper-border)', color: 'var(--accent-warm)' }}
           >
-            Personal Collection / {books.length.toString().padStart(3, '0')} Volumes
-          </p>
+            <ArrowLeft className="h-4 w-4" />
+          </Link>
+          <div className="min-w-0">
+            <h1 className="mb-2 text-5xl italic tracking-tight md:text-6xl" style={{ fontFamily: 'var(--font-geist-serif)' }}>
+              Libris
+            </h1>
+            <p
+              className="text-xs uppercase tracking-widest"
+              style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}
+            >
+              Personal Collection / {books.length.toString().padStart(3, '0')} Volumes
+            </p>
+          </div>
         </div>
         <div className="relative w-full md:w-80">
           <input
@@ -284,26 +334,60 @@ export default function LibraryPage() {
                         className="relative aspect-[3/4] overflow-hidden border border-black/10 shadow-[0_8px_20px_-12px_rgba(0,0,0,0.6)] transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)]"
                         style={{ backgroundColor: spineColor }}
                       >
-                        {/* Gradient book cover */}
-                        <div
-                          className="absolute inset-0"
-                          style={{
-                            background: `linear-gradient(135deg, ${spineColor} 0%, ${accentColor} 50%, ${spineColor} 100%)`,
-                          }}
-                        />
-
-                        {/* Cover title overlay */}
-                        <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
-                          <div
-                            className="mb-2 text-sm font-bold leading-tight text-white/90 md:text-base"
-                            style={{ fontFamily: 'var(--font-geist-serif)' }}
-                          >
-                            {title}
-                          </div>
-                          <div className="text-[10px] text-white/50" style={{ fontFamily: 'var(--font-geist-mono)' }}>
-                            {book.pageCount} pp.
-                          </div>
-                        </div>
+                        {/* Book cover image or gradient fallback */}
+                        {book.coverImage ? (
+                          <>
+                            <img
+                              src={book.coverImage}
+                              alt={`Cover of ${title}`}
+                              loading="lazy"
+                              className="absolute inset-0 h-full w-full object-cover"
+                            />
+                            {/* Change cover button */}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleCoverClick(book.fileName) }}
+                              className="absolute right-1.5 top-1.5 z-20 flex size-6 items-center justify-center rounded-full bg-black/40 text-white opacity-0 transition-opacity hover:bg-black/60 group-hover:opacity-100"
+                            >
+                              <Camera className="h-3 w-3" />
+                            </button>
+                          </>
+                        ) : (
+                          <>
+                            <div
+                              className="absolute inset-0"
+                              style={{
+                                background: `linear-gradient(135deg, ${spineColor} 0%, ${accentColor} 50%, ${spineColor} 100%)`,
+                              }}
+                            />
+                            <div className="absolute inset-0 flex flex-col items-center justify-center p-6 text-center">
+                              <div
+                                className="mb-2 text-sm font-bold leading-tight text-white/90 md:text-base"
+                                style={{ fontFamily: 'var(--font-geist-serif)' }}
+                              >
+                                {title}
+                              </div>
+                              <div className="text-[10px] text-white/50" style={{ fontFamily: 'var(--font-geist-mono)' }}>
+                                {book.pageCount} pp.
+                              </div>
+                            </div>
+                            {/* Add cover button */}
+                            <button
+                              onClick={(e) => { e.stopPropagation(); handleCoverClick(book.fileName) }}
+                              className="absolute inset-0 z-20 flex items-center justify-center bg-black/0 text-white opacity-0 transition-all hover:bg-black/30 group-hover:opacity-100"
+                            >
+                              <div className="flex flex-col items-center gap-1">
+                                {uploadingCover === book.fileName ? (
+                                  <Loader2 className="h-5 w-5 animate-spin" />
+                                ) : (
+                                  <>
+                                    <Camera className="h-5 w-5 drop-shadow-lg" />
+                                    <span className="text-[9px] uppercase tracking-wider drop-shadow-lg">Add Cover</span>
+                                  </>
+                                )}
+                              </div>
+                            </button>
+                          </>
+                        )}
 
                         {/* Inner spine highlight */}
                         <div className="pointer-events-none absolute inset-y-0 left-0 w-[3px] bg-white/10" />
@@ -406,6 +490,15 @@ export default function LibraryPage() {
           )}
         </div>
       )}
+
+      {/* Hidden file input for cover upload */}
+      <input
+        ref={coverInputRef}
+        type="file"
+        accept="image/jpeg,image/png,image/webp"
+        onChange={handleCoverFile}
+        className="hidden"
+      />
 
       {/* Footer */}
       <footer

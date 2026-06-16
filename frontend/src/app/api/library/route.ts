@@ -37,6 +37,7 @@ export async function GET(request: Request) {
           fileName: pdf.fileName,
           pageCount: pdf.pageCount || 0,
           lastPage: pdf.lastPage || 1,
+          coverImage: pdf.coverImage || null,
           wordCount,
           bookmarkCount,
           quoteCount,
