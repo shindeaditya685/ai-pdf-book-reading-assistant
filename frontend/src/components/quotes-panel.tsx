@@ -393,7 +393,7 @@ export function QuotesPanel() {
                 .map((q) => {
                   const member = shareSession?.members.find((m) => m.username === q.author)
                   const authorColor = member?.color || '#888'
-                  const inPersonal = quotes.some((pq) => pq.id === q.quoteId)
+                  const inPersonal = quotes.some((pq) => pq.text.toLowerCase() === q.text.toLowerCase() && pq.pageNumber === q.pageNumber && pq.pdfFileName === q.pdfFileName)
                   const isImporting = importingQuoteId === q.quoteId
 
                   return (
