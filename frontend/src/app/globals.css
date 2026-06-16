@@ -7,7 +7,12 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
+  --font-serif: var(--font-geist-serif);
   --font-mono: var(--font-geist-mono);
+  --color-canvas: var(--canvas);
+  --color-ink: var(--ink);
+  --color-paper-border: var(--paper-border);
+  --color-accent-warm: var(--accent-warm);
   --color-sidebar-ring: var(--sidebar-ring);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
@@ -47,6 +52,10 @@
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+  --canvas: #fbf9f6;
+  --ink: #1c1917;
+  --paper-border: #e5e1da;
+  --accent-warm: #7c746b;
   --card: oklch(1 0 0);
   --card-foreground: oklch(0.145 0 0);
   --popover: oklch(1 0 0);
@@ -81,6 +90,10 @@
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
+  --canvas: #1c1917;
+  --ink: #fbf9f6;
+  --paper-border: #3f3a35;
+  --accent-warm: #a8a098;
   --card: oklch(0.205 0 0);
   --card-foreground: oklch(0.985 0 0);
   --popover: oklch(0.205 0 0);
