@@ -87,8 +87,10 @@ export default function LibraryPage() {
   const [search, setSearch] = useState('')
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [uploadingCover, setUploadingCover] = useState<string | null>(null)
+  const [addBookLoading, setAddBookLoading] = useState(false)
   const coverInputRef = useRef<HTMLInputElement>(null)
   const coverTargetRef = useRef<string | null>(null)
+  const pdfInputRef = useRef<HTMLInputElement>(null)
   const cols = useColumnCount()
 
   useEffect(() => {
@@ -142,6 +144,35 @@ export default function LibraryPage() {
   const handleCoverClick = (fileName: string) => {
     coverTargetRef.current = fileName
     coverInputRef.current?.click()
+  }
+
+  const handleAddBookClick = () => {
+    pdfInputRef.current?.click()
+  }
+
+  const handleAddBookFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    setAddBookLoading(true)
+    try {
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      await authFetch('/api/db/pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ fileName: file.name, content: dataUrl, pageCount: 0, lastPage: 0 }),
+      })
+
+      await loadBooks()
+    } catch { /* ignore */ }
+    setAddBookLoading(false)
+    if (e.target) e.target.value = ''
   }
 
   const handleCoverFile = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -286,7 +317,9 @@ export default function LibraryPage() {
                       <button
                         key={`add-${rowIdx}-${i}`}
                         type="button"
-                        className="group/add flex aspect-[3/4] cursor-pointer flex-col items-center justify-center border border-dashed transition-all"
+                        onClick={handleAddBookClick}
+                        disabled={addBookLoading}
+                        className="group/add flex aspect-[3/4] cursor-pointer flex-col items-center justify-center border border-dashed transition-all disabled:cursor-default disabled:opacity-50"
                         style={{
                           backgroundColor: 'rgba(251,249,246,0.4)',
                           borderColor: 'var(--paper-border)',
@@ -300,13 +333,13 @@ export default function LibraryPage() {
                             fontFamily: 'var(--font-geist-mono)',
                           }}
                         >
-                          +
+                          {addBookLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : '+'}
                         </div>
                         <span
                           className="text-[10px] uppercase tracking-widest opacity-40 group-hover/add:opacity-100"
                           style={{ fontFamily: 'var(--font-geist-mono)' }}
                         >
-                          Add Document
+                          {addBookLoading ? 'Uploading\u2026' : 'Add Book'}
                         </span>
                       </button>
                     )
@@ -491,12 +524,19 @@ export default function LibraryPage() {
         </div>
       )}
 
-      {/* Hidden file input for cover upload */}
+      {/* Hidden file inputs */}
       <input
         ref={coverInputRef}
         type="file"
         accept="image/jpeg,image/png,image/webp"
         onChange={handleCoverFile}
+        className="hidden"
+      />
+      <input
+        ref={pdfInputRef}
+        type="file"
+        accept=".pdf,application/pdf"
+        onChange={handleAddBookFile}
         className="hidden"
       />
 
