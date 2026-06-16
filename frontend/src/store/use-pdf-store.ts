@@ -702,13 +702,33 @@ interface PDFState {
 
 const saveAnnotationToDb = async (ann: Annotation) => {
   try {
-    await authFetch("/api/db/annotations", {
+    const personalRes = await authFetch("/api/db/annotations", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(ann),
     });
+    if (!personalRes.ok) return
   } catch (err) {
     console.error("Failed to sync annotation to db:", err);
+    return
+  }
+
+  const state = usePDFStore.getState()
+  const session = state.shareSession
+  if (session) {
+    try {
+      const sharedRes = await authFetch('/api/share/annotations', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...ann, sessionId: session._id }),
+      })
+      if (sharedRes.ok) {
+        const sharedAnn = await sharedRes.json()
+        state.addSharedAnnotation(sharedAnn)
+      }
+    } catch (err) {
+      console.error("Failed to sync shared annotation:", err)
+    }
   }
 };
 
@@ -716,9 +736,22 @@ const deleteAnnotationFromDb = async (id: string) => {
   try {
     await authFetch(`/api/db/annotations?id=${encodeURIComponent(id)}`, {
       method: "DELETE",
-    });
+    })
   } catch (err) {
     console.error("Failed to delete annotation from db:", err);
+  }
+
+  const state = usePDFStore.getState()
+  const session = state.shareSession
+  if (session) {
+    try {
+      await authFetch(`/api/share/annotations?id=${encodeURIComponent(id)}&sessionId=${encodeURIComponent(session._id)}`, {
+        method: 'DELETE',
+      })
+      state.removeSharedAnnotation(id)
+    } catch (err) {
+      console.error("Failed to delete shared annotation:", err)
+    }
   }
 };
 
