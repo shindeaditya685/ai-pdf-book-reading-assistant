@@ -43,6 +43,21 @@ export function SummarizerPanel() {
   // Checklist for revision
   const [checkedTakeaways, setCheckedTakeaways] = useState<Record<number, boolean>>({})
 
+  // Retry state
+  const [retryAfter, setRetryAfter] = useState<number | null>(null)
+  const [retryTimer, setRetryTimer] = useState<number>(0)
+
+  useEffect(() => {
+    if (!retryAfter || retryTimer <= 0) return
+    const id = setInterval(() => {
+      setRetryTimer((t) => {
+        if (t <= 1) { clearInterval(id); setRetryAfter(null); return 0 }
+        return t - 1
+      })
+    }, 1000)
+    return () => clearInterval(id)
+  }, [retryAfter, retryTimer])
+
   // Sync start/end page with currentPage when panel is opened or page changes
    
   useEffect(() => {
@@ -92,6 +107,8 @@ export function SummarizerPanel() {
     setSummary('')
     setKeyTakeaways([])
     setCheckedTakeaways({})
+    setRetryAfter(null)
+    setRetryTimer(0)
 
     try {
       const start = scope === 'current' ? (currentPage || 1) : Math.min(Math.max(1, startPage), totalPages)
@@ -114,13 +131,16 @@ export function SummarizerPanel() {
 
       if (res.ok) {
         window.dispatchEvent(new CustomEvent('ai-quota-changed'))
-      } else if (res.status === 429) {
-        window.dispatchEvent(new CustomEvent('ai-quota-exceeded', { detail: { feature: 'summary' } }))
-      }
-
-      if (!res.ok) {
-        const errText = await res.text()
-        throw new Error(errText || 'Failed to generate summary. Please try again.')
+      } else {
+        const errBody = await res.json().catch(() => ({}))
+        if (errBody.retryAfter) {
+          setRetryAfter(errBody.retryAfter)
+          setRetryTimer(errBody.retryAfter)
+        }
+        if (res.status === 429) {
+          window.dispatchEvent(new CustomEvent('ai-quota-exceeded', { detail: { feature: 'summary' } }))
+        }
+        throw new Error(errBody.error || 'Failed to generate summary. Please try again.')
       }
 
       const data = await res.json()
@@ -130,6 +150,8 @@ export function SummarizerPanel() {
 
       setSummary(data.summary || '')
       setKeyTakeaways(data.keyTakeaways || [])
+      setRetryAfter(null)
+      setRetryTimer(0)
     } catch (err: any) {
       setError(err.message || 'An error occurred during summarization.')
     } finally {
@@ -180,6 +202,8 @@ export function SummarizerPanel() {
     setKeyTakeaways([])
     setCheckedTakeaways({})
     setError(null)
+    setRetryAfter(null)
+    setRetryTimer(0)
   }
 
   if (!showSummarizer) return null
@@ -202,9 +226,28 @@ export function SummarizerPanel() {
           {error && (
             <div className="flex gap-2 items-start rounded-xl border border-red-200 bg-red-50 dark:bg-red-950/20 p-3 text-xs text-red-600 dark:text-red-400">
               <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-              <div>
+              <div className="flex-1 min-w-0">
                 <p className="font-semibold">Summarization Failed</p>
                 <p className="mt-0.5 opacity-90">{error}</p>
+                {retryAfter && (
+                  <div className="mt-2">
+                    <button
+                      onClick={() => {
+                        setRetryAfter(null)
+                        setRetryTimer(0)
+                        handleSummarize()
+                      }}
+                      disabled={retryTimer > 0}
+                      className="inline-flex items-center gap-1 rounded-lg bg-red-500/10 px-2.5 py-1.5 text-[11px] font-semibold text-red-600 dark:text-red-400 hover:bg-red-500/20 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {retryTimer > 0 ? (
+                        <><RefreshCw className="h-3 w-3 animate-spin" /> Retry in {retryTimer}s</>
+                      ) : (
+                        <><RefreshCw className="h-3 w-3" /> Retry Now</>
+                      )}
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
           )}

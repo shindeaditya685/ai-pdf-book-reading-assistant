@@ -3,6 +3,17 @@ import Groq from 'groq-sdk'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { gateAiRequest, refundIfFailed } from '@/lib/ai-gate'
 
+function extractRetryAfter(errorMessage: string): { retryAfter: number | null; dailyQuota: boolean } {
+  const isDaily = /\blimit:\s*0\b/.test(errorMessage) || /exceeded your current quota/i.test(errorMessage)
+  if (isDaily) return { retryAfter: null, dailyQuota: true }
+
+  const match = errorMessage.match(/retry in (\d+(?:\.\d+)?)\s*s/i) || errorMessage.match(/retryDelay["':]\s*"?(\d+(?:\.\d+)?)s?/i)
+  if (match) return { retryAfter: Math.ceil(parseFloat(match[1])), dailyQuota: false }
+
+  const statusMatch = errorMessage.match(/429|Too Many Requests|quota/i)
+  return { retryAfter: statusMatch ? 30 : null, dailyQuota: false }
+}
+
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
 function getGroqClients(): Groq[] {
@@ -102,6 +113,8 @@ export async function POST(req: NextRequest) {
             console.warn(`Groq key index ${i} failed:`, lastError)
           }
         }
+      } else {
+        lastError = 'No GROQ_API_KEY configured'
       }
 
       if (content) {
@@ -119,24 +132,37 @@ export async function POST(req: NextRequest) {
         }, { status: 500 })
       }
 
-      try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
-        const genResult = await model.generateContent(prompt)
-        const content = genResult.response.text()
-        if (content) {
-          const parsed = parseJSON(content)
-          if (parsed && typeof parsed.summary === 'string' && Array.isArray(parsed.keyTakeaways)) {
-            return NextResponse.json(parsed)
+      for (const modelName of ['gemini-2.5-flash', 'gemini-2.0-flash']) {
+        try {
+          const model = genAI.getGenerativeModel({ model: modelName })
+          const genResult = await model.generateContent(prompt)
+          const text = genResult.response.text()
+          if (text) {
+            const parsed = parseJSON(text)
+            if (parsed && typeof parsed.summary === 'string' && Array.isArray(parsed.keyTakeaways)) {
+              return NextResponse.json(parsed)
+            }
           }
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : ''
+          if (/\blimit:\s*0\b/.test(msg)) {
+            await refundIfFailed(gate.userId, 'summary')
+            return NextResponse.json({
+              error: 'AI daily quota exceeded. Try again tomorrow or add a paid API key.',
+              dailyQuota: true,
+              retryAfter: null,
+            }, { status: 429 })
+          }
+          console.warn(`Gemini model ${modelName} failed:`, msg)
         }
-        await refundIfFailed(gate.userId, 'summary')
-        return NextResponse.json({ error: 'Failed to generate valid summary format' }, { status: 500 })
-      } catch (e) {
-        await refundIfFailed(gate.userId, 'summary')
-        return NextResponse.json({
-          error: 'Groq failed: ' + (lastError || 'unknown error') + '. Gemini also failed: ' + (e instanceof Error ? e.message : 'unknown error')
-        }, { status: 500 })
       }
+      await refundIfFailed(gate.userId, 'summary')
+      const lastGeminiError = 'All Gemini models failed'
+      const { retryAfter } = extractRetryAfter(lastGeminiError)
+      return NextResponse.json({
+        error: 'Groq failed: ' + (lastError || 'unknown error') + '. Gemini also failed.',
+        retryAfter,
+      }, { status: 500 })
     } catch (innerErr) {
       await refundIfFailed(gate.userId, 'summary')
       throw innerErr

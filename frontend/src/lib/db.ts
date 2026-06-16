@@ -16,8 +16,9 @@ async function createConnection(): Promise<{ client: MongoClient; db: Db } | nul
   try {
     console.log('[DB] Connecting to MongoDB...')
     const client = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 15000,
+      connectTimeoutMS: 15000,
+      socketTimeoutMS: 60000,
     })
     await client.connect()
     const db = client.db()
@@ -39,6 +40,8 @@ export async function connectToDatabase(): Promise<{ client: MongoClient; db: Db
       if (conn) {
         globalForMongo._mongoClient = conn.client
         globalForMongo._mongoDb = conn.db
+      } else {
+        globalForMongo._mongoPromise = undefined
       }
       return conn
     })
