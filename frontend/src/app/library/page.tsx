@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useState, useMemo, useRef } from 'react'
+import { useEffect, useState, useMemo, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Loader2, Camera } from 'lucide-react'
+import { motion, AnimatePresence } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 
@@ -89,6 +90,13 @@ export default function LibraryPage() {
   const [uploadingCover, setUploadingCover] = useState<string | null>(null)
   const [addBookLoading, setAddBookLoading] = useState(false)
   const [bookOpening, setBookOpening] = useState<string | null>(null)
+  const [openingAnim, setOpeningAnim] = useState<{
+    fileName: string
+    rect: { top: number; left: number; width: number; height: number }
+    coverImage: string | null
+    spineColor: string
+    title: string
+  } | null>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
   const coverTargetRef = useRef<string | null>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
@@ -120,10 +128,30 @@ export default function LibraryPage() {
     setDeleteConfirm(null)
   }
 
-  const handleOpen = (fileName: string) => {
-    setBookOpening(fileName)
-    setTimeout(() => router.push(`/dashboard?open=${encodeURIComponent(fileName)}`), 100)
-  }
+  const handleOpen = useCallback((fileName: string, rect?: DOMRect) => {
+    if (!rect) {
+      setBookOpening(fileName)
+      setTimeout(() => router.push(`/dashboard?open=${encodeURIComponent(fileName)}`), 100)
+      return
+    }
+    const book = books.find((b) => b.fileName === fileName)
+    if (!book) return
+    const cIdx = hashColorIndex(fileName)
+    setOpeningAnim({
+      fileName,
+      rect: { top: rect.top, left: rect.left, width: rect.width, height: rect.height },
+      coverImage: book.coverImage,
+      spineColor: SPINE_COLORS[cIdx],
+      title: titleOf(fileName),
+    })
+  }, [books, router])
+
+  const onAnimComplete = useCallback(() => {
+    if (!openingAnim) return
+    setBookOpening(openingAnim.fileName)
+    setOpeningAnim(null)
+    router.push(`/dashboard?open=${encodeURIComponent(openingAnim.fileName)}`)
+  }, [openingAnim, router])
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase().trim()
@@ -363,10 +391,14 @@ export default function LibraryPage() {
                     <div
                       key={book.fileName}
                       className="group relative cursor-pointer"
-                      onClick={() => handleOpen(book.fileName)}
+                      onClick={(e) => {
+                        const tile = e.currentTarget.querySelector('.book-spine') as HTMLElement
+                        const r = tile?.getBoundingClientRect() ?? e.currentTarget.getBoundingClientRect()
+                        handleOpen(book.fileName, r)
+                      }}
                     >
                       <div
-                        className="relative aspect-[3/4] overflow-hidden border border-black/10 shadow-[0_8px_20px_-12px_rgba(0,0,0,0.6)] transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)]"
+                        className="book-spine relative aspect-[3/4] overflow-hidden border border-black/10 shadow-[0_8px_20px_-12px_rgba(0,0,0,0.6)] transition-all duration-500 group-hover:-translate-y-2 group-hover:shadow-[0_20px_40px_-15px_rgba(0,0,0,0.7)]"
                         style={{ backgroundColor: spineColor }}
                       >
                         {/* Book cover image or gradient fallback */}
@@ -428,6 +460,23 @@ export default function LibraryPage() {
                         <div className="pointer-events-none absolute inset-y-0 left-0 w-[3px] bg-white/10" />
                         <div className="pointer-events-none absolute inset-y-0 right-0 w-[2px] bg-black/20" />
 
+                        {/* Bookmark ribbon for started books */}
+                        {progress > 0 && (
+                          <div className="pointer-events-none absolute -right-[3px] top-[3px] z-10">
+                            <div
+                              className="relative"
+                              style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))' }}
+                            >
+                              <svg width="14" height="22" viewBox="0 0 14 22" fill="none">
+                                <rect x="0" y="0" width="14" height="18" rx="1" fill="#c0392b" />
+                                <path d="M7 18 L0 21 L0 18 Z" fill="#e74c3c" />
+                                <path d="M7 18 L14 21 L14 18 Z" fill="#e74c3c" />
+                                <path d="M0 18 L7 21 L14 18" fill="none" stroke="#a93226" strokeWidth="0.5" />
+                              </svg>
+                            </div>
+                          </div>
+                        )}
+
                         {/* Progress */}
                         <div className="absolute bottom-0 left-0 h-1 w-full bg-black/30">
                           <div className="h-full bg-white transition-all duration-500" style={{ width: `${progress}%` }} />
@@ -468,7 +517,12 @@ export default function LibraryPage() {
                             </div>
                           </div>
                           <button
-                            onClick={(e) => { e.stopPropagation(); handleOpen(book.fileName) }}
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              const tile = (e.currentTarget as HTMLElement).closest('[class*="group"]')?.querySelector('.book-spine') as HTMLElement
+                              const r = tile?.getBoundingClientRect()
+                              handleOpen(book.fileName, r)
+                            }}
                             className="mb-1.5 px-3 py-1 text-[9px] uppercase tracking-widest transition-all hover:opacity-80"
                             style={{ backgroundColor: 'white', color: '#1c1917', fontFamily: 'var(--font-geist-mono)' }}
                           >
@@ -496,18 +550,17 @@ export default function LibraryPage() {
                 <div
                   className="h-[6px] w-full"
                   style={{
-                    background: 'linear-gradient(180deg, #c89a6a 0%, #a37242 40%, #7a4f29 100%)',
-                    boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)',
+                    background: `linear-gradient(180deg, var(--wood-top) 0%, #a37242 40%, #7a4f29 100%)`,
+                    boxShadow: 'inset 0 1px 0 var(--wood-highlight)',
                   }}
                 />
                 <div
                   className="relative h-[22px] w-full"
                   style={{
-                    background:
-                      'repeating-linear-gradient(90deg, #6b3f1f 0px, #7a4a26 2px, #5e3618 4px, #6b3f1f 7px, #7a4a26 10px), linear-gradient(180deg, #6b3f1f 0%, #4a2a12 100%)',
+                    background: 'var(--wood-grain), var(--wood-board-bg)',
                     backgroundBlendMode: 'multiply',
                     boxShadow:
-                      'inset 0 2px 4px rgba(255,255,255,0.08), inset 0 -2px 6px rgba(0,0,0,0.5), 0 8px 14px -6px rgba(0,0,0,0.45)',
+                      'inset 0 2px 4px rgba(255,255,255,0.08), inset 0 -2px 6px var(--wood-shadow), 0 8px 14px -6px rgba(0,0,0,0.45)',
                   }}
                 >
                   <div
@@ -520,7 +573,7 @@ export default function LibraryPage() {
                 </div>
                 <div
                   className="h-[10px] w-full opacity-50"
-                  style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 100%)' }}
+                  style={{ background: 'linear-gradient(180deg, var(--wood-shadow) 0%, rgba(0,0,0,0) 100%)' }}
                 />
               </div>
             </div>
@@ -617,6 +670,64 @@ export default function LibraryPage() {
           </div>
         </div>
       )}
+
+      {/* Book opening animation */}
+      <AnimatePresence>
+        {openingAnim && (
+          <motion.div
+            key="book-opening"
+            className="fixed z-[100] overflow-hidden"
+            style={{ borderRadius: 2 }}
+            initial={{
+              top: openingAnim.rect.top,
+              left: openingAnim.rect.left,
+              width: openingAnim.rect.width,
+              height: openingAnim.rect.height,
+            }}
+            animate={{
+              top: 0,
+              left: 0,
+              width: '100vw',
+              height: '100vh',
+              borderRadius: 0,
+            }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.55, ease: [0.32, 0.72, 0, 1] }}
+            onAnimationComplete={onAnimComplete}
+          >
+            {/* Background fill */}
+            <div
+              className="absolute inset-0"
+              style={{ backgroundColor: openingAnim.spineColor }}
+            >
+              {openingAnim.coverImage && (
+                <img
+                  src={openingAnim.coverImage}
+                  alt=""
+                  className="h-full w-full object-cover opacity-60"
+                />
+              )}
+            </div>
+
+            {/* Title & spinner */}
+            <div className="relative z-10 flex h-full flex-col items-center justify-center p-12 text-center">
+              <div className="mb-8 h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              <h2
+                className="text-2xl font-bold text-white/90 md:text-4xl"
+                style={{ fontFamily: 'var(--font-geist-serif)' }}
+              >
+                {openingAnim.title}
+              </h2>
+              <p
+                className="mt-3 text-xs uppercase tracking-widest text-white/50"
+                style={{ fontFamily: 'var(--font-geist-mono)' }}
+              >
+                Opening your book\u2026
+              </p>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   )
 }

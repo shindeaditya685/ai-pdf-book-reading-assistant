@@ -160,6 +160,20 @@ export function RecentBookshelf({ onOpen, loadingFileName }: RecentBookshelfProp
                 <div className="pointer-events-none absolute inset-y-0 left-0 w-[3px] bg-white/10" />
                 <div className="pointer-events-none absolute inset-y-0 right-0 w-[2px] bg-black/20" />
 
+                {/* Bookmark ribbon for started books */}
+                {progress > 0 && (
+                  <div className="pointer-events-none absolute -right-[3px] top-[3px] z-10">
+                    <div style={{ filter: 'drop-shadow(0 1px 2px rgba(0,0,0,0.4))' }}>
+                      <svg width="14" height="22" viewBox="0 0 14 22" fill="none">
+                        <rect x="0" y="0" width="14" height="18" rx="1" fill="#c0392b" />
+                        <path d="M7 18 L0 21 L0 18 Z" fill="#e74c3c" />
+                        <path d="M7 18 L14 21 L14 18 Z" fill="#e74c3c" />
+                        <path d="M0 18 L7 21 L14 18" fill="none" stroke="#a93226" strokeWidth="0.5" />
+                      </svg>
+                    </div>
+                  </div>
+                )}
+
                 <div className="absolute bottom-0 left-0 h-1 w-full bg-black/30">
                   <div className="h-full bg-white transition-all duration-500" style={{ width: `${progress}%` }} />
                 </div>
@@ -208,18 +222,17 @@ export function RecentBookshelf({ onOpen, loadingFileName }: RecentBookshelfProp
         <div
           className="h-[6px] w-full"
           style={{
-            background: 'linear-gradient(180deg, #c89a6a 0%, #a37242 40%, #7a4f29 100%)',
-            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)',
+            background: `linear-gradient(180deg, var(--wood-top) 0%, #a37242 40%, #7a4f29 100%)`,
+            boxShadow: 'inset 0 1px 0 var(--wood-highlight)',
           }}
         />
         <div
           className="relative h-[20px] w-full"
           style={{
-            background:
-              'repeating-linear-gradient(90deg, #6b3f1f 0px, #7a4a26 2px, #5e3618 4px, #6b3f1f 7px, #7a4a26 10px), linear-gradient(180deg, #6b3f1f 0%, #4a2a12 100%)',
+            background: 'var(--wood-grain), var(--wood-board-bg)',
             backgroundBlendMode: 'multiply',
             boxShadow:
-              'inset 0 2px 4px rgba(255,255,255,0.08), inset 0 -2px 6px rgba(0,0,0,0.5), 0 8px 14px -6px rgba(0,0,0,0.45)',
+              'inset 0 2px 4px rgba(255,255,255,0.08), inset 0 -2px 6px var(--wood-shadow), 0 8px 14px -6px rgba(0,0,0,0.45)',
           }}
         >
           <div
@@ -232,7 +245,7 @@ export function RecentBookshelf({ onOpen, loadingFileName }: RecentBookshelfProp
         </div>
         <div
           className="h-[8px] w-full opacity-50"
-          style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 100%)' }}
+          style={{ background: 'linear-gradient(180deg, var(--wood-shadow) 0%, rgba(0,0,0,0) 100%)' }}
         />
       </div>
 
