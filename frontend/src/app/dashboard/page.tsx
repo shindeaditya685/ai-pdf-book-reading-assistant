@@ -650,11 +650,11 @@ export default function DashboardPage() {
               <div className="min-w-0 pt-2">
                 <p
                   className="text-[10px] uppercase tracking-widest mb-3"
-                  style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}
+                  style={{ color: 'var(--accent-warm)' }}
                 >
                   Reading Desk
                 </p>
-                <h1 className="mb-3 text-4xl italic tracking-tight md:text-5xl" style={{ fontFamily: 'var(--font-geist-serif)' }}>
+                <h1 className="mb-3 text-4xl italic tracking-tight md:text-5xl">
                   Pick up your next page
                 </h1>
                 <p className="max-w-2xl text-sm leading-6" style={{ color: 'var(--accent-warm)' }}>
@@ -665,7 +665,7 @@ export default function DashboardPage() {
               <aside className="relative overflow-hidden border p-5" style={{ backgroundColor: 'var(--canvas)', borderColor: 'var(--paper-border)' }}>
                 <div className="relative mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-widest" style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}>
+                    <p className="text-xs uppercase tracking-widest" style={{ color: 'var(--accent-warm)' }}>
                       Start Reading
                     </p>
                     <p className="mt-1 text-sm" style={{ color: 'var(--accent-warm)' }}>Upload a PDF to open the reader.</p>
@@ -692,7 +692,7 @@ export default function DashboardPage() {
                       <BookOpen className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}>
+                      <p className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--accent-warm)' }}>
                         Resume Reading
                       </p>
                       <p className="mt-2 text-base font-bold truncate sm:text-lg" style={{ color: 'var(--ink)' }}>
@@ -727,8 +727,8 @@ export default function DashboardPage() {
                     <button
                       onClick={() => handleLoadRecentPdf(resumeBook.fileName, resumeBook.lastPage)}
                       disabled={recentLoading === resumeBook.fileName}
-                      className="inline-flex flex-1 items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold transition-all active:scale-[0.97] disabled:cursor-wait disabled:opacity-40 sm:flex-none"
-                      style={{ backgroundColor: 'var(--ink)', color: 'var(--canvas)', fontFamily: 'var(--font-geist-mono)' }}
+                      className="inline-flex flex-1 items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold tracking-wider transition-all active:scale-[0.97] disabled:cursor-wait disabled:opacity-40 sm:flex-none"
+                      style={{ backgroundColor: 'var(--ink)', color: 'var(--canvas)' }}
                     >
                       {recentLoading === resumeBook.fileName ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -765,10 +765,10 @@ export default function DashboardPage() {
 
             <section>
               <div className="mb-6">
-                <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}>
+                <p className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--accent-warm)' }}>
                   Your Library
                 </p>
-                <p className="mt-1 text-lg italic" style={{ fontFamily: 'var(--font-geist-serif)', color: 'var(--ink)' }}>
+                <p className="mt-1 text-lg italic" style={{ color: 'var(--ink)' }}>
                   All your books
                 </p>
               </div>

@@ -153,7 +153,7 @@ export function RecentBookshelf({
     <div
       className="rounded-lg p-8 py-10"
       style={{
-        background: `repeating-linear-gradient(90deg, transparent 0px, transparent 6px, rgba(0,0,0,0.04) 6px, rgba(0,0,0,0.04) 7px), linear-gradient(180deg, #b8a088, #a89078)`,
+        backgroundColor: "#1C1917",
       }}
     >
       <div className="mb-6">
@@ -166,16 +166,16 @@ export function RecentBookshelf({
           style={{
             borderColor: "rgba(28,25,23,0.2)",
             color: "var(--ink)",
-            fontFamily: "var(--font-geist-sans)",
           }}
         />
       </div>
+
+      <hr className="mb-6 border-t" style={{ borderColor: "rgba(255,255,255,0.1)" }} />
 
       {filtered.length === 0 ? (
         <p
           className="text-center italic"
           style={{
-            fontFamily: "var(--font-geist-serif)",
             color: "var(--accent-warm)",
           }}
         >
@@ -239,18 +239,10 @@ export function RecentBookshelf({
                               }}
                             />
                             <div className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center">
-                              <div
-                                className="mb-1 text-[11px] font-bold leading-tight text-white/90"
-                                style={{
-                                  fontFamily: "var(--font-geist-serif)",
-                                }}
-                              >
+                              <div className="mb-1 text-[11px] font-bold leading-tight text-white/90">
                                 {title}
                               </div>
-                              <div
-                                className="text-[9px] text-white/50"
-                                style={{ fontFamily: "var(--font-geist-mono)" }}
-                              >
+                              <div className="text-[9px] text-white/50">
                                 {book.pageCount} pp.
                               </div>
                             </div>
@@ -339,16 +331,10 @@ export function RecentBookshelf({
                           style={{ backgroundColor: "rgba(28,25,23,0.92)" }}
                         >
                           <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden">
-                            <div
-                              className="mb-0.5 text-[10px] leading-tight text-white line-clamp-2"
-                              style={{ fontFamily: "var(--font-geist-serif)" }}
-                            >
+                            <div className="mb-0.5 text-[10px] leading-tight text-white line-clamp-2">
                               {title}
                             </div>
-                            <div
-                              className="text-[7px] text-white/50 leading-tight"
-                              style={{ fontFamily: "var(--font-geist-mono)" }}
-                            >
+                            <div className="text-[7px] text-white/50 leading-tight">
                               {book.lastPage > 0
                                 ? `P.${book.lastPage}/${book.pageCount} \u00B7 `
                                 : ""}
@@ -361,7 +347,6 @@ export function RecentBookshelf({
                             style={{
                               backgroundColor: "white",
                               color: "#1c1917",
-                              fontFamily: "var(--font-geist-mono)",
                             }}
                           >
                             Continue
@@ -377,17 +362,17 @@ export function RecentBookshelf({
                 <div
                   className="h-[6px] w-full"
                   style={{
-                    background: `linear-gradient(180deg, var(--wood-top) 0%, var(--wood-body-2) 40%, var(--wood-body-3) 100%)`,
-                    boxShadow: "inset 0 1px 0 var(--wood-highlight)",
+                    background: `linear-gradient(180deg, #c49a6a 0%, #a88050 40%, #8a6a40 100%)`,
+                    boxShadow: "inset 0 1px 0 rgba(255,255,255,0.15)",
                   }}
                 />
                 <div
                   className="relative h-[20px] w-full"
                   style={{
-                    background: "var(--wood-grain), var(--wood-board-bg)",
+                    background: `repeating-linear-gradient(90deg, #a07040 0px, #b88850 2px, #906838 4px, #a07040 7px, #b88850 10px), linear-gradient(180deg, #8a6040 0%, #6a4830 100%)`,
                     backgroundBlendMode: "multiply",
                     boxShadow:
-                      "inset 0 2px 4px rgba(255,255,255,0.08), inset 0 -2px 6px var(--wood-shadow), 0 8px 14px -6px rgba(0,0,0,0.45)",
+                      "inset 0 2px 4px rgba(255,255,255,0.06), inset 0 -2px 6px rgba(0,0,0,0.5), 0 8px 14px -6px rgba(0,0,0,0.7)",
                   }}
                 >
                   <div
@@ -403,7 +388,7 @@ export function RecentBookshelf({
                   className="h-[8px] w-full opacity-50"
                   style={{
                     background:
-                      "linear-gradient(180deg, var(--wood-shadow) 0%, rgba(0,0,0,0) 100%)",
+                      "linear-gradient(180deg, rgba(0,0,0,0.6) 0%, rgba(0,0,0,0) 100%)",
                   }}
                 />
               </div>

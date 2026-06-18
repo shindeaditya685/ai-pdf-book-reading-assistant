@@ -117,7 +117,7 @@ export function ReadingChallenge() {
 
   if (loading) {
     return (
-      <div className="flex h-48 items-center justify-center" style={{ fontFamily: 'var(--font-geist-sans)' }}>
+      <div className="flex h-48 items-center justify-center">
         <Loader2 className="h-5 w-5 animate-spin" style={{ color: 'var(--accent-warm)' }} />
       </div>
     )
@@ -131,17 +131,17 @@ export function ReadingChallenge() {
       {/* Header */}
       <div className="flex items-center justify-between border-b px-5 py-3" style={{ borderColor: 'var(--paper-border)' }}>
         <div>
-          <h3 className="text-sm italic tracking-tight" style={{ fontFamily: 'var(--font-geist-serif)', color: 'var(--ink)' }}>
+          <h3 className="text-sm italic tracking-tight" style={{ color: 'var(--ink)' }}>
             Monthly Reading Challenge
           </h3>
-          <p className="mt-0.5 text-[10px] uppercase tracking-widest" style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}>
+          <p className="mt-0.5 text-[10px] uppercase tracking-widest" style={{ color: 'var(--accent-warm)' }}>
             {new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
           </p>
         </div>
         <button
           onClick={() => setSelecting(true)}
           className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all hover:opacity-70"
-          style={{ borderColor: 'var(--paper-border)', color: 'var(--ink)', fontFamily: 'var(--font-geist-mono)' }}
+          style={{ borderColor: 'var(--paper-border)', color: 'var(--ink)' }}
         >
           <BookPlus className="h-3 w-3" />
           {selectedBooks.length > 0 ? 'Edit' : 'Select Books'}
@@ -163,7 +163,7 @@ export function ReadingChallenge() {
                   {done ? <Check className="h-3 w-3" /> : pct}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-xs" style={{ fontFamily: 'var(--font-geist-sans)', color: 'var(--ink)' }}>
+                  <p className="truncate text-xs" style={{ color: 'var(--ink)' }}>
                     {titleOf(book.fileName)}
                   </p>
                   <div className="mt-1 h-1 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'var(--paper-border)' }}>
@@ -176,7 +176,7 @@ export function ReadingChallenge() {
                     />
                   </div>
                 </div>
-                <span className="text-[9px] tabular-nums" style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}>
+                <span className="text-[9px] tabular-nums" style={{ color: 'var(--accent-warm)' }}>
                   {pct}%
                 </span>
               </div>
@@ -201,11 +201,11 @@ export function ReadingChallenge() {
         </div>
         <div className="flex-1">
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl italic" style={{ fontFamily: 'var(--font-geist-serif)', color: 'var(--ink)' }}>
+            <span className="text-2xl italic" style={{ color: 'var(--ink)' }}>
               {finishedCount}
             </span>
             <span className="text-sm" style={{ color: 'var(--accent-warm)' }}>/ {goal}</span>
-            <span className="ml-1 text-[10px] uppercase tracking-wider" style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}>
+            <span className="ml-1 text-[10px] uppercase tracking-wider" style={{ color: 'var(--accent-warm)' }}>
               books
             </span>
           </div>
@@ -236,7 +236,7 @@ export function ReadingChallenge() {
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between border-b px-5 py-3" style={{ borderColor: 'var(--paper-border)' }}>
-              <p className="text-sm italic" style={{ fontFamily: 'var(--font-geist-serif)', color: 'var(--ink)' }}>
+              <p className="text-sm italic" style={{ color: 'var(--ink)' }}>
                 Select Books for Challenge
               </p>
               <button onClick={() => setSelecting(false)} className="rounded p-1 hover:opacity-60" style={{ color: 'var(--accent-warm)' }}>

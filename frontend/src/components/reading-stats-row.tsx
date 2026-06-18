@@ -61,11 +61,11 @@ export function ReadingStatsRow() {
         <div key={s.label} className="p-5" style={{ backgroundColor: 'var(--canvas)' }}>
           <span
             className="mb-1 block text-[9px] uppercase tracking-tighter"
-            style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}
+            style={{ color: 'var(--accent-warm)' }}
           >
             {s.label}
           </span>
-          <span className="text-2xl italic" style={{ fontFamily: 'var(--font-geist-serif)', color: 'var(--ink)' }}>
+          <span className="text-2xl font-semibold" style={{ color: 'var(--ink)' }}>
             {s.value}
           </span>
         </div>
