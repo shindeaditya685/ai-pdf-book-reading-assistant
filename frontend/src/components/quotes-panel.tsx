@@ -3,13 +3,14 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Quote as QuoteIcon, Trash2, BookOpen, Loader2, MessageSquarePlus, Search, X, Check, Sparkles, Plus } from 'lucide-react'
+import { Quote as QuoteIcon, Trash2, BookOpen, Loader2, MessageSquarePlus, Search, X, Check, Sparkles, Plus, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 import { useAuth } from '@/context/auth-context'
 import type { Quote } from '@/lib/quotes'
+import { QuoteCardModal } from '@/components/quote-card-modal'
 
 export function QuotesPanel() {
   const {
@@ -34,6 +35,7 @@ export function QuotesPanel() {
   const [dbQuotes, setDbQuotes] = useState<Quote[]>([])
   const [subTab, setSubTab] = useState<'personal' | 'shared'>('personal')
   const [importingQuoteId, setImportingQuoteId] = useState<string | null>(null)
+  const [cardQuote, setCardQuote] = useState<Quote | null>(null)
 
   const visibleQuotes = useMemo(() => {
     const all = [...quotes, ...dbQuotes.filter((q) => !quotes.some((q2) => q2.id === q.id))]
@@ -349,23 +351,34 @@ export function QuotesPanel() {
                           <span>Page {q.pageNumber || '?'}</span>
                         </div>
                       </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-7 w-7 shrink-0 text-muted-foreground hover:text-red-500"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          handleDelete(q.id)
-                        }}
-                        disabled={deletingId === q.id}
-                        aria-label="Delete quote"
-                      >
-                        {deletingId === q.id ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
-                        ) : (
-                          <Trash2 className="h-3 w-3" />
-                        )}
-                      </Button>
+                      <div className="flex shrink-0 items-center gap-0.5">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-yellow-600"
+                          onClick={(e) => { e.stopPropagation(); setCardQuote(q) }}
+                          aria-label="Generate quote card"
+                        >
+                          <ImageIcon className="h-3 w-3" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-7 w-7 text-muted-foreground hover:text-red-500"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            handleDelete(q.id)
+                          }}
+                          disabled={deletingId === q.id}
+                          aria-label="Delete quote"
+                        >
+                          {deletingId === q.id ? (
+                            <Loader2 className="h-3 w-3 animate-spin" />
+                          ) : (
+                            <Trash2 className="h-3 w-3" />
+                          )}
+                        </Button>
+                      </div>
                     </div>
                   </div>
                 )
@@ -476,6 +489,19 @@ export function QuotesPanel() {
           </Button>
         </div>
       </div>
+
+      {cardQuote && (
+        <QuoteCardModal
+          text={cardQuote.text}
+          context={cardQuote.context}
+          noteText={cardQuote.noteText}
+          bookTitle={cardQuote.pdfFileName}
+          pageNumber={cardQuote.pageNumber}
+          timestamp={cardQuote.timestamp}
+          color={cardQuote.color}
+          onClose={() => setCardQuote(null)}
+        />
+      )}
     </ResponsivePanel>
   )
 }

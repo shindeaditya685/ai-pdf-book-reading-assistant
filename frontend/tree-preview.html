@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html>
+<head><title>Tree Preview</title><style>
+  body { display:flex; gap:24px; padding:40px; background:#f5f0e8; font-family:Georgia,serif; flex-wrap:wrap; align-items:flex-end; }
+  .stage { text-align:center; }
+  svg { width:110px; height:130px; display:block; margin:0 auto; }
+  label { display:block; margin-top:8px; font-size:11px; color:#6b5c52; text-transform:uppercase; letter-spacing:1px; }
+</style></head>
+<body>
+<script>
+const ratios = [0, 0.15, 0.3, 0.5, 0.7, 0.85, 1];
+const labels = ['0%', '15%', '30%', '50%', '70%', '85%', '100%'];
+
+function seededRandom(seed) {
+  let s = seed;
+  return function() { s = (s * 9301 + 49297) % 233280; return s / 233280; };
+}
+
+ratios.forEach((ratio, idx) => {
+  const rand = seededRandom(42 + idx * 100);
+  const trunkBase = 102, trunkTop = 48;
+  const canopyY = trunkTop - 4 - ratio * 10;
+  const leafCount = Math.floor(ratio * 28);
+  const canopyRadius = 6 + ratio * 22;
+
+  let svg = `<svg viewBox="0 0 100 120">
+    <ellipse cx="50" cy="114" rx="36" ry="4" fill="#d4c9b8" opacity="0.5"/>`;
+
+  // Leaves
+  for (let i = 0; i < leafCount; i++) {
+    const angle = (i / leafCount) * Math.PI * 2 + ratio * 0.3;
+    const dist = 2 + rand() * canopyRadius * (0.7 + ratio * 0.3);
+    const lx = 50 + Math.cos(angle) * dist;
+    const ly = canopyY + Math.sin(angle) * dist * 0.65;
+    const size = 2.5 + rand() * 5 * ratio;
+    const shade = 0.35 + rand() * 0.4;
+    const hue = 130 + rand() * 40;
+    const rot = -20 + rand() * 40;
+    svg += `<ellipse cx="${lx.toFixed(1)}" cy="${ly.toFixed(1)}" rx="${(size*0.65).toFixed(1)}" ry="${size.toFixed(1)}" fill="oklch(${(0.5+shade*0.2).toFixed(2)} ${(0.15+ratio*0.1).toFixed(3)} ${hue.toFixed(0)})" opacity="${(0.6+ratio*0.4).toFixed(2)}" transform="rotate(${rot.toFixed(0)},${lx.toFixed(1)},${ly.toFixed(1)})"/>`;
+  }
+
+  // Fruit
+  if (ratio > 0.85) {
+    for (let i = 0; i < 4; i++) {
+      const fx = 38 + rand() * 24;
+      const fy = canopyY - 6 - rand() * canopyRadius * 0.6;
+      svg += `<circle cx="${fx.toFixed(1)}" cy="${fy.toFixed(1)}" r="${(2+rand()*1.5).toFixed(1)}" fill="#d97706" opacity="${(0.5+rand()*0.3).toFixed(2)}"/>`;
+    }
+  }
+
+  // Trunk (on top of leaves)
+  svg += `<path d="M46 ${trunkBase} Q42 ${trunkBase*0.72} 44 ${trunkTop} L56 ${trunkTop} Q58 ${trunkBase*0.72} 54 ${trunkBase}Z" fill="#6b5c52"/>`;
+
+  // Branches (on top of trunk)
+  if (ratio > 0.15) svg += `<path d="M44 ${trunkTop+6} Q${44-ratio*14} ${canopyY+6} ${44-canopyRadius*0.6} ${canopyY+4}" stroke="#6b5c52" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  if (ratio > 0.3) svg += `<path d="M56 ${trunkTop+3} Q${56+ratio*12} ${canopyY+4} ${56+canopyRadius*0.5} ${canopyY}" stroke="#6b5c52" stroke-width="2" fill="none" stroke-linecap="round"/>`;
+  if (ratio > 0.5) svg += `<path d="M46 ${trunkTop-1} Q${40-ratio*4} ${canopyY-4} ${50-canopyRadius*0.5} ${canopyY-6}" stroke="#6b5c52" stroke-width="1.8" fill="none" stroke-linecap="round"/>`;
+  if (ratio > 0.7) svg += `<path d="M54 ${trunkTop-3} Q${60+ratio*3} ${canopyY-6} ${50+canopyRadius*0.5} ${canopyY-8}" stroke="#6b5c52" stroke-width="1.8" fill="none" stroke-linecap="round"/>`;
+
+  svg += '</svg>';
+  document.body.innerHTML += `<div class="stage">${svg}<label>${labels[idx]}</label></div>`;
+});
+</script>
+</body>
+</html>

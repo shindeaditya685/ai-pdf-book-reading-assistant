@@ -3,11 +3,12 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, BookOpen, Search, ChevronDown, ChevronUp, Loader2, Quote as QuoteIcon, Calendar, Hash, Trash2, MessageSquarePlus, Edit3, Save, X, Sparkles } from 'lucide-react'
+import { ArrowLeft, BookOpen, Search, ChevronDown, ChevronUp, Loader2, Quote as QuoteIcon, Calendar, Hash, Trash2, MessageSquarePlus, Edit3, Save, X, Sparkles, Image as ImageIcon } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 import { QUOTE_LIMITS, truncate } from '@/lib/quotes'
 import type { Quote } from '@/lib/quotes'
+import { QuoteCardModal } from '@/components/quote-card-modal'
 
 const QUOTES_PER_PAGE = 30
 
@@ -26,6 +27,7 @@ export default function QuotesPage() {
   const [editingNote, setEditingNote] = useState('')
   const [savingNote, setSavingNote] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [cardQuote, setCardQuote] = useState<Quote | null>(null)
 
   useEffect(() => {
     if (authLoading) return
@@ -371,14 +373,24 @@ export default function QuotesPage() {
                       </div>
 
                       <div className="flex items-center justify-between pt-1">
-                        <button
-                          onClick={() => handleStartChat([q.id])}
-                          disabled={creating}
-                          className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 text-xs font-semibold text-yellow-700 transition-colors hover:bg-yellow-500/20 disabled:opacity-50 dark:text-yellow-300"
-                        >
-                          {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-                          Chat about this
-                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => handleStartChat([q.id])}
+                            disabled={creating}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 text-xs font-semibold text-yellow-700 transition-colors hover:bg-yellow-500/20 disabled:opacity-50 dark:text-yellow-300"
+                          >
+                            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                            Chat
+                          </button>
+                          <button
+                            onClick={() => setCardQuote(q)}
+                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors hover:opacity-80"
+                            style={{ borderColor: 'var(--paper-border)', color: 'var(--ink)' }}
+                          >
+                            <ImageIcon className="h-3.5 w-3.5" />
+                            Card
+                          </button>
+                        </div>
                         <span className="text-[10px] text-muted-foreground/40 tabular-nums">
                           <Hash className="inline h-2.5 w-2.5" /> {q.id.slice(-6)}
                         </span>
@@ -441,6 +453,20 @@ export default function QuotesPage() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Quote card modal */}
+      {cardQuote && (
+        <QuoteCardModal
+          text={cardQuote.text}
+          context={cardQuote.context}
+          noteText={cardQuote.noteText}
+          bookTitle={cardQuote.pdfFileName}
+          pageNumber={cardQuote.pageNumber}
+          timestamp={cardQuote.timestamp}
+          color={cardQuote.color}
+          onClose={() => setCardQuote(null)}
+        />
       )}
     </div>
   )

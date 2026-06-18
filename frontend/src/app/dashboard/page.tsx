@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, Library, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2 } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2 } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
@@ -19,6 +19,7 @@ import { ReadingAnalytics } from '@/components/reading-analytics'
 import { ShareSessionPanel } from '@/components/share-session-panel'
 import { RecentBookshelf } from '@/components/recent-bookshelf'
 import { ReadingStatsRow } from '@/components/reading-stats-row'
+import { ReadingChallenge } from '@/components/reading-challenge'
 import { QuestionGeneratorPanel } from '@/components/question-generator-panel'
 import { SummarizerPanel } from '@/components/summarizer-panel'
 import { ErrorBoundary } from '@/components/error-boundary'
@@ -530,13 +531,7 @@ export default function DashboardPage() {
           <div className="hidden sm:inline-flex">
             <SettingsPanel />
           </div>
-          <Link
-            href="/library"
-            className="hidden h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-amber-200 hover:bg-amber-50 hover:text-amber-600 hover:shadow-md sm:flex dark:hover:border-amber-800/30 dark:hover:bg-amber-950/20"
-            title="Library"
-          >
-            <Library className="h-3.5 w-3.5" />
-          </Link>
+
           <Link
             href="/review"
             className="hidden h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-md sm:flex dark:hover:border-violet-800/30 dark:hover:bg-violet-950/20"
@@ -579,11 +574,7 @@ export default function DashboardPage() {
                 <Users className="h-3.5 w-3.5" />
                 {shareSession ? shareSession.name : 'Collaborate'}
               </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/library" className="flex items-center gap-2">
-                  <Library className="h-3.5 w-3.5" /> Library
-                </Link>
-              </DropdownMenuItem>
+
               <DropdownMenuItem asChild>
                 <Link href="/review" className="flex items-center gap-2">
                   <BrainCircuit className="h-3.5 w-3.5" /> Flashcard Review
@@ -768,13 +759,17 @@ export default function DashboardPage() {
 
             <ReadingStatsRow />
 
+            <div className="max-w-3xl">
+              <ReadingChallenge />
+            </div>
+
             <section>
               <div className="mb-6">
                 <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}>
-                  Recent Books
+                  Your Library
                 </p>
                 <p className="mt-1 text-lg italic" style={{ fontFamily: 'var(--font-geist-serif)', color: 'var(--ink)' }}>
-                  Pick up where you left off
+                  All your books
                 </p>
               </div>
               <div className="max-w-3xl">

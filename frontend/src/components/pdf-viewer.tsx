@@ -33,6 +33,7 @@ import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
 import { SearchBar } from '@/components/search-bar'
 import { AnnotationToolbar } from '@/components/annotation-toolbar'
+import { SoundscapePlayer } from '@/components/soundscape-player'
 import { WordConfirmTooltip } from '@/components/word-confirm-tooltip'
 import { SelectionContextMenu } from '@/components/selection-context-menu'
 import {
@@ -1159,6 +1160,9 @@ export function PDFViewer() {
           >
             <Volume2 className="h-3.5 w-3.5" />
           </Button>
+          <div className="hidden sm:block">
+            <SoundscapePlayer />
+          </div>
           <div className="mx-1 hidden h-5 w-px bg-border/50 sm:block" />
 
           {/* Mobile overflow menu (bookmarks, history, flashcards, questions, summarizer, share, read aloud) */}
