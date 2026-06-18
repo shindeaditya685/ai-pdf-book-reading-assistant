@@ -445,30 +445,44 @@ export default function LibraryPage() {
 
                         {/* Hover overlay */}
                         <div
-                          className="absolute inset-0 flex flex-col items-center justify-center p-5 text-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                          className="absolute inset-0 flex flex-col p-3 text-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                           style={{ backgroundColor: 'rgba(28,25,23,0.92)' }}
                         >
-                          <div
-                            className="mb-2 text-base text-white"
-                            style={{ fontFamily: 'var(--font-geist-serif)' }}
+                          <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden">
+                            <div
+                              className="mb-1 text-xs leading-tight text-white line-clamp-2"
+                              style={{ fontFamily: 'var(--font-geist-serif)' }}
+                            >
+                              {title}
+                            </div>
+                            <div className="mb-1 text-[8px] text-white/50 leading-tight" style={{ fontFamily: 'var(--font-geist-mono)' }}>
+                              {book.lastPage > 0 ? `P.${book.lastPage}/${book.pageCount} \u00B7 ` : ''}{progress}% \u00B7 {book.pageCount}p
+                            </div>
+                            {book.totalMinutes > 0 && (
+                              <div className="mb-1 text-[9px] text-white/60">{minutesLabel} read</div>
+                            )}
+                            <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-0.5 text-[8px] text-white/50">
+                              {book.wordCount > 0 && <span>{book.wordCount}w</span>}
+                              {book.bookmarkCount > 0 && <span>{book.bookmarkCount}m</span>}
+                              {book.quoteCount > 0 && <span>{book.quoteCount}q</span>}
+                            </div>
+                          </div>
+                          <button
+                            onClick={(e) => { e.stopPropagation(); handleOpen(book.fileName) }}
+                            className="mb-1.5 px-3 py-1 text-[9px] uppercase tracking-widest transition-all hover:opacity-80"
+                            style={{ backgroundColor: 'white', color: '#1c1917', fontFamily: 'var(--font-geist-mono)' }}
                           >
-                            {title}
-                          </div>
-                          <div className="mb-3 text-[10px] text-white/60" style={{ fontFamily: 'var(--font-geist-mono)' }}>
-                            STATS
-                          </div>
-                          <div className="mb-1 text-sm text-white">{book.pageCount} Pages</div>
-                          <div className="mb-1 text-sm text-white">{minutesLabel} Reading</div>
-                          <div className="mb-5 text-sm text-white">{statusLabel}</div>
+                            Continue
+                          </button>
                           <button
                             onClick={(e) => {
                               e.stopPropagation()
                               setDeleteConfirm(book.fileName)
                             }}
-                            className="text-[10px] tracking-tighter text-red-400 transition-colors hover:text-red-300"
+                            className="text-[8px] tracking-tighter text-red-400/70 transition-colors hover:text-red-300"
                             style={{ fontFamily: 'var(--font-geist-mono)' }}
                           >
-                            [ DELETE VOLUME ]
+                            [ DELETE ]
                           </button>
                         </div>
                       </div>

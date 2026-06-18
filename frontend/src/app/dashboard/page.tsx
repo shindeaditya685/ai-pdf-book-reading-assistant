@@ -18,6 +18,7 @@ import { FlashcardReview } from '@/components/flashcard-review'
 import { ReadingAnalytics } from '@/components/reading-analytics'
 import { ShareSessionPanel } from '@/components/share-session-panel'
 import { RecentBookshelf } from '@/components/recent-bookshelf'
+import { ReadingStatsRow } from '@/components/reading-stats-row'
 import { QuestionGeneratorPanel } from '@/components/question-generator-panel'
 import { SummarizerPanel } from '@/components/summarizer-panel'
 import { ErrorBoundary } from '@/components/error-boundary'
@@ -656,27 +657,33 @@ export default function DashboardPage() {
           <div className="relative mx-auto flex min-h-full w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 lg:px-8">
             <section className="grid items-start gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
               <div className="min-w-0 pt-2">
-                <div className="inline-flex items-center gap-2 rounded-full border bg-emerald-50/50 px-3 py-1 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">
-                  <Sparkles className="h-3 w-3" />
+                <p
+                  className="text-[10px] uppercase tracking-widest mb-3"
+                  style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}
+                >
                   Reading Desk
-                </div>
-                <h1 className="mt-4 max-w-2xl text-2xl font-bold tracking-tight text-foreground sm:text-3xl md:text-4xl">
+                </p>
+                <h1 className="mb-3 text-4xl italic tracking-tight md:text-5xl" style={{ fontFamily: 'var(--font-geist-serif)' }}>
                   Pick up your next page
                 </h1>
-                <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground/80">
-                  Recent books, saved words, bookmarks, and reading progress are arranged in one calm workspace.
+                <p className="max-w-2xl text-sm leading-6" style={{ color: 'var(--accent-warm)' }}>
+                  Recent books, saved words, bookmarks, and reading progress arranged in one calm workspace.
                 </p>
               </div>
 
-              <aside className="relative overflow-hidden rounded-xl border bg-gradient-to-br from-background to-emerald-50/30 p-5 shadow-sm dark:to-emerald-950/10">
-                <div className="absolute -right-6 -top-6 h-16 w-16 rounded-full bg-emerald-500/10 blur-xl" />
-                <div className="relative mb-3 flex items-center justify-between gap-3">
+              <aside className="relative overflow-hidden border p-5" style={{ backgroundColor: 'var(--canvas)', borderColor: 'var(--paper-border)' }}>
+                <div className="relative mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <h2 className="text-sm font-bold text-foreground">Start Reading</h2>
-                    <p className="mt-0.5 text-xs text-muted-foreground">Upload a PDF to open the reader.</p>
+                    <p className="text-xs uppercase tracking-widest" style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}>
+                      Start Reading
+                    </p>
+                    <p className="mt-1 text-sm" style={{ color: 'var(--accent-warm)' }}>Upload a PDF to open the reader.</p>
                   </div>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm">
-                    <Sparkles className="h-4 w-4 text-white" />
+                  <div
+                    className="flex h-8 w-8 items-center justify-center"
+                    style={{ backgroundColor: 'var(--ink)', color: 'var(--canvas)' }}
+                  >
+                    <Sparkles className="h-4 w-4" />
                   </div>
                 </div>
                 <UploadZone variant="panel" />
@@ -684,44 +691,42 @@ export default function DashboardPage() {
             </section>
 
             {resumeBook && !dismissedResume && (
-              <div className="relative overflow-hidden rounded-2xl border border-emerald-400/30 bg-gradient-to-br from-emerald-50/80 via-white to-emerald-100/30 p-5 shadow-lg shadow-emerald-500/10 sm:p-6 dark:from-emerald-950/20 dark:via-emerald-950/10 dark:to-emerald-900/20 dark:border-emerald-700/30">
-                <div className="absolute -right-10 -top-10 h-28 w-28 rounded-full bg-emerald-400/20 blur-2xl" />
-                <div className="absolute -bottom-6 -left-6 h-20 w-20 rounded-full bg-emerald-300/10 blur-xl" />
+              <div className="relative overflow-hidden border p-6" style={{ backgroundColor: 'var(--canvas)', borderColor: 'var(--paper-border)' }}>
                 <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex min-w-0 items-start gap-3 sm:gap-4">
-                    <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 sm:h-12 sm:w-12">
-                      <BookOpen className="h-5 w-5 text-white" />
+                  <div className="flex min-w-0 items-start gap-4">
+                    <div
+                      className="flex h-11 w-11 shrink-0 items-center justify-center sm:h-12 sm:w-12"
+                      style={{ backgroundColor: 'var(--ink)', color: 'var(--canvas)' }}
+                    >
+                      <BookOpen className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
-                      <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                        <Sparkles className="h-3 w-3" />
+                      <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}>
                         Resume Reading
-                      </div>
-                      <p className="mt-2 text-base font-bold text-foreground truncate sm:text-lg">
+                      </p>
+                      <p className="mt-2 text-base font-bold truncate sm:text-lg" style={{ color: 'var(--ink)' }}>
                         {resumeBook.fileName}
                       </p>
-                      <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground sm:gap-x-4 sm:text-sm">
+                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" style={{ color: 'var(--accent-warm)' }}>
                         <span className="inline-flex items-center gap-1.5">
-                          <FileText className="h-3.5 w-3.5 text-emerald-500" />
                           Page {resumeBook.lastPage}{resumeBook.pageCount > 0 ? ` of ${resumeBook.pageCount}` : ''}
                         </span>
                         {resumeBook.timestamp && (
                           <span className="inline-flex items-center gap-1.5">
-                            <Clock className="h-3.5 w-3.5 text-amber-500" />
                             {timeAgo(Number(resumeBook.timestamp))}
                           </span>
                         )}
                         {resumeBook.pageCount > 0 && (
-                          <span className="text-emerald-600 dark:text-emerald-400 font-semibold">
+                          <span>
                             {Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}% complete
                           </span>
                         )}
                       </div>
                       {resumeBook.pageCount > 0 && (
-                        <div className="mt-3 h-2 w-full max-w-xs overflow-hidden rounded-full bg-emerald-500/10">
+                        <div className="mt-3 h-1 w-full max-w-xs" style={{ backgroundColor: 'rgba(28,25,23,0.1)' }}>
                           <div
-                            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all"
-                            style={{ width: `${Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}%` }}
+                            className="h-full transition-all"
+                            style={{ backgroundColor: 'var(--ink)', width: `${Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}%` }}
                           />
                         </div>
                       )}
@@ -731,13 +736,14 @@ export default function DashboardPage() {
                     <button
                       onClick={() => handleLoadRecentPdf(resumeBook.fileName, resumeBook.lastPage)}
                       disabled={recentLoading === resumeBook.fileName}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/30 transition-all hover:from-emerald-600 hover:to-emerald-700 hover:shadow-xl hover:shadow-emerald-500/40 active:scale-[0.97] disabled:cursor-wait disabled:opacity-60 sm:flex-none"
+                      className="inline-flex flex-1 items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold transition-all active:scale-[0.97] disabled:cursor-wait disabled:opacity-40 sm:flex-none"
+                      style={{ backgroundColor: 'var(--ink)', color: 'var(--canvas)', fontFamily: 'var(--font-geist-mono)' }}
                     >
                       {recentLoading === resumeBook.fileName ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
-                          Continue
+                          CONTINUE
                           <ArrowRight className="h-4 w-4" />
                         </>
                       )}
@@ -749,28 +755,27 @@ export default function DashboardPage() {
                         }
                         setDismissedResume(true)
                       }}
-                      className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground/50 shadow-sm backdrop-blur-sm transition-all hover:border-red-200 hover:bg-red-50 hover:text-red-500 sm:h-9 sm:w-9 dark:hover:border-red-800/30 dark:hover:bg-red-950/20"
+                      className="flex h-9 w-9 shrink-0 items-center justify-center border transition-all hover:bg-black/5"
+                      style={{ borderColor: 'var(--paper-border)', color: 'var(--accent-warm)' }}
                       title="Dismiss"
-                      aria-label="Dismiss resume card"
                     >
-                      <X className="h-4 w-4" />
+                      <X className="h-3.5 w-3.5" />
                     </button>
                   </div>
                 </div>
               </div>
             )}
 
+            <ReadingStatsRow />
+
             <section>
-              <div className="mb-5 flex items-end justify-between gap-3">
-                <div>
-                  <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
-                    <BookOpen className="h-3 w-3" />
-                    Recent Books
-                  </div>
-                  <p className="mt-1.5 text-lg font-bold text-foreground">
-                    Pick up where you left off
-                  </p>
-                </div>
+              <div className="mb-6">
+                <p className="text-[10px] uppercase tracking-widest" style={{ fontFamily: 'var(--font-geist-mono)', color: 'var(--accent-warm)' }}>
+                  Recent Books
+                </p>
+                <p className="mt-1 text-lg italic" style={{ fontFamily: 'var(--font-geist-serif)', color: 'var(--ink)' }}>
+                  Pick up where you left off
+                </p>
               </div>
               <div className="max-w-3xl">
                 <RecentBookshelf onOpen={(fileName) => handleLoadRecentPdf(fileName)} loadingFileName={recentLoading} />

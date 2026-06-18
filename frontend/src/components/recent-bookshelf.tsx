@@ -175,20 +175,27 @@ export function RecentBookshelf({ onOpen, loadingFileName }: RecentBookshelfProp
                 )}
 
                 <div
-                  className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+                  className="absolute inset-0 flex flex-col p-2 text-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                   style={{ backgroundColor: 'rgba(28,25,23,0.92)' }}
                 >
-                  <div
-                    className="mb-1 text-sm text-white"
-                    style={{ fontFamily: 'var(--font-geist-serif)' }}
+                  <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden">
+                    <div
+                      className="mb-0.5 text-[10px] leading-tight text-white line-clamp-2"
+                      style={{ fontFamily: 'var(--font-geist-serif)' }}
+                    >
+                      {title}
+                    </div>
+                    <div className="text-[7px] text-white/50 leading-tight" style={{ fontFamily: 'var(--font-geist-mono)' }}>
+                      {book.lastPage > 0 ? `P.${book.lastPage}/${book.pageCount} \u00B7 ` : ''}{book.pageCount}p \u00B7 {progress}%
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => onOpen(book.fileName)}
+                    className="px-2.5 py-0.5 text-[8px] uppercase tracking-widest transition-all hover:opacity-80"
+                    style={{ backgroundColor: 'white', color: '#1c1917', fontFamily: 'var(--font-geist-mono)' }}
                   >
-                    {title}
-                  </div>
-                  <div className="mb-2 text-[9px] text-white/60" style={{ fontFamily: 'var(--font-geist-mono)' }}>
-                    STATS
-                  </div>
-                  <div className="mb-0.5 text-xs text-white">{book.pageCount} Pages</div>
-                  <div className="text-xs text-white">{statusLabel}</div>
+                    Continue
+                  </button>
                 </div>
               </div>
             </div>
