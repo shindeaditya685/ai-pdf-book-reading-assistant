@@ -48,6 +48,7 @@ type RecentBookshelfProps = {
 export function RecentBookshelf({ onOpen, loadingFileName }: RecentBookshelfProps) {
   const [books, setBooks] = useState<RecentBook[]>([])
   const [loading, setLoading] = useState(true)
+  const [search, setSearch] = useState('')
   const [uploadingCover, setUploadingCover] = useState<string | null>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
   const coverTargetRef = useRef<string | null>(null)
@@ -114,18 +115,43 @@ export function RecentBookshelf({ onOpen, loadingFileName }: RecentBookshelfProp
 
   if (books.length === 0) return null
 
-  const rows = chunk(books, 4)
+  const filtered = search.trim()
+    ? books.filter((b) => titleOf(b.fileName).toLowerCase().includes(search.toLowerCase().trim()))
+    : books
+
+  const rows = chunk(filtered, 4)
 
   return (
     <div className="rounded-lg p-8 py-10" style={{ background: `repeating-linear-gradient(90deg, transparent 0px, transparent 6px, rgba(0,0,0,0.04) 6px, rgba(0,0,0,0.04) 7px), linear-gradient(180deg, #b8a088, #a89078)` }}>
-      <div className="space-y-4">
-        {rows.map((row, rowIdx) => (
-          <div key={rowIdx} className="relative">
-            <div
-              className="grid items-end gap-4 sm:gap-x-6"
-              style={{ gridTemplateColumns: `repeat(4, 1fr)` }}
-            >
-            {row.map((book) => {
+      {/* Search input */}
+      <div className="mb-6">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Find a title..."
+          className="w-full border-b bg-transparent px-1 py-2 placeholder:italic focus:outline-none"
+          style={{
+            borderColor: 'rgba(28,25,23,0.2)',
+            color: 'var(--ink)',
+            fontFamily: 'var(--font-geist-sans)',
+          }}
+        />
+      </div>
+
+      {filtered.length === 0 ? (
+        <p className="text-center italic" style={{ fontFamily: 'var(--font-geist-serif)', color: 'var(--accent-warm)' }}>
+          {search ? `No volumes match "${search}".` : 'Your library is empty.'}
+        </p>
+      ) : (
+        <div className="space-y-4">
+          {rows.map((row, rowIdx) => (
+            <div key={rowIdx} className="relative">
+              <div
+                className="grid items-end gap-4 sm:gap-x-6"
+                style={{ gridTemplateColumns: `repeat(4, 1fr)` }}
+              >
+              {row.map((book) => {
               const title = titleOf(book.fileName)
               const progress = book.pageCount > 0 ? Math.min(100, Math.round((book.lastPage / book.pageCount) * 100)) : 0
               const colorIdx = hashColorIndex(book.fileName)
@@ -284,17 +310,18 @@ export function RecentBookshelf({ onOpen, loadingFileName }: RecentBookshelfProp
             />
           </div>
         </div>
-      ))}
+        ))}
 
-        {/* Hidden file input for cover upload */}
-        <input
-          ref={coverInputRef}
-          type="file"
-          accept="image/jpeg,image/png,image/webp"
-          onChange={handleCoverFile}
-          className="hidden"
-        />
-      </div>
+          {/* Hidden file input for cover upload */}
+          <input
+            ref={coverInputRef}
+            type="file"
+            accept="image/jpeg,image/png,image/webp"
+            onChange={handleCoverFile}
+            className="hidden"
+          />
+        </div>
+      )}
     </div>
   )
 }
