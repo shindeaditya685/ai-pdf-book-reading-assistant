@@ -117,13 +117,14 @@ export function RecentBookshelf({ onOpen, loadingFileName }: RecentBookshelfProp
   const rows = chunk(books, 4)
 
   return (
-    <div className="space-y-4">
-      {rows.map((row, rowIdx) => (
-        <div key={rowIdx} className="relative">
-          <div
-            className="grid items-end gap-4 sm:gap-x-6"
-            style={{ gridTemplateColumns: `repeat(4, 1fr)` }}
-          >
+    <div className="rounded-lg p-8 py-10" style={{ background: `repeating-linear-gradient(90deg, transparent 0px, transparent 6px, rgba(0,0,0,0.04) 6px, rgba(0,0,0,0.04) 7px), linear-gradient(180deg, #b8a088, #a89078)` }}>
+      <div className="space-y-4">
+        {rows.map((row, rowIdx) => (
+          <div key={rowIdx} className="relative">
+            <div
+              className="grid items-end gap-4 sm:gap-x-6"
+              style={{ gridTemplateColumns: `repeat(4, 1fr)` }}
+            >
             {row.map((book) => {
               const title = titleOf(book.fileName)
               const progress = book.pageCount > 0 ? Math.min(100, Math.round((book.lastPage / book.pageCount) * 100)) : 0
@@ -285,14 +286,15 @@ export function RecentBookshelf({ onOpen, loadingFileName }: RecentBookshelfProp
         </div>
       ))}
 
-      {/* Hidden file input for cover upload */}
-      <input
-        ref={coverInputRef}
-        type="file"
-        accept="image/jpeg,image/png,image/webp"
-        onChange={handleCoverFile}
-        className="hidden"
-      />
+        {/* Hidden file input for cover upload */}
+        <input
+          ref={coverInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleCoverFile}
+          className="hidden"
+        />
+      </div>
     </div>
   )
 }
