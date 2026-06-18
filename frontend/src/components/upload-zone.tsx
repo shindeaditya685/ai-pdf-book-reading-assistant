@@ -120,6 +120,15 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
             }),
           })
 
+          // Mark as recently accessed
+          try {
+            await authFetch('/api/db/pdf', {
+              method: 'PATCH',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ fileName: file.name, lastAccessedAt: new Date().toISOString() }),
+            })
+          } catch { /* non-critical */ }
+
           // Generate cover thumbnail from first page
           try {
             const pdfjsLib = await import('pdfjs-dist')
@@ -214,6 +223,11 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
   const handleClear = useCallback(() => {
     clearActiveBook(username)
     usePDFStore.getState().reset()
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('open')
+      window.history.replaceState({}, '', url.toString())
+    }
   }, [username])
 
   if (pdfFileName) {

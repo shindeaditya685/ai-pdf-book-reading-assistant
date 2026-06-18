@@ -17,6 +17,7 @@ import { BookmarksPanel } from '@/components/bookmarks-panel'
 import { FlashcardReview } from '@/components/flashcard-review'
 import { ReadingAnalytics } from '@/components/reading-analytics'
 import { ShareSessionPanel } from '@/components/share-session-panel'
+import { RecentBookshelf } from '@/components/recent-bookshelf'
 import { QuestionGeneratorPanel } from '@/components/question-generator-panel'
 import { SummarizerPanel } from '@/components/summarizer-panel'
 import { ErrorBoundary } from '@/components/error-boundary'
@@ -180,6 +181,13 @@ export default function DashboardPage() {
             }
           }
 
+          // Mark as recently accessed
+          authFetch('/api/db/pdf', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fileName, lastAccessedAt: new Date().toISOString() }),
+          }).catch(() => {})
+
           // Fetch PDF file from the file-serving API route
           const fileRes = await authFetch(`/api/db/pdf/file?fileName=${encodeURIComponent(fileName)}`)
           if (fileRes.ok) {
@@ -212,6 +220,13 @@ export default function DashboardPage() {
 
     openRequestLoadedRef.current = openFileName
     handleLoadRecentPdf(openFileName)
+
+    // Clean the ?open= param from the URL so refresh doesn't re-open
+    if (typeof window !== 'undefined') {
+      const url = new URL(window.location.href)
+      url.searchParams.delete('open')
+      window.history.replaceState({}, '', url.toString())
+    }
   }, [handleLoadRecentPdf, user?.username])
 
   // Load recent PDFs from MongoDB on mount
@@ -750,108 +765,16 @@ export default function DashboardPage() {
                 <div>
                   <div className="inline-flex items-center gap-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground/60">
                     <BookOpen className="h-3 w-3" />
-                    Library
+                    Recent Books
                   </div>
                   <p className="mt-1.5 text-lg font-bold text-foreground">
-                    Continue where you left off
+                    Pick up where you left off
                   </p>
                 </div>
-                <span className="text-xs text-muted-foreground/50">
-                  {recentBookCards.length} book{recentBookCards.length !== 1 ? 's' : ''}
-                </span>
               </div>
-
-              {recentPdfsLoading ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {[1, 2, 3].map((i) => (
-                    <div
-                      key={i}
-                      className="flex min-h-[180px] animate-pulse flex-col justify-between rounded-xl border bg-background/60 p-5"
-                    >
-                      <div className="flex min-w-0 items-start gap-3">
-                        <div className="h-10 w-10 shrink-0 rounded-lg bg-muted/70" />
-                        <div className="min-w-0 flex-1 space-y-2">
-                          <div className="h-3 w-3/4 rounded bg-muted/70" />
-                          <div className="h-2 w-1/2 rounded bg-muted/70" />
-                        </div>
-                      </div>
-                      <div className="mt-4 space-y-2">
-                        <div className="h-2 w-full rounded bg-muted/70" />
-                        <div className="h-4 w-full rounded bg-muted/70" />
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : recentBookCards.length > 0 ? (
-                <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
-                  {recentBookCards.map((pdf) => (
-                    <button
-                      key={pdf.fileName}
-                      onClick={() => handleLoadRecentPdf(pdf.fileName)}
-                      disabled={pdf.isLoading}
-                      className="group relative flex min-h-[180px] flex-col justify-between overflow-hidden rounded-xl border bg-background/60 p-5 text-left shadow-sm transition-all hover:-translate-y-1 hover:border-emerald-400/50 hover:shadow-lg hover:shadow-emerald-500/5 disabled:cursor-wait disabled:opacity-60"
-                    >
-                      <div className="absolute -right-8 -top-8 h-20 w-20 rounded-full bg-emerald-500/5 transition-all group-hover:bg-emerald-500/10" />
-                      <div className="relative flex min-w-0 items-start gap-3">
-                        <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-sm">
-                          {pdf.isLoading ? (
-                            <Loader2 className="h-4 w-4 animate-spin" />
-                          ) : (
-                            <FileText className="h-4 w-4" />
-                          )}
-                        </div>
-                        <div className="min-w-0">
-                          <p className="truncate text-sm font-bold text-foreground" title={pdf.fileName}>
-                            {pdf.fileName}
-                          </p>
-                          <div className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-                            <Clock className="h-3 w-3" />
-                            <span>{timeAgo(pdf.timestamp)}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="relative mt-4">
-                        <div className="mb-2 flex items-center justify-between text-xs text-muted-foreground">
-                          <span>
-                            Page {pdf.lastPage}{pdf.pageCount > 0 ? ` of ${pdf.pageCount}` : ''}
-                          </span>
-                          {pdf.pageCount > 0 && <span className="font-medium text-foreground">{pdf.progress}%</span>}
-                        </div>
-                        <div className="h-2 overflow-hidden rounded-full bg-muted/70">
-                          <div
-                            className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
-                            style={{ width: `${pdf.pageCount > 0 ? pdf.progress : 12}%` }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="relative mt-4 flex items-center justify-between gap-3 text-xs text-muted-foreground">
-                        <div className="flex min-w-0 items-center gap-3">
-                          <span className="inline-flex items-center gap-1.5">
-                            <BookOpen className="h-3.5 w-3.5 text-emerald-500" />
-                            {pdf.wordCount}
-                          </span>
-                          <span className="inline-flex items-center gap-1.5">
-                            <Bookmark className="h-3.5 w-3.5 text-amber-500" />
-                            {pdf.bookmarkCount}
-                          </span>
-                        </div>
-                        <ArrowRight className="h-4 w-4 shrink-0 text-emerald-500 transition-all group-hover:translate-x-1" />
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              ) : (
-                <div className="relative overflow-hidden rounded-xl border border-dashed bg-gradient-to-br from-background to-muted/30 p-10 text-center">
-                  <div className="absolute -left-10 -top-10 h-32 w-32 rounded-full bg-emerald-500/5 blur-2xl" />
-                  <div className="relative mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-muted/50">
-                    <BookOpen className="h-7 w-7 text-muted-foreground/40" />
-                  </div>
-                  <h3 className="mt-4 text-base font-bold text-foreground">No recent books yet</h3>
-                  <p className="mt-1 text-sm text-muted-foreground/60">Upload a PDF above and your library will appear here.</p>
-                </div>
-              )}
+              <div className="max-w-3xl">
+                <RecentBookshelf onOpen={(fileName) => handleLoadRecentPdf(fileName)} />
+              </div>
             </section>
           </div>
         </main>
