@@ -773,7 +773,7 @@ export default function DashboardPage() {
                 </div>
               </div>
               <div className="max-w-3xl">
-                <RecentBookshelf onOpen={(fileName) => handleLoadRecentPdf(fileName)} />
+                <RecentBookshelf onOpen={(fileName) => handleLoadRecentPdf(fileName)} loadingFileName={recentLoading} />
               </div>
             </section>
           </div>

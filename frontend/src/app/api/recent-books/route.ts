@@ -17,7 +17,6 @@ export async function GET(request: Request) {
         { projection: { content: 0, ocrText: 0 } }
       )
       .sort({ lastAccessedAt: -1 })
-      .limit(4)
       .toArray()
 
     const books = pdfs.map((pdf) => ({

@@ -37,9 +37,10 @@ function titleOf(fileName: string) {
 
 type RecentBookshelfProps = {
   onOpen: (fileName: string) => void
+  loadingFileName?: string | null
 }
 
-export function RecentBookshelf({ onOpen }: RecentBookshelfProps) {
+export function RecentBookshelf({ onOpen, loadingFileName }: RecentBookshelfProps) {
   const [books, setBooks] = useState<RecentBook[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -75,10 +76,10 @@ export function RecentBookshelf({ onOpen }: RecentBookshelfProps) {
   ]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
       <div
-        className="grid items-end gap-x-6 px-1"
-        style={{ gridTemplateColumns: `repeat(${Math.min(5, allTiles.length)}, minmax(0, 1fr))` }}
+        className="grid items-end gap-4 sm:gap-x-6"
+        style={{ gridTemplateColumns: `repeat(auto-fill, minmax(80px, 1fr))` }}
       >
         {allTiles.map((book, i) => {
           if (book === null) {
@@ -163,6 +164,16 @@ export function RecentBookshelf({ onOpen }: RecentBookshelfProps) {
                   <div className="h-full bg-white transition-all duration-500" style={{ width: `${progress}%` }} />
                 </div>
 
+                {/* Loading overlay */}
+                {loadingFileName === book.fileName && (
+                  <div
+                    className="absolute inset-0 z-30 flex items-center justify-center"
+                    style={{ backgroundColor: 'rgba(28,25,23,0.85)' }}
+                  >
+                    <Loader2 className="h-5 w-5 animate-spin text-white" />
+                  </div>
+                )}
+
                 <div
                   className="absolute inset-0 flex flex-col items-center justify-center p-4 text-center opacity-0 transition-opacity duration-300 group-hover:opacity-100"
                   style={{ backgroundColor: 'rgba(28,25,23,0.92)' }}
@@ -184,6 +195,40 @@ export function RecentBookshelf({ onOpen }: RecentBookshelfProps) {
           )
         })}
       </div>
+
+      {/* Wooden shelf board */}
+      <div className="relative -mt-2">
+        <div
+          className="h-[6px] w-full"
+          style={{
+            background: 'linear-gradient(180deg, #c89a6a 0%, #a37242 40%, #7a4f29 100%)',
+            boxShadow: 'inset 0 1px 0 rgba(255,255,255,0.35)',
+          }}
+        />
+        <div
+          className="relative h-[20px] w-full"
+          style={{
+            background:
+              'repeating-linear-gradient(90deg, #6b3f1f 0px, #7a4a26 2px, #5e3618 4px, #6b3f1f 7px, #7a4a26 10px), linear-gradient(180deg, #6b3f1f 0%, #4a2a12 100%)',
+            backgroundBlendMode: 'multiply',
+            boxShadow:
+              'inset 0 2px 4px rgba(255,255,255,0.08), inset 0 -2px 6px rgba(0,0,0,0.5), 0 8px 14px -6px rgba(0,0,0,0.45)',
+          }}
+        >
+          <div
+            className="pointer-events-none absolute top-1/2 h-[8px] w-[20px] -translate-y-1/2 rounded-full opacity-40"
+            style={{
+              left: '22%',
+              background: 'radial-gradient(ellipse at center, #2a1808 0%, transparent 70%)',
+            }}
+          />
+        </div>
+        <div
+          className="h-[8px] w-full opacity-50"
+          style={{ background: 'linear-gradient(180deg, rgba(0,0,0,0.35) 0%, rgba(0,0,0,0) 100%)' }}
+        />
+      </div>
+
     </div>
   )
 }

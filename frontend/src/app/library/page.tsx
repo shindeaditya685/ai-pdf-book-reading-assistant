@@ -88,6 +88,7 @@ export default function LibraryPage() {
   const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null)
   const [uploadingCover, setUploadingCover] = useState<string | null>(null)
   const [addBookLoading, setAddBookLoading] = useState(false)
+  const [bookOpening, setBookOpening] = useState<string | null>(null)
   const coverInputRef = useRef<HTMLInputElement>(null)
   const coverTargetRef = useRef<string | null>(null)
   const pdfInputRef = useRef<HTMLInputElement>(null)
@@ -120,7 +121,8 @@ export default function LibraryPage() {
   }
 
   const handleOpen = (fileName: string) => {
-    router.push(`/dashboard?open=${encodeURIComponent(fileName)}`)
+    setBookOpening(fileName)
+    setTimeout(() => router.push(`/dashboard?open=${encodeURIComponent(fileName)}`), 100)
   }
 
   const filtered = useMemo(() => {
@@ -430,6 +432,16 @@ export default function LibraryPage() {
                         <div className="absolute bottom-0 left-0 h-1 w-full bg-black/30">
                           <div className="h-full bg-white transition-all duration-500" style={{ width: `${progress}%` }} />
                         </div>
+
+                        {/* Loading overlay */}
+                        {bookOpening === book.fileName && (
+                          <div
+                            className="absolute inset-0 z-30 flex items-center justify-center"
+                            style={{ backgroundColor: 'rgba(28,25,23,0.85)' }}
+                          >
+                            <Loader2 className="h-5 w-5 animate-spin text-white" />
+                          </div>
+                        )}
 
                         {/* Hover overlay */}
                         <div
