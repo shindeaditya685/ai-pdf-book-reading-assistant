@@ -18,6 +18,7 @@ import { FlashcardReview } from '@/components/flashcard-review'
 import { ReadingAnalytics } from '@/components/reading-analytics'
 import { ShareSessionPanel } from '@/components/share-session-panel'
 import { RecentBookshelf } from '@/components/recent-bookshelf'
+import { StarsBackground } from '@/components/stars-background'
 import { ReadingStatsRow } from '@/components/reading-stats-row'
 import { ReadingChallenge } from '@/components/reading-challenge'
 import { QuestionGeneratorPanel } from '@/components/question-generator-panel'
@@ -644,6 +645,7 @@ export default function DashboardPage() {
         </main>
       ) : (
         <main className="flex-1 overflow-auto relative">
+          <StarsBackground />
           <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--emerald-500)/0.05)_0%,transparent_40%,hsl(var(--background))_100%)]" />
           <div className="relative mx-auto flex min-h-full w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 lg:px-8">
             <section className="grid items-start gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
