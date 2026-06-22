@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight, Sparkles, Crown, FlaskConical, Rocket, MessageSquareQuote, Download, BarChart3, History, CheckCircle, XCircle, UserCog, UserMinus, UserPlus, LogOut, KeyRound } from 'lucide-react'
+import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight, Sparkles, Crown, FlaskConical, Rocket, MessageSquareQuote, Download, BarChart3, History, CheckCircle, XCircle, UserCog, UserMinus, UserPlus, LogOut, KeyRound, Megaphone, CheckCheck, Square, CheckSquare } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 import { PLAN_LABELS, PLAN_DESCRIPTIONS, type AIPlan } from '@/lib/ai-plan'
@@ -72,6 +72,16 @@ interface AuditEntry {
   createdAt: string
 }
 
+interface Announcement {
+  _id: string
+  title: string
+  body: string
+  createdBy: string
+  createdAt: string
+  expiresAt: string | null
+  active: boolean
+}
+
 const ACTION_LABELS: Record<string, string> = {
   delete_user: 'Deleted User',
   promote_admin: 'Promoted to Admin',
@@ -79,6 +89,9 @@ const ACTION_LABELS: Record<string, string> = {
   change_plan: 'Changed Plan',
   grant_access: 'Granted Access',
   dismiss_access: 'Dismissed Request',
+  bulk_plan_change: 'Bulk Plan Change',
+  create_announcement: 'Created Announcement',
+  delete_announcement: 'Deleted Announcement',
 }
 
 const ACTION_ICONS: Record<string, any> = {
@@ -88,6 +101,9 @@ const ACTION_ICONS: Record<string, any> = {
   change_plan: KeyRound,
   grant_access: CheckCircle,
   dismiss_access: XCircle,
+  bulk_plan_change: Users,
+  create_announcement: Megaphone,
+  delete_announcement: Trash2,
 }
 
 const ACTION_COLORS: Record<string, string> = {
@@ -97,6 +113,9 @@ const ACTION_COLORS: Record<string, string> = {
   change_plan: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20',
   grant_access: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20',
   dismiss_access: 'text-orange-500 bg-orange-50 dark:bg-orange-950/20',
+  bulk_plan_change: 'text-cyan-500 bg-cyan-50 dark:bg-cyan-950/20',
+  create_announcement: 'text-pink-500 bg-pink-50 dark:bg-pink-950/20',
+  delete_announcement: 'text-rose-500 bg-rose-50 dark:bg-rose-950/20',
 }
 
 export default function AdminPage() {
@@ -107,6 +126,7 @@ export default function AdminPage() {
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([])
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([])
+  const [announcements, setAnnouncements] = useState<Announcement[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -127,6 +147,21 @@ export default function AdminPage() {
   const [dismissError, setDismissError] = useState('')
   const [expandedMessages, setExpandedMessages] = useState<Record<string, boolean>>({})
 
+  // Announcement creation state
+  const [announceTitle, setAnnounceTitle] = useState('')
+  const [announceBody, setAnnounceBody] = useState('')
+  const [announceExpiry, setAnnounceExpiry] = useState('')
+  const [announceSubmitting, setAnnounceSubmitting] = useState(false)
+
+  // Bulk selection state
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
+  const [bulkPlanDialog, setBulkPlanDialog] = useState<{ plan?: AIPlan } | null>(null)
+
+  // Bulk plan change dialog state (reuses existing confirmAction pattern)
+  const [bulkConfirmAction, setBulkConfirmAction] = useState<{
+    plan: AIPlan
+  } | null>(null)
+
   useEffect(() => {
     if (authLoading) return
     if (!user) { router.push('/login'); return }
@@ -134,12 +169,13 @@ export default function AdminPage() {
 
     const load = async () => {
       try {
-        const [usersRes, statsRes, requestsRes, analyticsRes, auditRes] = await Promise.all([
+        const [usersRes, statsRes, requestsRes, analyticsRes, auditRes, annRes] = await Promise.all([
           authFetch('/api/admin/users'),
           authFetch('/api/admin/stats'),
           authFetch('/api/admin/access-requests').catch(() => null),
           authFetch('/api/admin/analytics').catch(() => null),
           authFetch('/api/admin/audit-log').catch(() => null),
+          authFetch('/api/admin/announcements').catch(() => null),
         ])
         if (!usersRes.ok || !statsRes.ok) { setError('Failed to load data'); return }
         const usersData = await usersRes.json()
@@ -147,11 +183,13 @@ export default function AdminPage() {
         const requestsData = requestsRes?.ok ? await requestsRes.json() : { requests: [] }
         const analyticsData = analyticsRes?.ok ? await analyticsRes.json() : null
         const auditData = auditRes?.ok ? await auditRes.json() : { entries: [] }
+        const annData = annRes?.ok ? await annRes.json() : { announcements: [] }
         setUsers(usersData.users || [])
         setStats(statsData.stats || null)
         setAccessRequests((requestsData.requests || []).filter((r: AccessRequest) => r.status === 'pending'))
         setAnalytics(analyticsData)
         setAuditLog(auditData.entries || [])
+        setAnnouncements(annData.announcements || [])
       } catch {
         setError('Failed to load data')
       } finally {
@@ -224,6 +262,75 @@ export default function AdminPage() {
     } else {
       const data = await res.json().catch(() => ({}))
       setDismissError(data?.error || 'Failed to dismiss request')
+    }
+  }
+
+  const handleCreateAnnouncement = async () => {
+    if (!announceTitle.trim() || !announceBody.trim()) return
+    setAnnounceSubmitting(true)
+    const res = await authFetch('/api/admin/announcements', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        title: announceTitle.trim(),
+        body: announceBody.trim(),
+        expiresAt: announceExpiry || null,
+      }),
+    })
+    setAnnounceSubmitting(false)
+    if (res.ok) {
+      const data = await res.json()
+      setAnnouncements((prev) => [data.announcement, ...prev])
+      setAnnounceTitle('')
+      setAnnounceBody('')
+      setAnnounceExpiry('')
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data?.error || 'Failed to create announcement')
+    }
+  }
+
+  const handleDeleteAnnouncement = async (id: string) => {
+    const res = await authFetch(`/api/admin/announcements/${id}`, { method: 'DELETE' })
+    if (res.ok) {
+      setAnnouncements((prev) => prev.filter((a) => a._id !== id))
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data?.error || 'Failed to delete announcement')
+    }
+  }
+
+  const handleBulkPlanChange = async (plan: AIPlan) => {
+    const userIds = Array.from(selectedIds)
+    const res = await authFetch('/api/admin/users/bulk', {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ userIds, plan }),
+    })
+    if (res.ok) {
+      setUsers((prev) => prev.map((u) => selectedIds.has(u._id) ? { ...u, plan } : u))
+      setSelectedIds(new Set())
+      setBulkConfirmAction(null)
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data?.error || 'Failed to change plans')
+    }
+  }
+
+  const toggleSelectUser = (id: string) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev)
+      if (next.has(id)) next.delete(id)
+      else next.add(id)
+      return next
+    })
+  }
+
+  const toggleSelectAll = () => {
+    if (selectedIds.size === paginatedUsers.length) {
+      setSelectedIds(new Set())
+    } else {
+      setSelectedIds(new Set(paginatedUsers.map((u) => u._id)))
     }
   }
 
@@ -500,6 +607,87 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* ── ANNOUNCEMENTS ── */}
+        <div className="mb-6 rounded-xl border bg-background/60 shadow-sm backdrop-blur-sm">
+          <div className="flex items-center gap-2 border-b border-border/40 p-4">
+            <Megaphone className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-bold text-foreground">Announcements</h2>
+            <span className="text-[10px] text-muted-foreground/60">Broadcast messages to all users</span>
+          </div>
+          <div className="p-4">
+            <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_1fr_auto]">
+              <input
+                type="text"
+                value={announceTitle}
+                onChange={(e) => setAnnounceTitle(e.target.value)}
+                placeholder="Announcement title..."
+                className="h-9 rounded-lg border border-border/60 bg-background/80 px-3 text-sm outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+              />
+              <input
+                type="text"
+                value={announceBody}
+                onChange={(e) => setAnnounceBody(e.target.value)}
+                placeholder="Message body..."
+                className="h-9 rounded-lg border border-border/60 bg-background/80 px-3 text-sm outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+              />
+              <div className="flex items-center gap-2">
+                <input
+                  type="date"
+                  value={announceExpiry}
+                  onChange={(e) => setAnnounceExpiry(e.target.value)}
+                  className="h-9 rounded-lg border border-border/60 bg-background/80 px-3 text-sm outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+                  title="Expiry date (optional)"
+                />
+                <button
+                  onClick={handleCreateAnnouncement}
+                  disabled={announceSubmitting || !announceTitle.trim() || !announceBody.trim()}
+                  className="flex h-9 items-center gap-1.5 rounded-lg bg-violet-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-violet-700 disabled:opacity-40"
+                >
+                  {announceSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Megaphone className="h-3.5 w-3.5" />}
+                  Send
+                </button>
+              </div>
+            </div>
+
+            {announcements.length > 0 ? (
+              <div className="space-y-2">
+                {announcements.map((a) => (
+                  <div key={a._id} className="flex items-start justify-between rounded-lg border border-border/30 bg-muted/20 p-3">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <p className="text-sm font-semibold text-foreground">{a.title}</p>
+                        {a.expiresAt && new Date(a.expiresAt) > new Date() && (
+                          <span className="rounded-full bg-emerald-100 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-400">Active</span>
+                        )}
+                        {a.expiresAt && new Date(a.expiresAt) <= new Date() && (
+                          <span className="rounded-full bg-muted px-1.5 py-0.5 text-[9px] font-semibold text-muted-foreground">Expired</span>
+                        )}
+                        {!a.expiresAt && (
+                          <span className="rounded-full bg-violet-100 px-1.5 py-0.5 text-[9px] font-semibold text-violet-700 dark:bg-violet-900/20 dark:text-violet-400">Ongoing</span>
+                        )}
+                      </div>
+                      <p className="mt-0.5 text-xs text-muted-foreground/70">{a.body}</p>
+                      <p className="mt-1 text-[10px] text-muted-foreground/40">
+                        By {a.createdBy} &middot; {new Date(a.createdAt).toLocaleDateString()}
+                        {a.expiresAt && <> &middot; Expires {new Date(a.expiresAt).toLocaleDateString()}</>}
+                      </p>
+                    </div>
+                    <button
+                      onClick={() => handleDeleteAnnouncement(a._id)}
+                      className="ml-3 rounded-md p-1.5 text-muted-foreground/40 transition-colors hover:bg-red-50 hover:text-red-500 dark:hover:bg-red-950/20"
+                      title="Delete announcement"
+                    >
+                      <Trash2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            ) : (
+              <p className="text-center text-xs text-muted-foreground/50">No announcements yet. Create one above.</p>
+            )}
+          </div>
+        </div>
+
         {/* ── USERS TABLE ── */}
         <div className="rounded-xl border bg-background/60 shadow-sm backdrop-blur-sm">
           <div className="flex flex-col gap-4 border-b border-border/40 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -529,10 +717,39 @@ export default function AdminPage() {
             </div>
           </div>
 
+          {selectedIds.size > 0 && (
+            <div className="flex items-center gap-3 border-b border-border/40 bg-violet-50/50 px-4 py-2 dark:bg-violet-950/10">
+              <p className="text-xs text-muted-foreground">
+                <span className="font-semibold text-foreground">{selectedIds.size}</span> selected
+              </p>
+              <div className="h-3 w-px bg-border/40" />
+              <button
+                onClick={() => setBulkConfirmAction({ plan: 'free' as AIPlan })}
+                className="rounded-md bg-violet-600 px-3 py-1 text-[10px] font-semibold text-white transition-colors hover:bg-violet-700"
+              >
+                Change Plan
+              </button>
+              <button
+                onClick={() => setSelectedIds(new Set())}
+                className="rounded-md px-3 py-1 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              >
+                Clear
+              </button>
+            </div>
+          )}
+
           <div className="overflow-x-auto">
             <table className="w-full text-left text-xs">
               <thead>
                 <tr className="border-b border-border/30 text-muted-foreground/60">
+                  <th className="w-10 px-2 py-3">
+                    <button onClick={toggleSelectAll} className="flex items-center justify-center">
+                      {selectedIds.size === paginatedUsers.length && paginatedUsers.length > 0
+                        ? <CheckSquare className="h-4 w-4 text-violet-500" />
+                        : <Square className="h-4 w-4 text-muted-foreground/50" />
+                      }
+                    </button>
+                  </th>
                   <th className="px-4 py-3 font-semibold uppercase tracking-wider">Username</th>
                   <th className="px-4 py-3 font-semibold uppercase tracking-wider">Role</th>
                   <th className="px-4 py-3 font-semibold uppercase tracking-wider">Plan</th>
@@ -546,7 +763,15 @@ export default function AdminPage() {
               </thead>
               <tbody>
                 {paginatedUsers.map((u) => (
-                  <tr key={u._id} className="border-b border-border/20 transition-colors hover:bg-muted/30">
+                  <tr key={u._id} className={`border-b border-border/20 transition-colors hover:bg-muted/30 ${selectedIds.has(u._id) ? 'bg-violet-50/50 dark:bg-violet-950/10' : ''}`}>
+                    <td className="px-2 py-3">
+                      <button onClick={() => toggleSelectUser(u._id)} className="flex items-center justify-center">
+                        {selectedIds.has(u._id)
+                          ? <CheckSquare className="h-4 w-4 text-violet-500" />
+                          : <Square className="h-4 w-4 text-muted-foreground/30" />
+                        }
+                      </button>
+                    </td>
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-violet-500 to-violet-600 shadow-sm">
@@ -842,6 +1067,41 @@ export default function AdminPage() {
               {dismissing && <Loader2 className="mr-1.5 h-3 w-3 animate-spin" />}
               {dismissing ? 'Dismissing…' : 'Dismiss request'}
             </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* ── BULK PLAN CHANGE DIALOG ── */}
+      <AlertDialog open={!!bulkConfirmAction} onOpenChange={() => setBulkConfirmAction(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Change Plan for {selectedIds.size} Users</AlertDialogTitle>
+            <AlertDialogDescription>
+              Select a new plan for all <strong>{selectedIds.size}</strong> selected users. Changes take effect immediately.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <div className="mt-1 grid gap-2">
+            {(['free', 'pro', 'beta', 'founder'] as AIPlan[]).map((p) => (
+              <button
+                key={p}
+                onClick={() => {
+                  setBulkConfirmAction(null)
+                  handleBulkPlanChange(p)
+                }}
+                className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left text-xs transition-colors hover:bg-muted/50 ${
+                  bulkConfirmAction?.plan === p ? 'border-violet-500/40 bg-violet-500/5' : 'border-border/60'
+                }`}
+              >
+                <span className="flex items-center gap-2 font-semibold">
+                  {planIcon(p)}
+                  {PLAN_LABELS[p]}
+                </span>
+                <span className="text-muted-foreground/70">{PLAN_DESCRIPTIONS[p]}</span>
+              </button>
+            ))}
+          </div>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>

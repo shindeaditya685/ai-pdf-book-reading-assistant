@@ -137,6 +137,25 @@ export default function DashboardPage() {
     timestamp: number
   } | null>(null)
   const [dismissedResume, setDismissedResume] = useState(true)
+  const [announcements, setAnnouncements] = useState<{ _id: string; title: string; body: string }[]>([])
+  const [dismissedAnnouncements, setDismissedAnnouncements] = useState<Set<string>>(() => {
+    if (typeof window === 'undefined') return new Set()
+    try {
+      const stored = localStorage.getItem('dismissed-announcements')
+      return stored ? new Set(JSON.parse(stored)) : new Set()
+    } catch {
+      return new Set()
+    }
+  })
+
+  const dismissAnnouncement = (id: string) => {
+    setDismissedAnnouncements((prev) => {
+      const next = new Set(prev)
+      next.add(id)
+      try { localStorage.setItem('dismissed-announcements', JSON.stringify(Array.from(next))) } catch {}
+      return next
+    })
+  }
 
   const dataLoadedRef = useRef<string | null>(null)
   const recentLoadedRef = useRef<string | null>(null)
@@ -359,6 +378,13 @@ export default function DashboardPage() {
       })
     }).catch(() => {})
   }, [setStreakCount])
+
+  // Fetch active announcements
+  useEffect(() => {
+    authFetch('/api/announcements').then((res) => {
+      if (res.ok) res.json().then((data) => setAnnouncements(data.announcements || []))
+    }).catch(() => {})
+  }, [])
 
   // Real-time share session sync
   useShareSSE()
@@ -682,6 +708,20 @@ export default function DashboardPage() {
                 <UploadZone variant="panel" />
               </aside>
             </section>
+
+            {announcements.filter((a) => !dismissedAnnouncements.has(a._id)).map((a) => (
+              <div key={a._id} className="relative rounded-xl border border-violet-200/40 bg-gradient-to-r from-violet-50/80 to-fuchsia-50/80 px-5 py-4 pr-12 shadow-sm dark:border-violet-800/20 dark:from-violet-950/20 dark:to-fuchsia-950/20">
+                <button
+                  onClick={() => dismissAnnouncement(a._id)}
+                  className="absolute right-3 top-3 rounded-md p-1 text-violet-400 transition-colors hover:bg-violet-200/50 hover:text-violet-700 dark:hover:bg-violet-800/30 dark:hover:text-violet-300"
+                  title="Dismiss"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <p className="text-xs font-bold uppercase tracking-wider text-violet-700 dark:text-violet-400">{a.title}</p>
+                <p className="mt-1 text-sm text-muted-foreground">{a.body}</p>
+              </div>
+            ))}
 
             {resumeBook && !dismissedResume && (
               <div className="relative overflow-hidden border p-6" style={{ backgroundColor: 'var(--canvas)', borderColor: 'var(--paper-border)' }}>

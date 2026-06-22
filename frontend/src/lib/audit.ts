@@ -7,6 +7,9 @@ export type AuditAction =
   | 'change_plan'
   | 'grant_access'
   | 'dismiss_access'
+  | 'bulk_plan_change'
+  | 'create_announcement'
+  | 'delete_announcement'
 
 export async function logAudit(opts: {
   adminUsername: string
