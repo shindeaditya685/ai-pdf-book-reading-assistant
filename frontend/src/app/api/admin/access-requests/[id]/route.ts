@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/admin'
 import { connectToDatabase } from '@/lib/db'
 import { ObjectId } from 'mongodb'
 import { MIN_DISMISS_REASON, MAX_DISMISS_REASON } from '@/lib/access-request'
+import { logAudit } from '@/lib/audit'
 
 export async function PATCH(
   request: Request,
@@ -31,7 +32,12 @@ export async function PATCH(
       return NextResponse.json({ error: 'Invalid request id' }, { status: 400 })
     }
 
-    const result = await conn.db.collection('accessRequests').updateOne(
+    const accessRequest = await conn.db.collection('accessRequests').findOne({ _id: objectId })
+    if (!accessRequest) {
+      return NextResponse.json({ error: 'Request not found' }, { status: 404 })
+    }
+
+    await conn.db.collection('accessRequests').updateOne(
       { _id: objectId },
       {
         $set: {
@@ -42,9 +48,14 @@ export async function PATCH(
         },
       }
     )
-    if (result.matchedCount === 0) {
-      return NextResponse.json({ error: 'Request not found' }, { status: 404 })
-    }
+
+    await logAudit({
+      adminUsername: admin.username,
+      action: 'dismiss_access',
+      targetUsername: accessRequest.username || accessRequest.userId?.toString() || 'unknown',
+      details: reason.slice(0, 100),
+    })
+
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })

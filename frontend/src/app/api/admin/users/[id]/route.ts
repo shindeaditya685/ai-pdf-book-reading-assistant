@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/admin'
 import { connectToDatabase } from '@/lib/db'
 import { ObjectId } from 'mongodb'
 import { isAIPlan, type AIPlan } from '@/lib/ai-plan'
+import { logAudit } from '@/lib/audit'
 
 const ALLOWED_PLANS: AIPlan[] = ['free', 'pro', 'beta', 'admin', 'founder']
 
@@ -46,10 +47,17 @@ export async function PATCH(
     )
 
     // If the user had a pending access request, mark it granted
-    await conn.db.collection('accessRequests').updateOne(
+    const grantResult = await conn.db.collection('accessRequests').updateOne(
       { userId: objectId, status: 'pending' },
       { $set: { status: 'granted', grantedAt: new Date(), grantedPlan: plan, grantedBy: admin.username } }
     )
+
+    await logAudit({
+      adminUsername: admin.username,
+      action: grantResult.matchedCount > 0 ? 'grant_access' : 'change_plan',
+      targetUsername: user.username,
+      details: `Plan set to ${plan}`,
+    })
 
     return NextResponse.json({ success: true, username: user.username, plan })
   } catch {
@@ -79,6 +87,13 @@ export async function DELETE(
     }
 
     await conn.db.collection('users').deleteOne({ _id: objectId })
+
+    await logAudit({
+      adminUsername: admin.username,
+      action: 'delete_user',
+      targetUsername: user.username,
+    })
+
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ error: 'Something went wrong' }, { status: 500 })

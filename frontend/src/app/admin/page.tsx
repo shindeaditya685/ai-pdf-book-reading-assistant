@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight, Sparkles, Crown, FlaskConical, Rocket, MessageSquareQuote } from 'lucide-react'
+import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight, Sparkles, Crown, FlaskConical, Rocket, MessageSquareQuote, Download, BarChart3, History, CheckCircle, XCircle, UserCog, UserMinus, UserPlus, LogOut, KeyRound } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 import { PLAN_LABELS, PLAN_DESCRIPTIONS, type AIPlan } from '@/lib/ai-plan'
@@ -57,12 +57,56 @@ interface PlatformStats {
   shareSessions: number
 }
 
+interface AnalyticsData {
+  userSignups: { date: string; count: number }[]
+  pdfUploads: { date: string; count: number }[]
+  planBreakdown: { plan: string; count: number }[]
+}
+
+interface AuditEntry {
+  _id: string
+  adminUsername: string
+  action: string
+  targetUsername: string
+  details: string
+  createdAt: string
+}
+
+const ACTION_LABELS: Record<string, string> = {
+  delete_user: 'Deleted User',
+  promote_admin: 'Promoted to Admin',
+  revoke_admin: 'Revoked Admin',
+  change_plan: 'Changed Plan',
+  grant_access: 'Granted Access',
+  dismiss_access: 'Dismissed Request',
+}
+
+const ACTION_ICONS: Record<string, any> = {
+  delete_user: UserMinus,
+  promote_admin: UserPlus,
+  revoke_admin: UserCog,
+  change_plan: KeyRound,
+  grant_access: CheckCircle,
+  dismiss_access: XCircle,
+}
+
+const ACTION_COLORS: Record<string, string> = {
+  delete_user: 'text-red-500 bg-red-50 dark:bg-red-950/20',
+  promote_admin: 'text-violet-500 bg-violet-50 dark:bg-violet-950/20',
+  revoke_admin: 'text-amber-500 bg-amber-50 dark:bg-amber-950/20',
+  change_plan: 'text-blue-500 bg-blue-50 dark:bg-blue-950/20',
+  grant_access: 'text-emerald-500 bg-emerald-50 dark:bg-emerald-950/20',
+  dismiss_access: 'text-orange-500 bg-orange-50 dark:bg-orange-950/20',
+}
+
 export default function AdminPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
   const [users, setUsers] = useState<AppUser[]>([])
   const [stats, setStats] = useState<PlatformStats | null>(null)
   const [accessRequests, setAccessRequests] = useState<AccessRequest[]>([])
+  const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
+  const [auditLog, setAuditLog] = useState<AuditEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -90,18 +134,24 @@ export default function AdminPage() {
 
     const load = async () => {
       try {
-        const [usersRes, statsRes, requestsRes] = await Promise.all([
+        const [usersRes, statsRes, requestsRes, analyticsRes, auditRes] = await Promise.all([
           authFetch('/api/admin/users'),
           authFetch('/api/admin/stats'),
           authFetch('/api/admin/access-requests').catch(() => null),
+          authFetch('/api/admin/analytics').catch(() => null),
+          authFetch('/api/admin/audit-log').catch(() => null),
         ])
         if (!usersRes.ok || !statsRes.ok) { setError('Failed to load data'); return }
         const usersData = await usersRes.json()
         const statsData = await statsRes.json()
         const requestsData = requestsRes?.ok ? await requestsRes.json() : { requests: [] }
+        const analyticsData = analyticsRes?.ok ? await analyticsRes.json() : null
+        const auditData = auditRes?.ok ? await auditRes.json() : { entries: [] }
         setUsers(usersData.users || [])
         setStats(statsData.stats || null)
         setAccessRequests((requestsData.requests || []).filter((r: AccessRequest) => r.status === 'pending'))
+        setAnalytics(analyticsData)
+        setAuditLog(auditData.entries || [])
       } catch {
         setError('Failed to load data')
       } finally {
@@ -203,6 +253,28 @@ export default function AdminPage() {
   // Reset to page 1 when search changes
    
   useEffect(() => { setPage(1) }, [search])
+
+  const exportCSV = () => {
+    const headers = ['Username', 'Role', 'Plan', 'Joined', 'PDFs', 'Words', 'Bookmarks', 'Annotations']
+    const rows = users.map((u) => [
+      u.username,
+      u.isAdmin ? 'Admin' : 'User',
+      PLAN_LABELS[u.plan || 'free'],
+      new Date(u.createdAt).toLocaleDateString(),
+      u.stats.pdfs,
+      u.stats.words,
+      u.stats.bookmarks,
+      u.stats.annotations,
+    ])
+    const csv = [headers.join(','), ...rows.map((r) => r.join(','))].join('\n')
+    const blob = new Blob([csv], { type: 'text/csv' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = `admin-users-${new Date().toISOString().slice(0, 10)}.csv`
+    a.click()
+    URL.revokeObjectURL(url)
+  }
    
 
   if (authLoading || loading) {
@@ -339,6 +411,95 @@ export default function AdminPage() {
           </div>
         )}
 
+        {/* ── ANALYTICS CHARTS ── */}
+        {analytics && (
+          <div className="mb-8 grid gap-6 lg:grid-cols-[1fr_auto]">
+            {/* Daily Activity */}
+            <div className="rounded-xl border bg-background/60 p-5 shadow-sm backdrop-blur-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-bold text-foreground">Daily Activity (30 days)</h2>
+              </div>
+              <div className="space-y-4">
+                {[
+                  { label: 'New Users', data: analytics.userSignups, color: '#6366f1' },
+                  { label: 'PDF Uploads', data: analytics.pdfUploads, color: '#10b981' },
+                ].map((series) => {
+                  const max = Math.max(...series.data.map((d) => d.count), 1)
+                  return (
+                    <div key={series.label}>
+                      <p className="mb-1.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/70">{series.label}</p>
+                      <div className="flex items-end gap-0.5 h-16">
+                        {series.data.map((d) => (
+                          <div
+                            key={d.date}
+                            className="flex-1 rounded-t transition-all hover:opacity-80"
+                            style={{
+                              height: `${(d.count / max) * 100}%`,
+                              backgroundColor: series.color,
+                              opacity: 0.3 + (d.count / max) * 0.7,
+                              minHeight: d.count > 0 ? 4 : 0,
+                            }}
+                            title={`${d.date}: ${d.count}`}
+                          />
+                        ))}
+                      </div>
+                    </div>
+                  )
+                })}
+              </div>
+            </div>
+
+            {/* Plan Breakdown */}
+            <div className="w-64 rounded-xl border bg-background/60 p-5 shadow-sm backdrop-blur-sm">
+              <div className="mb-4 flex items-center gap-2">
+                <Users className="h-4 w-4 text-muted-foreground" />
+                <h2 className="text-sm font-bold text-foreground">Plans</h2>
+              </div>
+              {(() => {
+                const total = analytics.planBreakdown.reduce((s, p) => s + p.count, 0)
+                const colors = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6']
+                let cumulative = 0
+                return (
+                  <div className="space-y-3">
+                    <div className="flex h-4 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'var(--border)' }}>
+                      {analytics.planBreakdown.map((p, i) => {
+                        const pct = (p.count / total) * 100
+                        const start = cumulative
+                        cumulative += pct
+                        return (
+                          <div
+                            key={p.plan}
+                            style={{
+                              width: `${pct}%`,
+                              backgroundColor: colors[i % colors.length],
+                            }}
+                            title={`${p.plan}: ${p.count}`}
+                          />
+                        )
+                      })}
+                    </div>
+                    <div className="space-y-1.5">
+                      {analytics.planBreakdown.map((p, i) => {
+                        const pct = total > 0 ? Math.round((p.count / total) * 100) : 0
+                        return (
+                          <div key={p.plan} className="flex items-center justify-between text-xs">
+                            <span className="flex items-center gap-2">
+                              <span className="inline-block h-2 w-2 rounded-full" style={{ backgroundColor: colors[i % colors.length] }} />
+                              <span className="font-medium capitalize text-foreground">{PLAN_LABELS[p.plan as AIPlan] || p.plan}</span>
+                            </span>
+                            <span className="tabular-nums text-muted-foreground">{p.count} ({pct}%)</span>
+                          </div>
+                        )
+                      })}
+                    </div>
+                  </div>
+                )
+              })()}
+            </div>
+          </div>
+        )}
+
         {/* ── USERS TABLE ── */}
         <div className="rounded-xl border bg-background/60 shadow-sm backdrop-blur-sm">
           <div className="flex flex-col gap-4 border-b border-border/40 p-4 sm:flex-row sm:items-center sm:justify-between">
@@ -346,7 +507,16 @@ export default function AdminPage() {
               <h2 className="text-sm font-bold text-foreground">Users</h2>
               <p className="text-xs text-muted-foreground/60">{users.length} registered users</p>
             </div>
-            <div className="relative">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={exportCSV}
+                className="flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-1.5 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+                title="Export as CSV"
+              >
+                <Download className="h-3 w-3" />
+                CSV
+              </button>
+              <div className="relative">
               <Search className="absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
               <input
                 type="text"
@@ -355,6 +525,7 @@ export default function AdminPage() {
                 placeholder="Search by username..."
                 className="h-10 w-full rounded-lg border border-border/60 bg-background/80 pl-9 pr-3 text-base outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15 sm:h-9 sm:w-64 sm:text-sm"
               />
+            </div>
             </div>
           </div>
 
@@ -490,6 +661,58 @@ export default function AdminPage() {
             </div>
           )}
         </div>
+
+        {/* ── AUDIT LOG ── */}
+        {auditLog.length > 0 && (
+          <div className="mt-8 rounded-xl border bg-background/60 shadow-sm backdrop-blur-sm">
+            <div className="flex items-center gap-2 border-b border-border/40 p-4">
+              <History className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-bold text-foreground">Audit Log</h2>
+              <span className="text-[10px] text-muted-foreground/60">Recent admin actions</span>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead>
+                  <tr className="border-b border-border/30 text-muted-foreground/60">
+                    <th className="px-4 py-3 font-semibold uppercase tracking-wider">Action</th>
+                    <th className="px-4 py-3 font-semibold uppercase tracking-wider">Admin</th>
+                    <th className="px-4 py-3 font-semibold uppercase tracking-wider">Target</th>
+                    <th className="px-4 py-3 font-semibold uppercase tracking-wider">Details</th>
+                    <th className="px-4 py-3 font-semibold uppercase tracking-wider">Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {auditLog.map((entry) => {
+                    const Icon = ACTION_ICONS[entry.action] || LogOut
+                    const colorClass = ACTION_COLORS[entry.action] || 'text-muted-foreground bg-muted/30'
+                    return (
+                      <tr key={entry._id} className="border-b border-border/20 transition-colors hover:bg-muted/30">
+                        <td className="px-4 py-3">
+                          <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[10px] font-semibold ${colorClass}`}>
+                            <Icon className="h-3 w-3" />
+                            {ACTION_LABELS[entry.action] || entry.action}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 font-medium text-foreground">{entry.adminUsername}</td>
+                        <td className="px-4 py-3 text-muted-foreground/70">{entry.targetUsername}</td>
+                        <td className="max-w-xs truncate px-4 py-3 text-muted-foreground/50">{entry.details}</td>
+                        <td className="px-4 py-3 text-muted-foreground/70 whitespace-nowrap">
+                          {new Date(entry.createdAt).toLocaleString()}
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+              {auditLog.length === 0 && (
+                <div className="flex flex-col items-center gap-2 py-12 text-center">
+                  <History className="h-8 w-8 text-muted-foreground/20" />
+                  <p className="text-xs text-muted-foreground/50">No audit entries yet</p>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
       </main>
 
       {/* ── CONFIRMATION DIALOG ── */}

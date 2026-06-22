@@ -3,6 +3,7 @@ import { requireAdmin } from '@/lib/admin'
 import { connectToDatabase } from '@/lib/db'
 import { ObjectId } from 'mongodb'
 import { isUnlimitedPlan, normalizeAIPlan, type AIPlan } from '@/lib/ai-plan'
+import { logAudit } from '@/lib/audit'
 
 export async function GET(request: Request) {
   const admin = await requireAdmin(request)
@@ -63,6 +64,12 @@ export async function POST(request: Request) {
     }
 
     await conn.db.collection('users').updateOne({ _id: objectId }, { $set: { isAdmin: makeAdmin !== false } })
+
+    await logAudit({
+      adminUsername: admin.username,
+      action: makeAdmin ? 'promote_admin' : 'revoke_admin',
+      targetUsername: user.username,
+    })
 
     return NextResponse.json({ success: true, username: user.username, isAdmin: makeAdmin !== false })
   } catch {
