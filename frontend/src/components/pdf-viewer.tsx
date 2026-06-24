@@ -50,6 +50,39 @@ if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.min.mjs'
 }
 
+function ToolButton({
+  icon: Icon,
+  active,
+  onClick,
+  title,
+  disabled,
+  className,
+}: {
+  icon: React.ComponentType<{ className?: string }>
+  active: boolean
+  onClick: () => void
+  title: string
+  disabled?: boolean
+  className?: string
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      title={title}
+      aria-label={title}
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-all sm:h-8 sm:w-8 ${
+        disabled ? 'cursor-not-allowed opacity-30' : 'hover:text-foreground hover:bg-muted/40'
+      } ${
+        active ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' : ''
+      } ${className ?? ''}`}
+    >
+      <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
+    </button>
+  )
+}
+
 export function PDFViewer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const pageTextCacheRef = useRef<Map<number, string>>(new Map())
@@ -1009,168 +1042,127 @@ export function PDFViewer() {
 
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-background to-muted/10">
-      <div className={`flex items-center justify-between gap-1 border-b bg-background/80 px-2 py-1 backdrop-blur-lg shadow-sm transition-all duration-300 sm:px-3 sm:py-1.5 ${
+      {/* ── MODERN UNIFIED TOOLBAR ── */}
+      <div className={`flex items-center justify-between gap-1 border-b border-border/40 bg-background/70 px-2 py-1.5 backdrop-blur-xl shadow-sm transition-all duration-300 sm:px-4 sm:py-2 ${
         isMobile && !mobileToolbarVisible ? '-translate-y-full -mb-12 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
       }`}>
-        <div className="flex items-center gap-0.5 sm:gap-1">
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={goToPrevPage} disabled={currentPage <= 1} aria-label="Previous page">
-            <ChevronLeft className="h-4 w-4" />
+        {/* Left: Page Navigation */}
+        <div className="flex items-center gap-1 sm:gap-1.5">
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 sm:h-8 sm:w-8" onClick={goToPrevPage} disabled={currentPage <= 1} aria-label="Previous page">
+            <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
-          <input
-            type="text"
-            inputMode="numeric"
-            pattern="[0-9]*"
-            maxLength={String(totalPages).length}
-            value={pageInput}
-            onChange={(e) => setPageInput(e.target.value.replace(/\D/g, '').slice(0, String(totalPages).length))}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter') {
-                e.preventDefault()
-                ;(e.target as HTMLInputElement).blur()
-              } else if (e.key === 'Escape') {
-                e.preventDefault()
-                setPageInput(String(currentPage))
-                ;(e.target as HTMLInputElement).blur()
-              }
-            }}
-            onFocus={(e) => e.target.select()}
-            onBlur={commitPageInput}
-            className="w-12 rounded-lg border bg-background/80 px-1 py-1 text-center text-xs font-semibold outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 sm:py-0.5"
-            aria-label="Page number"
-          />
-          <span className="text-xs text-muted-foreground/60">/ {totalPages}</span>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={goToNextPage} disabled={currentPage >= totalPages} aria-label="Next page">
-            <ChevronRight className="h-4 w-4" />
+          <div className="flex items-center gap-1 rounded-lg border border-border/40 bg-background/60 px-1.5 py-0.5">
+            <input
+              type="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
+              maxLength={String(totalPages).length}
+              value={pageInput}
+              onChange={(e) => setPageInput(e.target.value.replace(/\D/g, '').slice(0, String(totalPages).length))}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur() }
+                else if (e.key === 'Escape') { e.preventDefault(); setPageInput(String(currentPage)); (e.target as HTMLInputElement).blur() }
+              }}
+              onFocus={(e) => e.target.select()}
+              onBlur={commitPageInput}
+              className="w-10 rounded-md bg-transparent px-1 py-0.5 text-center text-xs font-semibold tabular-nums outline-none sm:w-12"
+              aria-label="Page number"
+            />
+            <span className="text-[11px] text-muted-foreground/50">/ {totalPages}</span>
+          </div>
+          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 sm:h-8 sm:w-8" onClick={goToNextPage} disabled={currentPage >= totalPages} aria-label="Next page">
+            <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
         </div>
+
+        {/* Center / Right: Tools */}
         <div className="flex items-center gap-0.5 sm:gap-1">
-          {showSearch && <SearchBar />}
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-8 w-8 rounded-lg ${showSearch ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
-            onClick={toggleSearch}
-            title="Search in PDF (/ or F)"
-            aria-label="Search in PDF"
-          >
-            <Search className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 sm:inline-flex"
-            onClick={toggleBookmarks}
-            title="Bookmarks (B)"
-            aria-label="Bookmarks"
-          >
-            <Bookmark className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden h-8 w-8 rounded-lg text-muted-foreground hover:text-yellow-600 hover:bg-yellow-50 dark:hover:bg-yellow-950/30 sm:inline-flex"
-            onClick={toggleQuotes}
-            title="Saved Quotes (Q)"
-            aria-label="Saved quotes"
-          >
-            <QuoteIcon className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 sm:inline-flex"
-            onClick={toggleHistory}
-            title="Word History (H)"
-            aria-label="Word history"
-          >
-            <Clock className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden h-8 w-8 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 sm:inline-flex"
-            onClick={toggleFlashcards}
-            title="Flashcards (G)"
-            aria-label="Flashcards"
-          >
-            <Brain className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-disabled={questionQuotaBlocked}
-            className={`hidden h-8 w-8 rounded-lg sm:inline-flex ${questionQuotaBlocked ? 'cursor-not-allowed opacity-50' : ''} ${showQuestionGenerator ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
-            onClick={() => {
-              if (questionQuotaBlocked) {
-                setQuotaModalOpen(true)
-                return
-              }
-              toggleQuestionGenerator()
-            }}
-            title={
-              questionQuotaBlocked
-                ? 'Daily question limit reached'
-                : 'AI Question Generator'
-            }
-            aria-label="AI Question Generator"
-          >
-            <HelpCircle className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            aria-disabled={summaryQuotaBlocked}
-            className={`hidden h-8 w-8 rounded-lg sm:inline-flex ${summaryQuotaBlocked ? 'cursor-not-allowed opacity-50' : ''} ${showSummarizer ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
-            onClick={() => {
-              if (summaryQuotaBlocked) {
-                setQuotaModalOpen(true)
-                return
-              }
-              toggleSummarizer()
-            }}
-            title={
-              summaryQuotaBlocked
-                ? 'Daily summary limit reached'
-                : 'AI Summarizer'
-            }
-            aria-label="AI Summarizer"
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-          </Button>
-          <div className="hidden sm:inline-flex">
+          {/* Reading Tools Group */}
+          <div className="flex items-center gap-0.5 rounded-lg bg-muted/30 p-0.5 sm:gap-1 sm:px-1">
+            {showSearch && <SearchBar />}
+            <ToolButton icon={Search} active={showSearch} onClick={toggleSearch} title="Search in PDF (/)" />
+            <ToolButton icon={Bookmark} active={false} onClick={toggleBookmarks} title="Bookmarks (B)" className="hidden sm:inline-flex" />
+            <ToolButton icon={QuoteIcon} active={false} onClick={toggleQuotes} title="Saved Quotes" className="hidden sm:inline-flex" />
+            <ToolButton icon={Clock} active={false} onClick={toggleHistory} title="Word History (H)" className="hidden sm:inline-flex" />
+            <ToolButton icon={Brain} active={false} onClick={toggleFlashcards} title="Flashcards (G)" className="hidden sm:inline-flex" />
+          </div>
+
+          <div className="mx-1 hidden h-5 w-px bg-border/40 sm:block" />
+
+          {/* AI Tools Group */}
+          <div className="hidden items-center gap-0.5 rounded-lg bg-muted/30 p-0.5 sm:flex sm:gap-1 sm:px-1">
+            <ToolButton
+              icon={HelpCircle}
+              active={showQuestionGenerator}
+              disabled={questionQuotaBlocked}
+              onClick={() => { if (questionQuotaBlocked) setQuotaModalOpen(true); else toggleQuestionGenerator() }}
+              title={questionQuotaBlocked ? 'Daily question limit reached' : 'AI Questions'}
+            />
+            <ToolButton
+              icon={Sparkles}
+              active={showSummarizer}
+              disabled={summaryQuotaBlocked}
+              onClick={() => { if (summaryQuotaBlocked) setQuotaModalOpen(true); else toggleSummarizer() }}
+              title={summaryQuotaBlocked ? 'Daily summary limit reached' : 'AI Summarizer'}
+            />
             <AIQuotaBadge state={quota} onClick={() => setQuotaModalOpen(true)} />
           </div>
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`hidden h-8 w-8 rounded-lg sm:inline-flex ${shareSession ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
-            onClick={toggleSharePanel}
-            title={shareSession ? `Session: ${shareSession.name}` : 'Collaborative Reading'}
-            aria-label="Collaborative reading"
-          >
-            <Users className="h-3.5 w-3.5" />
-          </Button>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="hidden h-8 w-8 rounded-lg text-muted-foreground hover:text-emerald-500 hover:bg-emerald-50/50 sm:inline-flex dark:hover:bg-emerald-950/20"
-            onClick={handleReadAloud}
-            title="Read Aloud (current page or selection)"
-            aria-label="Read aloud"
-          >
-            <Volume2 className="h-3.5 w-3.5" />
-          </Button>
 
-          <div className="mx-1 hidden h-5 w-px bg-border/50 sm:block" />
+          <div className="mx-1 hidden h-5 w-px bg-border/40 sm:block" />
 
-          {/* Mobile overflow menu (bookmarks, history, flashcards, questions, summarizer, share, read aloud) */}
+          {/* View Controls Group */}
+          <div className="hidden items-center gap-0.5 rounded-lg bg-muted/30 p-0.5 sm:flex sm:gap-1 sm:px-1">
+            <ToolButton icon={Volume2} active={false} onClick={handleReadAloud} title="Read Aloud" />
+            <ToolButton icon={Users} active={!!shareSession} onClick={toggleSharePanel} title={shareSession ? `Session: ${shareSession.name}` : 'Collaborate'} />
+            <ToolButton
+              icon={scrollMode ? AlignJustify : BookOpen}
+              active={scrollMode}
+              onClick={() => {
+                const next = !scrollMode
+                setScrollMode(next)
+                if (next && containerRef.current) {
+                  requestAnimationFrame(() => {
+                    const target = containerRef.current?.querySelector(`[data-page="${currentPage}"]`)
+                    ;(target as HTMLElement)?.scrollIntoView({ behavior: 'auto', block: 'start' })
+                  })
+                } else {
+                  containerRef.current?.scrollTo({ top: 0, behavior: 'auto' })
+                }
+              }}
+              title={scrollMode ? 'Continuous scroll' : 'Single page'}
+            />
+          </div>
+
+          {/* Zoom Controls */}
+          <div className="hidden items-center gap-0.5 rounded-lg bg-muted/30 p-0.5 sm:flex sm:px-1">
+            <ToolButton icon={ZoomOut} active={false} onClick={zoomOut} disabled={scale <= 0.5} title="Zoom out" />
+            <div className="flex items-center">
+              <input
+                type="text"
+                inputMode="numeric"
+                pattern="[0-9]*"
+                maxLength={3}
+                value={zoomInput}
+                onChange={(e) => setZoomInput(e.target.value.replace(/\D/g, '').slice(0, 3))}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur() }
+                  else if (e.key === 'Escape') { e.preventDefault(); setZoomInput(String(Math.round(scale * 100))); (e.target as HTMLInputElement).blur() }
+                }}
+                onFocus={(e) => e.target.select()}
+                onBlur={commitZoomInput}
+                className="w-9 rounded-md bg-transparent px-1 py-0.5 text-center text-[11px] font-semibold tabular-nums outline-none"
+                title="Zoom percentage"
+              />
+              <span className="text-[10px] font-medium text-muted-foreground/50">%</span>
+            </div>
+            <ToolButton icon={ZoomIn} active={false} onClick={zoomIn} disabled={scale >= 3} title="Zoom in" />
+          </div>
+
+          {/* Mobile overflow */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button
-                className="flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground sm:hidden"
-                aria-label="More tools"
-              >
-                <MoreHorizontal className="h-4 w-4" />
+              <button className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground sm:hidden sm:h-8 sm:w-8" aria-label="More tools">
+                <MoreHorizontal className="h-3.5 w-3.5" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={6} className="w-52">
@@ -1179,7 +1171,7 @@ export function PDFViewer() {
                 <Bookmark className="h-3.5 w-3.5" /> Bookmarks <span className="ml-auto text-[10px] text-muted-foreground/60">B</span>
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => toggleQuotes()}>
-                <QuoteIcon className="h-3.5 w-3.5" /> Saved Quotes <span className="ml-auto text-[10px] text-muted-foreground/60">Q</span>
+                <QuoteIcon className="h-3.5 w-3.5" /> Saved Quotes
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => toggleHistory()}>
                 <Clock className="h-3.5 w-3.5" /> Word History <span className="ml-auto text-[10px] text-muted-foreground/60">H</span>
@@ -1188,28 +1180,10 @@ export function PDFViewer() {
                 <Brain className="h-3.5 w-3.5" /> Flashcards <span className="ml-auto text-[10px] text-muted-foreground/60">G</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem
-                onSelect={() => {
-                  if (questionQuotaBlocked) {
-                    setQuotaModalOpen(true)
-                    return
-                  }
-                  toggleQuestionGenerator()
-                }}
-                disabled={questionQuotaBlocked}
-              >
+              <DropdownMenuItem onSelect={() => { if (questionQuotaBlocked) setQuotaModalOpen(true); else toggleQuestionGenerator() }} disabled={questionQuotaBlocked}>
                 <HelpCircle className="h-3.5 w-3.5" /> AI Questions
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onSelect={() => {
-                  if (summaryQuotaBlocked) {
-                    setQuotaModalOpen(true)
-                    return
-                  }
-                  toggleSummarizer()
-                }}
-                disabled={summaryQuotaBlocked}
-              >
+              <DropdownMenuItem onSelect={() => { if (summaryQuotaBlocked) setQuotaModalOpen(true); else toggleSummarizer() }} disabled={summaryQuotaBlocked}>
                 <Sparkles className="h-3.5 w-3.5" /> AI Summarizer
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => toggleSharePanel()}>
@@ -1218,65 +1192,12 @@ export function PDFViewer() {
               <DropdownMenuItem onSelect={() => handleReadAloud()}>
                 <Volume2 className="h-3.5 w-3.5" /> Read Aloud
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setQuotaModalOpen(true)}>
                 <Sparkles className="h-3.5 w-3.5" /> AI Quota
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
-
-          <Button
-            variant="ghost"
-            size="icon"
-            className={`h-8 w-8 rounded-lg ${scrollMode ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20' : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'}`}
-            onClick={() => {
-              const next = !scrollMode
-              setScrollMode(next)
-              // When switching modes, reset scroll to current page
-              if (next && containerRef.current) {
-                requestAnimationFrame(() => {
-                  const target = containerRef.current?.querySelector(`[data-page="${currentPage}"]`)
-                  ;(target as HTMLElement)?.scrollIntoView({ behavior: 'auto', block: 'start' })
-                })
-              } else {
-                containerRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-              }
-            }}
-            title={scrollMode ? 'Scroll mode (continuous)' : 'Page mode (single)'}
-            aria-label={scrollMode ? 'Scroll mode' : 'Page mode'}
-          >
-            {scrollMode ? <AlignJustify className="h-3.5 w-3.5" /> : <BookOpen className="h-3.5 w-3.5" />}
-          </Button>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={zoomOut} disabled={scale <= 0.5} aria-label="Zoom out">
-            <ZoomOut className="h-3.5 w-3.5" />
-          </Button>
-          <div className="flex items-center">
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={3}
-              value={zoomInput}
-              onChange={(e) => setZoomInput(e.target.value.replace(/\D/g, '').slice(0, 3))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  e.preventDefault()
-                  ;(e.target as HTMLInputElement).blur()
-                } else if (e.key === 'Escape') {
-                  e.preventDefault()
-                  setZoomInput(String(Math.round(scale * 100)))
-                  ;(e.target as HTMLInputElement).blur()
-                }
-              }}
-              onFocus={(e) => e.target.select()}
-              onBlur={commitZoomInput}
-              className="w-10 rounded-lg border bg-background/80 px-1 py-1 text-center text-[11px] font-semibold outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500/20 tabular-nums sm:py-0.5"
-              title="Type a zoom percentage and press Enter (50-300%)"
-            />
-            <span className="ml-0.5 text-[11px] font-medium text-muted-foreground/70">%</span>
-          </div>
-          <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-foreground hover:bg-muted/50" onClick={zoomIn} disabled={scale >= 3} aria-label="Zoom in">
-            <ZoomIn className="h-3.5 w-3.5" />
-          </Button>
         </div>
       </div>
 

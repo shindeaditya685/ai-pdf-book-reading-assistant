@@ -515,16 +515,26 @@ export default function DashboardPage() {
           <kbd className="rounded-md border border-violet-200/50 bg-white/60 px-1.5 py-0.5 text-[10px] font-mono font-bold dark:border-violet-800/30 dark:bg-violet-950/50">Esc</kbd>
         </button>
       )}
-      <header className={`flex h-16 items-center justify-between gap-2 border-b border-emerald-500/10 bg-background/60 px-3 shadow-[0_1px_0_0_rgba(16,185,129,0.05)] backdrop-blur-xl transition-opacity duration-300 sm:px-4 ${focusMode ? 'pointer-events-none opacity-0' : ''}`}>
+      <header className={`flex h-14 items-center justify-between gap-2 border-b border-border/40 bg-background/60 px-3 shadow-sm backdrop-blur-xl transition-all duration-300 sm:h-16 sm:px-4 ${
+        focusMode ? 'pointer-events-none opacity-0 -translate-y-2' : ''
+      }`}>
+        {/* Left: Brand + PDF File Name */}
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <Link href="/dashboard" className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <div className="relative flex h-9 w-9 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-500/20">
-              <BookOpen className="h-4 w-4 text-white" />
+            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 ring-1 ring-emerald-500/20 sm:h-9 sm:w-9">
+              <BookOpen className="h-3.5 w-3.5 text-white sm:h-4 sm:w-4" />
             </div>
             <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-foreground">PDFMind<span className="text-emerald-500">AI</span></p>
-              {!pdfDataUrl && (
-                <p className="hidden text-xs text-muted-foreground/60 sm:block">
+              <p className="truncate text-sm font-bold text-foreground">
+                PDFMind<span className="text-emerald-500">AI</span>
+              </p>
+              {pdfFileName ? (
+                <p className="max-w-[120px] truncate text-[10px] text-muted-foreground sm:max-w-[200px] sm:text-xs">
+                  <span className="text-emerald-500/70 mr-1">&#9654;</span>
+                  {pdfFileName.replace(/\.pdf$/i, '')}
+                </p>
+              ) : (
+                <p className="hidden text-[10px] text-muted-foreground/60 sm:block sm:text-xs">
                   Reading workspace
                 </p>
               )}
@@ -532,77 +542,74 @@ export default function DashboardPage() {
           </Link>
         </div>
 
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-1.5 sm:gap-2">
+        {/* Right: Actions */}
+        <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-1.5">
           {pdfFileName && (
-            <>
-              <div className="hidden md:block">
-                <UploadZone />
-              </div>
-              <div className="mx-1 hidden h-5 w-px bg-emerald-500/10 md:block" />
-            </>
+            <div className="hidden md:block">
+              <UploadZone />
+            </div>
           )}
           {streakCount > 0 && (
             <Link
               href="/profile"
-              className="flex h-9 w-9 items-center justify-center rounded-xl border border-orange-200/30 bg-gradient-to-r from-orange-50 to-amber-50 text-xs font-semibold text-orange-600 shadow-sm shadow-orange-200/20 transition-all hover:shadow-md hover:shadow-orange-200/30 sm:h-auto sm:w-auto sm:gap-1.5 sm:px-3 sm:py-1.5 dark:border-orange-800/15 dark:from-orange-950/15 dark:to-amber-950/15 dark:text-orange-400 dark:shadow-orange-900/10"
+              className="flex h-8 w-8 items-center justify-center rounded-lg border border-orange-200/30 bg-gradient-to-r from-orange-50 to-amber-50 text-xs font-semibold text-orange-600 shadow-sm transition-all hover:shadow-md sm:h-auto sm:w-auto sm:gap-1.5 sm:rounded-xl sm:px-3 sm:py-1.5 dark:border-orange-800/15 dark:from-orange-950/15 dark:to-amber-950/15 dark:text-orange-400"
               title={`${streakCount}-day streak!`}
             >
-              <Flame className="h-3.5 w-3.5" />
+              <Flame className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
               <span className="hidden sm:inline">{streakCount}</span>
             </Link>
           )}
 
-          {/* Desktop: individual icon buttons */}
-          <button
-            onClick={toggleSharePanel}
-            className={`hidden sm:inline-flex h-9 items-center gap-1.5 rounded-xl border px-3 text-xs font-semibold transition-all ${
-              shareSession
-                ? 'border-emerald-400/50 bg-emerald-50 text-emerald-700 shadow-sm shadow-emerald-200/30 dark:bg-emerald-950/20 dark:text-emerald-400'
-                : 'border-border/60 bg-background/80 text-muted-foreground hover:border-muted-foreground/20 hover:text-foreground hover:shadow-sm'
-            }`}
-            title="Collaborative Reading Groups"
-          >
-            <Users className="h-3.5 w-3.5" />
-            <span className="hidden md:inline">
-              {shareSession ? shareSession.name : 'Collaborate'}
-            </span>
-          </button>
-          <div className="hidden sm:inline-flex">
-            <SettingsPanel />
+          {/* Desktop action links */}
+          <div className="hidden items-center gap-1 rounded-lg bg-muted/20 p-0.5 sm:flex sm:gap-1 sm:px-1">
+            <button
+              onClick={toggleSharePanel}
+              className={`inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all ${
+                shareSession
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+              }`}
+              title={shareSession ? `Session: ${shareSession.name}` : 'Collaborative Reading'}
+            >
+              <Users className="h-3 w-3" />
+              <span className="hidden xl:inline">{shareSession ? shareSession.name : 'Collaborate'}</span>
+            </button>
+            <Link
+              href="/review"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
+              title="Flashcard Review"
+            >
+              <BrainCircuit className="h-3 w-3" />
+            </Link>
+            <Link
+              href="/vocabulary"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
+              title="Vocabulary"
+            >
+              <BookText className="h-3 w-3" />
+            </Link>
+            {user?.isAdmin && (
+              <Link
+                href="/admin"
+                className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
+                title="Admin Panel"
+              >
+                <Shield className="h-3 w-3" />
+              </Link>
+            )}
+            <div className="inline-flex">
+              <SettingsPanel />
+            </div>
           </div>
 
-          <Link
-            href="/review"
-            className="hidden h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-md sm:flex dark:hover:border-violet-800/30 dark:hover:bg-violet-950/20"
-            title="Flashcard Review"
-          >
-            <BrainCircuit className="h-3.5 w-3.5" />
-          </Link>
-          <Link
-            href="/vocabulary"
-            className="hidden h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-md sm:flex dark:hover:border-violet-800/30 dark:hover:bg-violet-950/20"
-            title="Vocabulary"
-          >
-            <BookText className="h-3.5 w-3.5" />
-          </Link>
-          {user?.isAdmin && (
-            <Link
-              href="/admin"
-              className="hidden h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-violet-200 hover:bg-violet-50 hover:text-violet-600 hover:shadow-md sm:flex dark:hover:border-violet-800/30 dark:hover:bg-violet-950/20"
-              title="Admin Panel"
-            >
-              <Shield className="h-3.5 w-3.5" />
-            </Link>
-          )}
-
-          {/* Mobile: overflow menu with everything that doesn't fit */}
+          {/* Mobile overflow */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:border-muted-foreground/20 hover:text-foreground sm:hidden"
+                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/50 bg-background/80 text-muted-foreground shadow-sm transition-all hover:border-muted-foreground/20 hover:text-foreground sm:hidden"
                 aria-label="More menu"
               >
-                <MoreHorizontal className="h-4 w-4" />
+                <MoreHorizontal className="h-3.5 w-3.5" />
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" sideOffset={6} className="w-56">
@@ -613,7 +620,6 @@ export default function DashboardPage() {
                 <Users className="h-3.5 w-3.5" />
                 {shareSession ? shareSession.name : 'Collaborate'}
               </DropdownMenuItem>
-
               <DropdownMenuItem asChild>
                 <Link href="/review" className="flex items-center gap-2">
                   <BrainCircuit className="h-3.5 w-3.5" /> Flashcard Review
@@ -632,7 +638,6 @@ export default function DashboardPage() {
                 </DropdownMenuItem>
               )}
               <DropdownMenuItem onSelect={(e) => {
-                // SettingsPanel uses a Popover so we just trigger its trigger
                 e.preventDefault()
                 const btn = document.querySelector<HTMLButtonElement>('[aria-label="Settings"]')
                 btn?.click()
@@ -646,19 +651,28 @@ export default function DashboardPage() {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {/* Profile pill */}
           {user && (
-            <div className="flex shrink-0 items-center gap-1 rounded-xl border border-border/60 bg-background/80 px-1.5 py-1 text-xs text-muted-foreground shadow-sm backdrop-blur-sm">
-              <Link href="/profile" className="flex items-center gap-1.5 rounded-lg px-1.5 py-0.5 transition-colors hover:bg-muted/50">
-                <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm">
-                  <span className="text-[10px] font-bold text-white">{user.username.charAt(0).toUpperCase()}</span>
-                </div>
-                <span className="hidden max-w-[100px] truncate sm:inline font-medium">{user.username}</span>
-              </Link>
-              <span className={`hidden md:inline-flex items-center gap-1 rounded-full px-1.5 py-0.5 text-[10px] font-semibold ${planBadgeClass}`} title={`Plan: ${PLAN_LABELS[plan as AIPlan]}`}>
-                <PlanIcon className="h-2.5 w-2.5" />
+            <Link
+              href="/profile"
+              className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border/50 bg-background/80 px-1.5 shadow-sm backdrop-blur-sm transition-all hover:border-muted-foreground/20 hover:shadow-md sm:h-9 sm:rounded-xl sm:px-2"
+            >
+              <div className="flex h-5 w-5 items-center justify-center rounded-md bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm sm:h-6 sm:w-6">
+                <span className="text-[9px] font-bold text-white sm:text-[10px]">
+                  {user.username.charAt(0).toUpperCase()}
+                </span>
+              </div>
+              <span className="hidden max-w-[80px] truncate text-xs font-medium text-foreground sm:inline sm:max-w-[100px]">
+                {user.username}
+              </span>
+              <span
+                className={`hidden md:inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-semibold ${planBadgeClass}`}
+                title={`Plan: ${PLAN_LABELS[plan as AIPlan]}`}
+              >
+                <PlanIcon className="h-2 w-2" />
                 {PLAN_LABELS[plan as AIPlan]}
               </span>
-            </div>
+            </Link>
           )}
         </div>
       </header>
