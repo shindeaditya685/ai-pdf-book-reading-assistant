@@ -7,6 +7,7 @@ import {
   Library, Clock, Brain, BookMarked, Volume2, TrendingUp,
   Zap, FileText, BarChart3, BookmarkCheck, ChevronRight,
   Sparkles, Award, Crown, Rocket, FlaskConical, Check, Loader2, X, Send, MessageSquareQuote, AlertCircle, Hourglass,
+  Camera, Pencil, Lock, Trophy, Star, Activity, Sun, Moon, Cloud, CheckCircle, Info, Settings,
 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
@@ -78,6 +79,23 @@ export default function ProfilePage() {
   const [requestSuccess, setRequestSuccess] = useState(false)
   const [now, setNow] = useState(() => Date.now())
 
+  // Avatar
+  const [avatarImage, setAvatarImage] = useState<string | null>(null)
+  const [avatarLoading, setAvatarLoading] = useState(false)
+
+  // Inline goal editing
+  const [editingGoal, setEditingGoal] = useState(false)
+  const [goalForm, setGoalForm] = useState({ pages: 10, minutes: 30 })
+  const [savingGoal, setSavingGoal] = useState(false)
+
+  // AI quota
+  const [aiQuota, setAiQuota] = useState<{
+    plan: string
+    isUnlimited: boolean
+    usage: { summaries: number; questions: number; translations: number; quoteChats: number }
+    limits: { summary: number; question: number; translation: number; quote_chat: number } | null
+  } | null>(null)
+
   useEffect(() => {
     const loadAll = async () => {
       try {
@@ -125,7 +143,29 @@ export default function ProfilePage() {
           const q = await quotaRes.json()
           if (q.plan) setCurrentPlan(q.plan as AIPlan)
           setIsUnlimited(!!q.isUnlimited)
+          setAiQuota({
+            plan: q.plan,
+            isUnlimited: !!q.isUnlimited,
+            usage: q.usage || { summaries: 0, questions: 0, translations: 0, quoteChats: 0 },
+            limits: q.limits || null,
+          })
         }
+
+        // Fetch avatar
+        const avatarRes = await authFetch('/api/avatar')
+        if (avatarRes.ok) {
+          const avatarData = await avatarRes.json()
+          if (avatarData.avatarImage) setAvatarImage(avatarData.avatarImage)
+        }
+
+        // Fetch avatar
+        try {
+          const avatarRes = await authFetch('/api/avatar')
+          if (avatarRes.ok) {
+            const avatarData = await avatarRes.json()
+            if (avatarData.avatarImage) setAvatarImage(avatarData.avatarImage)
+          }
+        } catch { /* ignore */ }
       } catch { /* ignore */ }
       setLoading(false)
     }
@@ -183,6 +223,44 @@ export default function ProfilePage() {
     } finally {
       setRequesting(false)
     }
+  }
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setAvatarLoading(true)
+    try {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const base64 = reader.result as string
+        const res = await authFetch('/api/avatar', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ avatarImage: base64 }),
+        })
+        if (res.ok) {
+          setAvatarImage(base64)
+        }
+        setAvatarLoading(false)
+      }
+      reader.readAsDataURL(file)
+    } catch {
+      setAvatarLoading(false)
+    }
+  }
+
+  const handleSaveGoal = async () => {
+    setSavingGoal(true)
+    try {
+      await authFetch('/api/reading-goal', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ enabled: true, pages: goalForm.pages, minutes: goalForm.minutes }),
+      })
+      setDailyGoal({ enabled: true, pages: goalForm.pages, minutes: goalForm.minutes })
+      setEditingGoal(false)
+    } catch { /* ignore */ }
+    setSavingGoal(false)
   }
 
   // Recompute live countdown from `now`
@@ -275,11 +353,33 @@ export default function ProfilePage() {
           <div className="relative flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
             <div className="flex items-center gap-5">
               <div className="relative">
-                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20">
-                  <span className="text-2xl font-bold text-white">
-                    {user?.username?.charAt(0).toUpperCase() || '?'}
-                  </span>
+                <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-lg shadow-emerald-500/20 overflow-hidden">
+                  {avatarImage ? (
+                    <img src={avatarImage} alt="Avatar" className="h-full w-full object-cover" />
+                  ) : (
+                    <span className="text-2xl font-bold text-white">
+                      {user?.username?.charAt(0).toUpperCase() || '?'}
+                    </span>
+                  )}
                 </div>
+                <button
+                  onClick={() => document.getElementById('avatar-upload')?.click()}
+                  className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-violet-600 shadow-md transition-colors hover:bg-violet-700"
+                  title="Upload avatar"
+                >
+                  {avatarLoading ? (
+                    <Loader2 className="h-3 w-3 animate-spin text-white" />
+                  ) : (
+                    <Camera className="h-3 w-3 text-white" />
+                  )}
+                </button>
+                <input
+                  id="avatar-upload"
+                  type="file"
+                  accept="image/*"
+                  className="hidden"
+                  onChange={handleAvatarUpload}
+                />
                 {streak > 0 && (
                   <div className="absolute -bottom-1 -right-1 flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 shadow-md">
                     <Flame className="h-3.5 w-3.5 text-white" />
@@ -476,37 +576,88 @@ export default function ProfilePage() {
 
         {/* ── TODAY'S PROGRESS ── */}
         {dailyGoal.enabled && (
-          <div className="mt-6 grid gap-4 sm:grid-cols-2">
-            <div className="group rounded-xl border bg-background/60 p-5 shadow-sm transition-all hover:shadow-md hover:border-emerald-400/40">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                  <FileText className="h-3.5 w-3.5 text-emerald-500" />
-                  Pages Today
-                </span>
-                <span className="text-sm font-bold text-foreground tabular-nums">{todayPages} <span className="text-xs font-normal text-muted-foreground">/ {dailyGoal.pages}</span></span>
-              </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-muted/60">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
-                  style={{ width: `${pageProgress}%` }}
-                />
-              </div>
+          <div className="mt-6">
+            <div className="mb-3 flex items-center justify-between">
+              <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/70 flex items-center gap-2">
+                <Target className="h-3.5 w-3.5 text-emerald-500" />
+                Today&apos;s Goal
+              </h2>
+              <button
+                onClick={() => { setGoalForm({ pages: dailyGoal.pages, minutes: dailyGoal.minutes }); setEditingGoal(!editingGoal) }}
+                className="flex items-center gap-1 rounded-lg border border-border/60 px-2.5 py-1 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
+              >
+                <Pencil className="h-3 w-3" />
+                {editingGoal ? 'Cancel' : 'Edit Goal'}
+              </button>
             </div>
-            <div className="group rounded-xl border bg-background/60 p-5 shadow-sm transition-all hover:shadow-md hover:border-violet-400/40">
-              <div className="flex items-center justify-between mb-3">
-                <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
-                  <Clock className="h-3.5 w-3.5 text-violet-500" />
-                  Reading Time
-                </span>
-                <span className="text-sm font-bold text-foreground tabular-nums">{formatMinutes(todayMinutes)} <span className="text-xs font-normal text-muted-foreground">/ {formatMinutes(dailyGoal.minutes)}</span></span>
+
+            {editingGoal ? (
+              <div className="rounded-xl border bg-muted/30 p-5 shadow-sm">
+                <div className="grid gap-4 sm:grid-cols-3 sm:items-end">
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-foreground">Pages per day</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={goalForm.pages}
+                      onChange={(e) => setGoalForm({ ...goalForm, pages: Math.max(1, Number(e.target.value)) })}
+                      className="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+                    />
+                  </div>
+                  <div>
+                    <label className="mb-1 block text-xs font-semibold text-foreground">Minutes per day</label>
+                    <input
+                      type="number"
+                      min={1}
+                      value={goalForm.minutes}
+                      onChange={(e) => setGoalForm({ ...goalForm, minutes: Math.max(1, Number(e.target.value)) })}
+                      className="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+                    />
+                  </div>
+                  <button
+                    onClick={handleSaveGoal}
+                    disabled={savingGoal}
+                    className="flex h-9 items-center justify-center gap-1.5 rounded-lg bg-violet-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-violet-700 disabled:opacity-50"
+                  >
+                    {savingGoal ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Check className="h-3.5 w-3.5" />}
+                    Save
+                  </button>
+                </div>
               </div>
-              <div className="h-2.5 overflow-hidden rounded-full bg-muted/60">
-                <div
-                  className="h-full rounded-full bg-gradient-to-r from-violet-400 to-violet-500 transition-all duration-500"
-                  style={{ width: `${minuteProgress}%` }}
-                />
+            ) : (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div className="group rounded-xl border bg-background/60 p-5 shadow-sm transition-all hover:shadow-md hover:border-emerald-400/40">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <FileText className="h-3.5 w-3.5 text-emerald-500" />
+                      Pages Today
+                    </span>
+                    <span className="text-sm font-bold text-foreground tabular-nums">{todayPages} <span className="text-xs font-normal text-muted-foreground">/ {dailyGoal.pages}</span></span>
+                  </div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-muted/60">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-emerald-400 to-emerald-500 transition-all duration-500"
+                      style={{ width: `${pageProgress}%` }}
+                    />
+                  </div>
+                </div>
+                <div className="group rounded-xl border bg-background/60 p-5 shadow-sm transition-all hover:shadow-md hover:border-violet-400/40">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="text-xs font-semibold text-muted-foreground flex items-center gap-1.5">
+                      <Clock className="h-3.5 w-3.5 text-violet-500" />
+                      Reading Time
+                    </span>
+                    <span className="text-sm font-bold text-foreground tabular-nums">{formatMinutes(todayMinutes)} <span className="text-xs font-normal text-muted-foreground">/ {formatMinutes(dailyGoal.minutes)}</span></span>
+                  </div>
+                  <div className="h-2.5 overflow-hidden rounded-full bg-muted/60">
+                    <div
+                      className="h-full rounded-full bg-gradient-to-r from-violet-400 to-violet-500 transition-all duration-500"
+                      style={{ width: `${minuteProgress}%` }}
+                    />
+                  </div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         )}
 
@@ -544,6 +695,165 @@ export default function ProfilePage() {
             </div>
           ))}
         </div>
+
+        {/* ── ACHIEVEMENTS ── */}
+        <div className="mt-8">
+          <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/70 mb-4 flex items-center gap-2">
+            <Trophy className="h-3.5 w-3.5 text-amber-500" />
+            Achievements
+          </h2>
+          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-5">
+            {[
+              { icon: Star, label: 'First Steps', desc: 'Read your first page', earned: (analytics?.totalPages ?? 0) >= 1, color: 'text-emerald-500', bg: 'from-emerald-500/10' },
+              { icon: BookOpen, label: 'Bookworm', desc: 'Read 100 pages', earned: (analytics?.totalPages ?? 0) >= 100, color: 'text-emerald-500', bg: 'from-emerald-500/10' },
+              { icon: Library, label: 'Scholar', desc: 'Read 1,000 pages', earned: (analytics?.totalPages ?? 0) >= 1000, color: 'text-violet-500', bg: 'from-violet-500/10' },
+              { icon: Flame, label: 'Streak Master', desc: '7-day streak', earned: streak >= 7, color: 'text-orange-500', bg: 'from-orange-500/10' },
+              { icon: Flame, label: 'Dedicated', desc: '30-day streak', earned: streak >= 30, color: 'text-rose-500', bg: 'from-rose-500/10' },
+              { icon: FileText, label: 'Explorer', desc: 'Read 5 books', earned: (analytics?.bookBreakdown?.length ?? 0) >= 5, color: 'text-sky-500', bg: 'from-sky-500/10' },
+              { icon: Brain, label: 'Linguist', desc: 'Looked up 50 words', earned: wordCount >= 50, color: 'text-amber-500', bg: 'from-amber-500/10' },
+              { icon: BookMarked, label: 'Note Taker', desc: '20 bookmarks', earned: bookmarkCount >= 20, color: 'text-indigo-500', bg: 'from-indigo-500/10' },
+              { icon: TrendingUp, label: 'Speed Reader', desc: '60+ pages/hr', earned: (analytics?.readingSpeed ?? 0) >= 60, color: 'text-cyan-500', bg: 'from-cyan-500/10' },
+              { icon: Award, label: 'Veteran', desc: '90 days active', earned: (analytics?.daysActive ?? 0) >= 90, color: 'text-fuchsia-500', bg: 'from-fuchsia-500/10' },
+            ].map((badge) => (
+              <div
+                key={badge.label}
+                className={`relative overflow-hidden rounded-xl border p-4 text-center shadow-sm transition-all ${
+                  badge.earned
+                    ? 'bg-gradient-to-br ' + badge.bg + ' to-background border-emerald-400/30 hover:shadow-md hover:-translate-y-0.5'
+                    : 'border-border/40 bg-muted/10 opacity-50'
+                }`}
+              >
+                <div className={`mx-auto flex h-9 w-9 items-center justify-center rounded-full ${
+                  badge.earned ? 'bg-gradient-to-br ' + badge.bg : 'bg-muted/30'
+                }`}>
+                  {badge.earned ? (
+                    <badge.icon className={`h-4 w-4 ${badge.color}`} />
+                  ) : (
+                    <Lock className="h-3.5 w-3.5 text-muted-foreground/40" />
+                  )}
+                </div>
+                <p className={`mt-2 text-xs font-bold ${badge.earned ? 'text-foreground' : 'text-muted-foreground/50'}`}>
+                  {badge.label}
+                </p>
+                <p className={`mt-0.5 text-[9px] ${badge.earned ? 'text-muted-foreground/60' : 'text-muted-foreground/30'}`}>
+                  {badge.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* ── AI USAGE ── */}
+        {aiQuota && (
+          <div className="mt-8">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/70 mb-4 flex items-center gap-2">
+              <Brain className="h-3.5 w-3.5 text-violet-500" />
+              AI Feature Usage
+            </h2>
+            <div className="rounded-xl border bg-background/60 p-5 shadow-sm">
+              <div className="grid gap-4 sm:grid-cols-2">
+                {[
+                  { label: 'Summaries', used: aiQuota.usage.summaries, limit: aiQuota.limits?.summary, icon: FileText, color: 'emerald' },
+                  { label: 'Questions', used: aiQuota.usage.questions, limit: aiQuota.limits?.question, icon: MessageSquareQuote, color: 'violet' },
+                  { label: 'Translations', used: aiQuota.usage.translations, limit: aiQuota.limits?.translation, icon: BookOpen, color: 'amber' },
+                  { label: 'Quote Chat', used: aiQuota.usage.quoteChats, limit: aiQuota.limits?.quote_chat, icon: MessageSquareQuote, color: 'sky' },
+                ].map((feature) => {
+                  const pct = feature.limit && feature.limit > 0 ? Math.min(100, Math.round((feature.used / feature.limit) * 100)) : 0
+                  return (
+                    <div key={feature.label} className="rounded-lg border border-border/30 bg-muted/20 p-3.5">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="flex items-center gap-2 text-xs font-semibold text-foreground">
+                          <feature.icon className={`h-3.5 w-3.5 text-${feature.color}-500`} />
+                          {feature.label}
+                        </span>
+                        <span className={`text-xs tabular-nums font-bold ${
+                          pct >= 80 ? 'text-red-500' : pct >= 50 ? 'text-amber-500' : 'text-muted-foreground'
+                        }`}>
+                          {feature.used}{feature.limit ? ` / ${feature.limit}` : ''}
+                        </span>
+                      </div>
+                      {feature.limit && (
+                        <div className="h-1.5 overflow-hidden rounded-full bg-muted/60">
+                          <div
+                            className={`h-full rounded-full transition-all duration-500 ${
+                              pct >= 80 ? 'bg-red-500' : pct >= 50 ? 'bg-amber-500' : 'bg-violet-500'
+                            }`}
+                            style={{ width: `${pct}%` }}
+                          />
+                        </div>
+                      )}
+                      {!feature.limit && (
+                        <p className="text-[10px] text-muted-foreground/50">Unlimited</p>
+                      )}
+                    </div>
+                  )
+                })}
+              </div>
+              {aiQuota.isUnlimited && (
+                <p className="mt-3 text-center text-[10px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                  Unlimited AI access on your plan
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── READING INSIGHTS ── */}
+        {analytics && (
+          <div className="mt-8">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/70 mb-4 flex items-center gap-2">
+              <Activity className="h-3.5 w-3.5 text-emerald-500" />
+              Reading Insights
+            </h2>
+            <div className="grid gap-4 sm:grid-cols-3">
+              <div className="rounded-xl border bg-background/60 p-5 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <Target className="h-4 w-4 text-emerald-500" />
+                  <p className="text-xs font-semibold text-foreground">Consistency</p>
+                </div>
+                <p className="text-2xl font-bold text-foreground tabular-nums">
+                  {analytics.daysActive > 0
+                    ? `${Math.min(100, Math.round((history.filter(h => h.pagesRead > 0).length / Math.max(1, history.length)) * 100))}%`
+                    : 'N/A'}
+                </p>
+                <p className="mt-1 text-[10px] text-muted-foreground/60">
+                  Days with activity out of last {history.length}
+                </p>
+              </div>
+              <div className="rounded-xl border bg-background/60 p-5 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <TrendingUp className="h-4 w-4 text-violet-500" />
+                  <p className="text-xs font-semibold text-foreground">Avg. Session</p>
+                </div>
+                <p className="text-2xl font-bold text-foreground tabular-nums">
+                  {analytics.totalSessions > 0
+                    ? formatMinutes(Math.round(analytics.totalMinutes / analytics.totalSessions))
+                    : 'N/A'}
+                </p>
+                <p className="mt-1 text-[10px] text-muted-foreground/60">
+                  Per reading session
+                </p>
+              </div>
+              <div className="rounded-xl border bg-background/60 p-5 shadow-sm">
+                <div className="flex items-center gap-2 mb-2">
+                  <Sun className="h-4 w-4 text-amber-500" />
+                  <p className="text-xs font-semibold text-foreground">Best Day</p>
+                </div>
+                <p className="text-2xl font-bold text-foreground tabular-nums">
+                  {history.length > 0
+                    ? (() => {
+                        const best = history.reduce((max, h) => (h.pagesRead > (max?.pagesRead || 0) ? h : max), history[0])
+                        return best ? new Date(best.date + 'T00:00:00').toLocaleDateString(undefined, { weekday: 'short' }) : 'N/A'
+                      })()
+                    : 'N/A'}
+                </p>
+                <p className="mt-1 text-[10px] text-muted-foreground/60">
+                  Most productive day
+                </p>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* ── GITHUB-STYLE CONTRIBUTION HEATMAP ── */}
         {history.length > 0 && (
