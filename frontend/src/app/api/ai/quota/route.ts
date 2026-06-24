@@ -33,10 +33,33 @@ export async function GET(request: Request) {
 
     const doc = await conn.db.collection('users').findOne(
       { _id: objectId },
-      { projection: { isAdmin: 1, plan: 1, aiUsage: 1 } }
+      { projection: { isAdmin: 1, plan: 1, aiUsage: 1, planExpiresAt: 1 } }
     )
 
-    const plan: AIPlan = normalizeAIPlan(doc?.plan)
+    let plan: AIPlan = normalizeAIPlan(doc?.plan)
+
+    // Check for active grants if user's plan has expired
+    if (doc?.planExpiresAt && new Date(doc.planExpiresAt) <= new Date()) {
+      // Plan expired — look for an active grant
+      const activeGrant = await conn.db.collection('grants').findOne({
+        username: user.username,
+        active: true,
+        $or: [
+          { expiresAt: { $gt: new Date() } },
+          { expiresAt: null },
+        ],
+      })
+      if (activeGrant) {
+        plan = normalizeAIPlan(activeGrant.plan)
+      } else {
+        plan = 'free'
+        // Fall back to free
+        await conn.db.collection('users').updateOne(
+          { _id: objectId },
+          { $set: { plan: 'free', planExpiresAt: null } }
+        )
+      }
+    }
     const isUnlimited = isUnlimitedPlan(plan)
     const stored = doc?.aiUsage as AIUsage | undefined
     const usage: AIUsage = !stored || stored.date !== todayUtc() ? emptyUsage() : stored

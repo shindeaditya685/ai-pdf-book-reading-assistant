@@ -7,7 +7,7 @@ import {
   Library, Clock, Brain, BookMarked, Volume2, TrendingUp,
   Zap, FileText, BarChart3, BookmarkCheck, ChevronRight,
   Sparkles, Award, Crown, Rocket, FlaskConical, Check, Loader2, X, Send, MessageSquareQuote, AlertCircle, Hourglass,
-  Camera, Pencil, Lock, Trophy, Star, Activity, Sun, Moon, Cloud, CheckCircle, Info, Settings,
+  Camera, Pencil, Lock, Trophy, Star, Activity, Sun, Moon, Cloud, CheckCircle, Info, Settings, Gift,
 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
@@ -96,6 +96,9 @@ export default function ProfilePage() {
     limits: { summary: number; question: number; translation: number; quote_chat: number } | null
   } | null>(null)
 
+  // Grants & rewards
+  const [activeGrants, setActiveGrants] = useState<{ plan: string; expiresAt: string | null; reason: string; grantedAt: string }[]>([])
+
   useEffect(() => {
     const loadAll = async () => {
       try {
@@ -164,6 +167,15 @@ export default function ProfilePage() {
           if (avatarRes.ok) {
             const avatarData = await avatarRes.json()
             if (avatarData.avatarImage) setAvatarImage(avatarData.avatarImage)
+          }
+        } catch { /* ignore */ }
+
+        // Fetch active grants
+        try {
+          const grantsRes = await authFetch('/api/grants')
+          if (grantsRes.ok) {
+            const grantsData = await grantsRes.json()
+            setActiveGrants(grantsData.grants || [])
           }
         } catch { /* ignore */ }
       } catch { /* ignore */ }
@@ -573,6 +585,61 @@ export default function ProfilePage() {
             )}
           </div>
         </div>
+
+        {/* ── ACTIVE GRANTS / REWARDS ── */}
+        {activeGrants.length > 0 && (
+          <div className="mt-6">
+            <h2 className="text-xs font-bold uppercase tracking-wider text-muted-foreground/70 mb-4 flex items-center gap-2">
+              <Gift className="h-3.5 w-3.5 text-emerald-500" />
+              Active Benefits
+            </h2>
+            <div className="space-y-3">
+              {activeGrants.map((g, i) => {
+                const isExpiring = g.expiresAt && new Date(g.expiresAt) > new Date() && new Date(g.expiresAt).getTime() - Date.now() < 86400000 * 3
+                return (
+                  <div key={i} className={`rounded-xl border p-4 shadow-sm ${
+                    isExpiring
+                      ? 'border-amber-300/50 bg-gradient-to-r from-amber-50/60 to-background dark:from-amber-950/10'
+                      : 'border-emerald-300/30 bg-gradient-to-r from-emerald-50/40 to-background dark:from-emerald-950/10'
+                  }`}>
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className={`flex h-10 w-10 items-center justify-center rounded-xl ${
+                          g.plan === 'founder' ? 'bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30' : 'bg-violet-100 text-violet-600 dark:bg-violet-900/30'
+                        }`}>
+                          {g.plan === 'founder' ? <Crown className="h-5 w-5" /> : <Rocket className="h-5 w-5" />}
+                        </div>
+                        <div>
+                          <p className="text-sm font-bold text-foreground">{PLAN_LABELS[g.plan as AIPlan]} Access</p>
+                          <p className="text-xs text-muted-foreground/70">{g.reason}</p>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        {g.expiresAt ? (
+                          <span className={`text-[10px] font-semibold ${isExpiring ? 'text-amber-600' : 'text-muted-foreground/60'}`}>
+                            {isExpiring ? 'Expiring soon' : `Expires ${new Date(g.expiresAt).toLocaleDateString()}`}
+                          </span>
+                        ) : (
+                          <span className="text-[10px] font-semibold text-emerald-600">Permanent</span>
+                        )}
+                      </div>
+                    </div>
+                    {g.expiresAt && (
+                      <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-muted/60">
+                        <div
+                          className={`h-full rounded-full transition-all ${isExpiring ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                          style={{
+                            width: `${Math.max(0, Math.min(100, ((new Date(g.expiresAt).getTime() - Date.now()) / (86400000 * 30)) * 100))}%`,
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        )}
 
         {/* ── TODAY'S PROGRESS ── */}
         {dailyGoal.enabled && (

@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight, Sparkles, Crown, FlaskConical, Rocket, MessageSquareQuote, Download, BarChart3, History, CheckCircle, XCircle, UserCog, UserMinus, UserPlus, LogOut, KeyRound, Megaphone, CheckCheck, Square, CheckSquare } from 'lucide-react'
+import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight, Sparkles, Crown, FlaskConical, Rocket, MessageSquareQuote, Download, BarChart3, History, CheckCircle, XCircle, UserCog, UserMinus, UserPlus, LogOut, KeyRound, Megaphone, CheckCheck, Square, CheckSquare, Gift } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 import { PLAN_LABELS, PLAN_DESCRIPTIONS, type AIPlan } from '@/lib/ai-plan'
@@ -82,6 +82,18 @@ interface Announcement {
   active: boolean
 }
 
+interface GrantEntry {
+  _id: string
+  username: string
+  plan: string
+  grantedBy: string
+  durationDays: number
+  grantedAt: string
+  expiresAt: string | null
+  reason: string
+  active: boolean
+}
+
 const ACTION_LABELS: Record<string, string> = {
   delete_user: 'Deleted User',
   promote_admin: 'Promoted to Admin',
@@ -127,6 +139,7 @@ export default function AdminPage() {
   const [analytics, setAnalytics] = useState<AnalyticsData | null>(null)
   const [auditLog, setAuditLog] = useState<AuditEntry[]>([])
   const [announcements, setAnnouncements] = useState<Announcement[]>([])
+  const [grants, setGrants] = useState<GrantEntry[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [search, setSearch] = useState('')
@@ -153,6 +166,13 @@ export default function AdminPage() {
   const [announceExpiry, setAnnounceExpiry] = useState('')
   const [announceSubmitting, setAnnounceSubmitting] = useState(false)
 
+  // Grant state
+  const [grantUsername, setGrantUsername] = useState('')
+  const [grantPlan, setGrantPlan] = useState('pro')
+  const [grantDuration, setGrantDuration] = useState('')
+  const [grantReason, setGrantReason] = useState('')
+  const [grantSubmitting, setGrantSubmitting] = useState(false)
+
   // Bulk selection state
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkPlanDialog, setBulkPlanDialog] = useState<{ plan?: AIPlan } | null>(null)
@@ -169,13 +189,14 @@ export default function AdminPage() {
 
     const load = async () => {
       try {
-        const [usersRes, statsRes, requestsRes, analyticsRes, auditRes, annRes] = await Promise.all([
+        const [usersRes, statsRes, requestsRes, analyticsRes, auditRes, annRes, grantsRes] = await Promise.all([
           authFetch('/api/admin/users'),
           authFetch('/api/admin/stats'),
           authFetch('/api/admin/access-requests').catch(() => null),
           authFetch('/api/admin/analytics').catch(() => null),
           authFetch('/api/admin/audit-log').catch(() => null),
           authFetch('/api/admin/announcements').catch(() => null),
+          authFetch('/api/admin/grants').catch(() => null),
         ])
         if (!usersRes.ok || !statsRes.ok) { setError('Failed to load data'); return }
         const usersData = await usersRes.json()
@@ -190,6 +211,8 @@ export default function AdminPage() {
         setAnalytics(analyticsData)
         setAuditLog(auditData.entries || [])
         setAnnouncements(annData.announcements || [])
+        const grantsData = grantsRes?.ok ? await grantsRes.json() : { grants: [] }
+        setGrants(grantsData.grants || [])
       } catch {
         setError('Failed to load data')
       } finally {
@@ -287,6 +310,33 @@ export default function AdminPage() {
     } else {
       const data = await res.json().catch(() => ({}))
       alert(data?.error || 'Failed to create announcement')
+    }
+  }
+
+  const handleCreateGrant = async () => {
+    if (!grantUsername.trim()) return
+    setGrantSubmitting(true)
+    const res = await authFetch('/api/admin/grants', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: grantUsername.trim(),
+        plan: grantPlan,
+        durationDays: grantDuration ? Number(grantDuration) : 0,
+        reason: grantReason.trim() || undefined,
+      }),
+    })
+    setGrantSubmitting(false)
+    if (res.ok) {
+      const data = await res.json()
+      setGrants((prev) => [data.grant, ...prev])
+      setGrantUsername('')
+      setGrantPlan('pro')
+      setGrantDuration('')
+      setGrantReason('')
+    } else {
+      const data = await res.json().catch(() => ({}))
+      alert(data?.error || 'Failed to grant plan')
     }
   }
 
@@ -684,6 +734,112 @@ export default function AdminPage() {
               </div>
             ) : (
               <p className="text-center text-xs text-muted-foreground/50">No announcements yet. Create one above.</p>
+            )}
+          </div>
+        </div>
+
+        {/* ── GRANTS / REWARDS ── */}
+        <div className="mb-6 rounded-xl border bg-background/60 shadow-sm backdrop-blur-sm">
+          <div className="flex items-center gap-2 border-b border-border/40 p-4">
+            <Gift className="h-4 w-4 text-muted-foreground" />
+            <h2 className="text-sm font-bold text-foreground">Grants &amp; Rewards</h2>
+            <span className="text-[10px] text-muted-foreground/60">Grant plans to users</span>
+          </div>
+          <div className="p-4">
+            <div className="mb-4 grid gap-3 sm:grid-cols-[1fr_auto_auto_1fr_auto]">
+              <input
+                type="text"
+                value={grantUsername}
+                onChange={(e) => setGrantUsername(e.target.value)}
+                placeholder="Username..."
+                className="h-9 rounded-lg border border-border/60 bg-background/80 px-3 text-sm outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+              />
+              <select
+                value={grantPlan}
+                onChange={(e) => setGrantPlan(e.target.value)}
+                className="h-9 rounded-lg border border-border/60 bg-background/80 px-3 text-sm outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+              >
+                <option value="pro">Pro</option>
+                <option value="beta">Beta Tester</option>
+                <option value="founder">Founder</option>
+              </select>
+              <input
+                type="number"
+                min={0}
+                value={grantDuration}
+                onChange={(e) => setGrantDuration(e.target.value)}
+                placeholder="Days (0 = permanent)"
+                className="h-9 w-24 rounded-lg border border-border/60 bg-background/80 px-3 text-sm outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+              />
+              <input
+                type="text"
+                value={grantReason}
+                onChange={(e) => setGrantReason(e.target.value)}
+                placeholder="Reason (optional)..."
+                className="h-9 rounded-lg border border-border/60 bg-background/80 px-3 text-sm outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+              />
+              <button
+                onClick={handleCreateGrant}
+                disabled={grantSubmitting || !grantUsername.trim()}
+                className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-600 px-4 text-xs font-semibold text-white transition-colors hover:bg-emerald-700 disabled:opacity-40"
+              >
+                {grantSubmitting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Gift className="h-3.5 w-3.5" />}
+                Grant
+              </button>
+            </div>
+
+            {grants.length > 0 ? (
+              <div className="overflow-x-auto">
+                <table className="w-full text-left text-xs">
+                  <thead>
+                    <tr className="border-b border-border/30 text-muted-foreground/60">
+                      <th className="px-3 py-2 font-semibold">User</th>
+                      <th className="px-3 py-2 font-semibold">Plan</th>
+                      <th className="px-3 py-2 font-semibold">Granted By</th>
+                      <th className="px-3 py-2 font-semibold">Duration</th>
+                      <th className="px-3 py-2 font-semibold">Expires</th>
+                      <th className="px-3 py-2 font-semibold">Status</th>
+                      <th className="px-3 py-2 font-semibold">Date</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {grants.map((g) => {
+                      const expired = g.expiresAt && new Date(g.expiresAt) <= new Date()
+                      return (
+                        <tr key={g._id} className="border-b border-border/20 transition-colors hover:bg-muted/30">
+                          <td className="px-3 py-2 font-medium text-foreground">{g.username}</td>
+                          <td className="px-3 py-2">
+                            <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-semibold ${
+                              g.plan === 'founder' ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400' :
+                              g.plan === 'pro' ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400' :
+                              'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
+                            }`}>
+                              {PLAN_LABELS[g.plan as AIPlan] || g.plan}
+                            </span>
+                          </td>
+                          <td className="px-3 py-2 text-muted-foreground/70">{g.grantedBy}</td>
+                          <td className="px-3 py-2 text-muted-foreground/70">{g.durationDays > 0 ? `${g.durationDays} days` : 'Permanent'}</td>
+                          <td className="px-3 py-2 text-muted-foreground/70">
+                            {g.expiresAt ? new Date(g.expiresAt).toLocaleDateString() : 'Never'}
+                          </td>
+                          <td className="px-3 py-2">
+                            {expired ? (
+                              <span className="text-red-500/70">Expired</span>
+                            ) : (
+                              <span className="text-emerald-500/70">Active</span>
+                            )}
+                          </td>
+                          <td className="px-3 py-2 text-muted-foreground/50 whitespace-nowrap">
+                            {new Date(g.grantedAt).toLocaleDateString()}
+                          </td>
+                        </tr>
+                      )
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <p className="text-center text-xs text-muted-foreground/50">No grants yet.</p>
             )}
           </div>
         </div>

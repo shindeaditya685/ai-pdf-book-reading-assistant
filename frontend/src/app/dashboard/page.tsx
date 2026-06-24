@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2 } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2, Gift } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
@@ -138,6 +138,7 @@ export default function DashboardPage() {
   } | null>(null)
   const [dismissedResume, setDismissedResume] = useState(true)
   const [announcements, setAnnouncements] = useState<{ _id: string; title: string; body: string }[]>([])
+  const [rewardNotification, setRewardNotification] = useState<{ days: number; rewardDays: number } | null>(null)
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set()
     try {
@@ -383,6 +384,17 @@ export default function DashboardPage() {
   useEffect(() => {
     authFetch('/api/announcements').then((res) => {
       if (res.ok) res.json().then((data) => setAnnouncements(data.announcements || []))
+    }).catch(() => {})
+  }, [])
+
+  // Check for new streak rewards
+  useEffect(() => {
+    authFetch('/api/rewards').then((res) => {
+      if (res.ok) res.json().then((data) => {
+        if (data.newReward) {
+          setRewardNotification({ days: data.streak, rewardDays: data.newReward.durationDays })
+        }
+      })
     }).catch(() => {})
   }, [])
 
@@ -708,6 +720,30 @@ export default function DashboardPage() {
                 <UploadZone variant="panel" />
               </aside>
             </section>
+
+            {rewardNotification && (
+              <div className="relative rounded-xl border border-emerald-300/50 bg-gradient-to-r from-emerald-50/90 to-emerald-100/50 px-5 py-4 pr-12 shadow-sm dark:border-emerald-800/30 dark:from-emerald-950/30 dark:to-emerald-900/20">
+                <button
+                  onClick={() => setRewardNotification(null)}
+                  className="absolute right-3 top-3 rounded-md p-1 text-emerald-400 transition-colors hover:bg-emerald-200/50 hover:text-emerald-700 dark:hover:bg-emerald-800/30"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <div className="flex items-start gap-3">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                    <Gift className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                      Streak Reward Unlocked!
+                    </p>
+                    <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-400/80">
+                      You reached a {rewardNotification.days}-day streak and earned <strong>{rewardNotification.rewardDays} days of Pro</strong> access!
+                    </p>
+                  </div>
+                </div>
+              </div>
+            )}
 
             {announcements.filter((a) => !dismissedAnnouncements.has(a._id)).map((a) => (
               <div key={a._id} className="relative rounded-xl border border-violet-200/40 bg-gradient-to-r from-violet-50/80 to-fuchsia-50/80 px-5 py-4 pr-12 shadow-sm dark:border-violet-800/20 dark:from-violet-950/20 dark:to-fuchsia-950/20">
