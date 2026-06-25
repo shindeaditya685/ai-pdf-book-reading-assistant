@@ -478,6 +478,11 @@ interface PDFState {
   showReadingStats: boolean;
   showReadingAnalytics: boolean;
 
+  // Dashboard cache (persists across SPA navigations)
+  announcements: { _id: string; title: string; body: string }[];
+  rewardNotification: { days: number; rewardDays: number } | null;
+  lastDashboardFetch: number;
+
   // UI panels
   showHistory: boolean;
   showBookmarks: boolean;
@@ -637,6 +642,11 @@ interface PDFState {
   setStreakCount: (count: number) => void;
   setDailyGoal: (enabled: boolean, pages: number, minutes: number) => void;
   setShowReadingStats: (show: boolean) => void;
+  // Dashboard cache actions
+  setDashboardCache: (data: {
+    announcements?: { _id: string; title: string; body: string }[];
+    rewardNotification?: { days: number; rewardDays: number } | null;
+  }) => void;
   toggleReadingStats: () => void;
   setShowReadingAnalytics: (show: boolean) => void;
 
@@ -823,6 +833,10 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   dailyGoalMinutes: 30,
   showReadingStats: false,
   showReadingAnalytics: false,
+
+  announcements: [],
+  rewardNotification: null,
+  lastDashboardFetch: 0,
 
   showHistory: false,
   showBookmarks: false,
@@ -1165,6 +1179,12 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   setTodayStats: (pages, minutes) =>
     set({ todayPages: pages, todayMinutes: minutes }),
   setStreakCount: (count) => set({ streakCount: count }),
+  setDashboardCache: (data) =>
+    set((s) => ({
+      announcements: data.announcements ?? s.announcements,
+      rewardNotification: data.rewardNotification !== undefined ? data.rewardNotification : s.rewardNotification,
+      lastDashboardFetch: Date.now(),
+    })),
   setDailyGoal: (enabled, pages, minutes) =>
     set({
       dailyGoalEnabled: enabled,

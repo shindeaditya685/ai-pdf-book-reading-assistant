@@ -32,40 +32,157 @@ interface BookInfo {
 }
 
 function TreeSVG({ ratio, animated }: { ratio: number; animated: boolean }) {
-  const trunkBase = 102, trunkTop = 48
-  const canopyY = trunkTop - 4 - ratio * 10
-  const leafCount = Math.floor(ratio * 28)
-  const canopyRadius = 6 + ratio * 22
+  const t = `transition-all ${animated ? 'duration-700 ease-in-out' : 'duration-0'}`
+
+  // Trunk grows upward from base (y=114) as ratio increases
+  const trunkH   = 30 + ratio * 60          // 30 → 90
+  const trunkY   = 114 - trunkH             // top of trunk
+  const trunkW   = 8 + ratio * 6            // 8 → 14 (thickens slightly)
+  const trunkX   = 50 - trunkW / 2
+
+  // Canopy centre sits just above trunk top
+  const canopyY = trunkY + 4
+
+  // Each foliage layer scales with ratio
+  const s1 = Math.max(0, Math.min(1, (ratio - 0.0) / 0.25))  // outer low  0–25%
+  const s2 = Math.max(0, Math.min(1, (ratio - 0.2) / 0.25))  // mid low    20–45%
+  const s3 = Math.max(0, Math.min(1, (ratio - 0.4) / 0.25))  // centre     40–65%
+  const s4 = Math.max(0, Math.min(1, (ratio - 0.55) / 0.25)) // upper      55–80%
+  const s5 = Math.max(0, Math.min(1, (ratio - 0.7) / 0.20))  // top crown  70–90%
+
+  // Side branches appear progressively
+  const b1 = Math.max(0, Math.min(1, (ratio - 0.15) / 0.2))
+  const b2 = Math.max(0, Math.min(1, (ratio - 0.3) / 0.2))
+  const b3 = Math.max(0, Math.min(1, (ratio - 0.5) / 0.2))
+  const b4 = Math.max(0, Math.min(1, (ratio - 0.65) / 0.2))
+
+  const fruitOpacity = Math.max(0, (ratio - 0.82) / 0.18)
+  const starOpacity  = Math.max(0, (ratio - 0.95) / 0.05)
 
   return (
-    <svg viewBox="0 0 100 120" className="h-full w-full" style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.06))' }}>
-      <ellipse cx="50" cy="114" rx="36" ry="4" fill="var(--paper-border)" opacity={0.5} />
-      {Array.from({ length: leafCount }).map((_, i) => {
-        const angle = (i / leafCount) * Math.PI * 2 + (ratio * 0.3)
-        const dist = 2 + Math.random() * canopyRadius * (0.7 + ratio * 0.3)
-        const lx = 50 + Math.cos(angle) * dist
-        const ly = canopyY + Math.sin(angle) * dist * 0.65
-        const size = 2.5 + Math.random() * 5 * ratio
-        const shade = 0.35 + Math.random() * 0.4
-        return (
-          <ellipse key={i} cx={lx} cy={ly} rx={size * 0.65} ry={size}
-            fill={`oklch(${0.5 + shade * 0.2} ${0.15 + ratio * 0.1} ${130 + Math.random() * 40})`}
-            opacity={0.6 + ratio * 0.4}
-            transform={`rotate(${-20 + Math.random() * 40}, ${lx}, ${ly})`}
-            className={animated ? 'transition-all duration-1000' : ''}
-          />
-        )
-      })}
-      {ratio > 0.85 && Array.from({ length: 4 }).map((_, i) => {
-        const fx = 38 + Math.random() * 24
-        const fy = canopyY - 6 - Math.random() * canopyRadius * 0.6
-        return <circle key={`f-${i}`} cx={fx} cy={fy} r={2 + Math.random() * 1.5} fill="#d97706" opacity={0.5 + Math.random() * 0.3} />
-      })}
-      <path d={`M46 ${trunkBase} Q42 ${trunkBase * 0.72} 44 ${trunkTop} L56 ${trunkTop} Q58 ${trunkBase * 0.72} 54 ${trunkBase} Z`} fill="#6b5c52" className={animated ? 'transition-all duration-1000' : ''} />
-      {ratio > 0.15 && <path d={`M44 ${trunkTop + 6} Q${44 - ratio * 14} ${canopyY + 6} ${44 - canopyRadius * 0.6} ${canopyY + 4}`} stroke="#6b5c52" strokeWidth="2" fill="none" strokeLinecap="round" className={animated ? 'transition-all duration-700' : ''} />}
-      {ratio > 0.3 && <path d={`M56 ${trunkTop + 3} Q${56 + ratio * 12} ${canopyY + 4} ${56 + canopyRadius * 0.5} ${canopyY}`} stroke="#6b5c52" strokeWidth="2" fill="none" strokeLinecap="round" className={animated ? 'transition-all duration-700' : ''} />}
-      {ratio > 0.5 && <path d={`M46 ${trunkTop - 1} Q${40 - ratio * 4} ${canopyY - 4} ${50 - canopyRadius * 0.5} ${canopyY - 6}`} stroke="#6b5c52" strokeWidth="1.8" fill="none" strokeLinecap="round" className={animated ? 'transition-all duration-700' : ''} />}
-      {ratio > 0.7 && <path d={`M54 ${trunkTop - 3} Q${60 + ratio * 3} ${canopyY - 6} ${50 + canopyRadius * 0.5} ${canopyY - 8}`} stroke="#6b5c52" strokeWidth="1.8" fill="none" strokeLinecap="round" className={animated ? 'transition-all duration-700' : ''} />}
+    <svg
+      viewBox="0 -18 100 138"
+      className="h-full w-full"
+      aria-label={`Tree ${Math.round(ratio * 100)}% grown`}
+      style={{ filter: 'drop-shadow(0 2px 6px rgba(0,0,0,0.06))' }}
+    >
+      {/* Ground shadow */}
+      <ellipse cx="50" cy="114" rx="36" ry="4" fill="#B4B2A9" opacity={0.4} />
+
+      {/* === Side branches (behind canopy) === */}
+      {b1 > 0 && (
+        <path
+          d={`M${50 - trunkW * 0.3} ${trunkY + trunkH * 0.35}
+              Q${50 - 14 * b1} ${trunkY + trunkH * 0.3}
+               ${50 - 18 * b1} ${trunkY + trunkH * 0.2}`}
+          stroke="#6b5c52" strokeWidth="1.8" fill="none" strokeLinecap="round"
+          opacity={b1} className={t}
+        />
+      )}
+      {b2 > 0 && (
+        <path
+          d={`M${50 + trunkW * 0.3} ${trunkY + trunkH * 0.28}
+              Q${50 + 14 * b2} ${trunkY + trunkH * 0.22}
+               ${50 + 18 * b2} ${trunkY + trunkH * 0.1}`}
+          stroke="#6b5c52" strokeWidth="1.8" fill="none" strokeLinecap="round"
+          opacity={b2} className={t}
+        />
+      )}
+      {b3 > 0 && (
+        <path
+          d={`M${50 - trunkW * 0.2} ${trunkY + trunkH * 0.15}
+              Q${50 - 12 * b3} ${trunkY + trunkH * 0.08}
+               ${50 - 16 * b3} ${trunkY - 2}`}
+          stroke="#6b5c52" strokeWidth="1.4" fill="none" strokeLinecap="round"
+          opacity={b3} className={t}
+        />
+      )}
+      {b4 > 0 && (
+        <path
+          d={`M${50 + trunkW * 0.2} ${trunkY + trunkH * 0.1}
+              Q${50 + 10 * b4} ${trunkY + trunkH * 0.02}
+               ${50 + 14 * b4} ${trunkY - 5}`}
+          stroke="#6b5c52" strokeWidth="1.4" fill="none" strokeLinecap="round"
+          opacity={b4} className={t}
+        />
+      )}
+
+      {/* === Trunk === */}
+      <rect
+        x={trunkX} y={trunkY}
+        width={trunkW} height={trunkH}
+        rx={trunkW / 2}
+        fill="#6b5c52"
+        className={t}
+      />
+
+      {/* === Foliage layers (back → front) === */}
+
+      {/* Layer 1 — wide outer low (darkest) */}
+      {s1 > 0 && (
+        <>
+          <ellipse cx={50 - 16 * s1} cy={canopyY + 8} rx={16 * s1} ry={20 * s1}
+            fill="#27500A" opacity={0.85 * s1} className={t} />
+          <ellipse cx={50 + 16 * s1} cy={canopyY + 8} rx={16 * s1} ry={20 * s1}
+            fill="#27500A" opacity={0.85 * s1} className={t} />
+        </>
+      )}
+
+      {/* Layer 2 — mid spread */}
+      {s2 > 0 && (
+        <>
+          <ellipse cx={50 - 12 * s2} cy={canopyY + 2} rx={18 * s2} ry={24 * s2}
+            fill="#3B6D11" opacity={0.9 * s2} className={t} />
+          <ellipse cx={50 + 12 * s2} cy={canopyY + 2} rx={18 * s2} ry={24 * s2}
+            fill="#3B6D11" opacity={0.9 * s2} className={t} />
+        </>
+      )}
+
+      {/* Layer 3 — main centre canopy */}
+      {s3 > 0 && (
+        <ellipse cx={50} cy={canopyY - 4} rx={22 * s3} ry={28 * s3}
+          fill="#639922" opacity={s3} className={t} />
+      )}
+
+      {/* Layer 4 — upper canopy (lighter) */}
+      {s4 > 0 && (
+        <>
+          <ellipse cx={50 - 8 * s4} cy={canopyY - 12 * s4} rx={14 * s4} ry={18 * s4}
+            fill="#63B022" opacity={0.9 * s4} className={t} />
+          <ellipse cx={50 + 8 * s4} cy={canopyY - 10 * s4} rx={12 * s4} ry={16 * s4}
+            fill="#63B022" opacity={0.85 * s4} className={t} />
+        </>
+      )}
+
+      {/* Layer 5 — crown top */}
+      {s5 > 0 && (
+        <ellipse cx={50} cy={canopyY - 22 * s5} rx={14 * s5} ry={18 * s5}
+          fill="#97C459" opacity={0.95 * s5} className={t} />
+      )}
+
+      {/* === Fruits (appear near completion) === */}
+      {fruitOpacity > 0 && (
+        <>
+          <circle cx={38} cy={canopyY - 8} r={3} fill="#D85A30" opacity={fruitOpacity} />
+          <circle cx={58} cy={canopyY - 2} r={3} fill="#D85A30" opacity={fruitOpacity * 0.9} />
+          <circle cx={44} cy={canopyY - 18} r={2.5} fill="#D85A30" opacity={fruitOpacity * 0.8} />
+          <circle cx={34} cy={canopyY + 4} r={2.5} fill="#FAC775" opacity={fruitOpacity * 0.85} />
+          <circle cx={62} cy={canopyY - 14} r={2.5} fill="#FAC775" opacity={fruitOpacity * 0.75} />
+        </>
+      )}
+
+      {/* === Sparkle (100%) === */}
+      {starOpacity > 0 && (
+        <text
+          x="50" y={canopyY - 34}
+          textAnchor="middle"
+          fontSize="10"
+          fill="#FAC775"
+          opacity={starOpacity}
+        >
+          ✨
+        </text>
+      )}
     </svg>
   )
 }
@@ -112,8 +229,6 @@ export function ReadingChallenge() {
       return next
     })
   }
-
-  const treeKey = `tree-${Math.round(avgProgress * 100)}`
 
   if (loading) {
     return (
@@ -196,8 +311,8 @@ export function ReadingChallenge() {
 
       {/* Body */}
       <div className="flex items-center gap-6 px-5 py-4">
-        <div className="h-24 w-20 shrink-0">
-          <TreeSVG key={treeKey} ratio={avgProgress} animated />
+        <div className="h-28 w-20 shrink-0">
+          <TreeSVG ratio={avgProgress} animated />
         </div>
         <div className="flex-1">
           <div className="flex items-baseline gap-2">

@@ -74,6 +74,7 @@ const timeAgo = (timestamp: number) => {
 }
 
 const RESUME_DISMISS_KEY = 'pdf-reader-ai-resume-dismissed'
+const FETCH_TTL = 60_000
 
 export default function DashboardPage() {
   const {
@@ -111,6 +112,10 @@ export default function DashboardPage() {
     setOcrText,
     clearOcrText,
     setStreakCount,
+    announcements,
+    rewardNotification,
+    lastDashboardFetch,
+    setDashboardCache,
   } = usePDFStore()
 
   const { user, logout } = useAuth()
@@ -137,8 +142,6 @@ export default function DashboardPage() {
     timestamp: number
   } | null>(null)
   const [dismissedResume, setDismissedResume] = useState(true)
-  const [announcements, setAnnouncements] = useState<{ _id: string; title: string; body: string }[]>([])
-  const [rewardNotification, setRewardNotification] = useState<{ days: number; rewardDays: number } | null>(null)
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set()
     try {
@@ -252,21 +255,29 @@ export default function DashboardPage() {
     }
   }, [handleLoadRecentPdf, user?.username])
 
-  // Load recent PDFs from MongoDB on mount
+  // Load recent PDFs from MongoDB on mount (cache in zustand store across navigations)
   useEffect(() => {
     if (!user?.username || recentLoadedRef.current === user.username) return
     recentLoadedRef.current = user.username
-    usePDFStore.setState({ recentPdfs: [] })
+
+    const store = usePDFStore.getState()
+    const hasCached = store.recentPdfs.length > 0
+
+    if (hasCached) {
+      // Show cached data immediately; re-fetch silently in background
+      setRecentPdfsLoading(false)
+      restoreResumeBook(store.recentPdfs)
+    } else {
+      setRecentPdfsLoading(true)
+    }
 
     const loadRecentPdfs = async () => {
-      setRecentPdfsLoading(true)
       try {
         const res = await authFetch('/api/db/pdf')
         const pdfs: any[] = await res.json()
         if (Array.isArray(pdfs)) {
+          // Merge remote data into store (dedupes by fileName internally)
           pdfs.forEach((p) => {
-            // Use the max of DB and localStorage — localStorage may be ahead of the DB
-            // if the user closed the tab before the debounced PATCH fired.
             const storedPage = getStoredBookPage(user.username, p.fileName) || 0
             const dbPage = Number(p.lastPage) || 0
             const lastPage = Math.max(dbPage, storedPage) || 1
@@ -280,24 +291,8 @@ export default function DashboardPage() {
             })
           })
 
-          const activeBook = getActiveBook(user.username)
-          if (!pdfDataUrl && activeBook && pdfs.some((p) => p.fileName === activeBook)) {
-            const activeMeta = pdfs.find((p) => p.fileName === activeBook)
-            // Use the max of DB and localStorage for the resume display
-            const storedPage = getStoredBookPage(user.username, activeBook) || 0
-            const dbPage = Number(activeMeta?.lastPage) || 0
-            const lastPage = Math.max(dbPage, storedPage) || 1
-            const dismissed = typeof window !== 'undefined' &&
-              window.localStorage.getItem(RESUME_DISMISS_KEY) === activeBook
-            setDismissedResume(dismissed)
-            if (!dismissed) {
-              setResumeBook({
-                fileName: activeBook,
-                lastPage,
-                pageCount: activeMeta?.pageCount || 0,
-                timestamp: activeMeta?.timestamp ? Number(activeMeta.timestamp) : Date.now(),
-              })
-            }
+          if (!hasCached) {
+            restoreResumeBook(pdfs)
           }
         }
       } catch {
@@ -310,15 +305,40 @@ export default function DashboardPage() {
     loadRecentPdfs()
   }, [addRecentPdf, handleLoadRecentPdf, pdfDataUrl, user?.username])
 
-  // Load bookmarks and history from MongoDB when PDF loads
+  function restoreResumeBook(pdfs: any[]) {
+    const activeBook = getActiveBook(user?.username)
+    if (!pdfDataUrl && activeBook && pdfs.some((p: any) => p.fileName === activeBook)) {
+      const activeMeta = pdfs.find((p: any) => p.fileName === activeBook)
+      const storedPage = getStoredBookPage(user?.username, activeBook) || 0
+      const dbPage = Number(activeMeta?.lastPage) || 0
+      const lastPage = Math.max(dbPage, storedPage) || 1
+      const dismissed = typeof window !== 'undefined' &&
+        window.localStorage.getItem(RESUME_DISMISS_KEY) === activeBook
+      setDismissedResume(dismissed)
+      if (!dismissed) {
+        setResumeBook({
+          fileName: activeBook,
+          lastPage,
+          pageCount: activeMeta?.pageCount || 0,
+          timestamp: activeMeta?.timestamp ? Number(activeMeta.timestamp) : Date.now(),
+        })
+      }
+    }
+  }
+
+  // Load bookmarks and history from MongoDB when PDF loads (cache in zustand store)
   useEffect(() => {
     if (!pdfFileName || dataLoadedRef.current === pdfFileName) return
     dataLoadedRef.current = pdfFileName
 
+    // Skip fetch if store already has data for this PDF
+    const store = usePDFStore.getState()
+    const hasHistory = store.wordHistory.some((w) => w.pdfFileName === pdfFileName)
+    const hasBookmarks = store.bookmarks.some((b) => b.pdfFileName === pdfFileName)
+    if (hasHistory && hasBookmarks) return
+
     const loadData = async () => {
       try {
-        usePDFStore.setState({ wordHistory: [], bookmarks: [] })
-
         const [bookmarksRes, historyRes] = await Promise.all([
           authFetch(`/api/db/bookmarks?pdfFileName=${encodeURIComponent(pdfFileName)}`),
           authFetch(`/api/db/history?pdfFileName=${encodeURIComponent(pdfFileName)}`),
@@ -365,38 +385,33 @@ export default function DashboardPage() {
     loadData()
   }, [pdfFileName, addBookmark, addToHistory])
 
-  // Fetch streak count on mount (always, even without PDF loaded)
+  // Fetch dashboard data (streak, announcements, rewards) — cached in store across navigations
   useEffect(() => {
-    authFetch('/api/reading-stats?days=1').then((res) => {
-      if (res.ok) res.json().then((data) => {
-        setStreakCount(data.streak || 0)
-        if (data.today) {
+    const now = Date.now()
+    if (now - lastDashboardFetch < FETCH_TTL) return
+
+    Promise.all([
+      authFetch('/api/reading-stats?days=1').then((r) => r.ok ? r.json() : null),
+      authFetch('/api/announcements').then((r) => r.ok ? r.json() : null),
+      authFetch('/api/rewards').then((r) => r.ok ? r.json() : null),
+    ]).then(([stats, ann, rew]) => {
+      if (stats) {
+        setStreakCount(stats.streak || 0)
+        if (stats.today) {
           usePDFStore.getState().setTodayStats(
-            data.today.pagesRead || 0,
-            data.today.timeSpentMs ? Math.round(data.today.timeSpentMs / 60000) : 0
+            stats.today.pagesRead || 0,
+            stats.today.timeSpentMs ? Math.round(stats.today.timeSpentMs / 60000) : 0
           )
         }
+      }
+      setDashboardCache({
+        announcements: ann?.announcements || [],
+        rewardNotification: rew?.newReward
+          ? { days: rew.streak, rewardDays: rew.newReward.durationDays }
+          : null,
       })
     }).catch(() => {})
-  }, [setStreakCount])
-
-  // Fetch active announcements
-  useEffect(() => {
-    authFetch('/api/announcements').then((res) => {
-      if (res.ok) res.json().then((data) => setAnnouncements(data.announcements || []))
-    }).catch(() => {})
-  }, [])
-
-  // Check for new streak rewards
-  useEffect(() => {
-    authFetch('/api/rewards').then((res) => {
-      if (res.ok) res.json().then((data) => {
-        if (data.newReward) {
-          setRewardNotification({ days: data.streak, rewardDays: data.newReward.durationDays })
-        }
-      })
-    }).catch(() => {})
-  }, [])
+  }, [lastDashboardFetch, setStreakCount, setDashboardCache])
 
   // Real-time share session sync
   useShareSSE()
@@ -738,7 +753,7 @@ export default function DashboardPage() {
             {rewardNotification && (
               <div className="relative rounded-xl border border-emerald-300/50 bg-gradient-to-r from-emerald-50/90 to-emerald-100/50 px-5 py-4 pr-12 shadow-sm dark:border-emerald-800/30 dark:from-emerald-950/30 dark:to-emerald-900/20">
                 <button
-                  onClick={() => setRewardNotification(null)}
+                  onClick={() => setDashboardCache({ rewardNotification: null })}
                   className="absolute right-3 top-3 rounded-md p-1 text-emerald-400 transition-colors hover:bg-emerald-200/50 hover:text-emerald-700 dark:hover:bg-emerald-800/30"
                 >
                   <X className="h-4 w-4" />

@@ -261,13 +261,13 @@ export default function VocabularyPage() {
                             <span className="hidden shrink-0 text-xs font-medium text-emerald-600 dark:text-emerald-400 sm:block">{w.translation}</span>
                           )}
                           <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted-foreground/30 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                          <button
+                          <span
                             onClick={(e) => { e.stopPropagation(); setDeleteConfirm(w.word) }}
-                            className="shrink-0 rounded p-0.5 text-muted-foreground/20 transition-colors hover:text-red-500"
+                            className="shrink-0 cursor-pointer rounded p-0.5 text-muted-foreground/20 transition-colors hover:text-red-500"
                             title="Delete this word"
                           >
                             <Trash2 className="h-3 w-3" />
-                          </button>
+                          </span>
                         </button>
 
                         {isExpanded && (
