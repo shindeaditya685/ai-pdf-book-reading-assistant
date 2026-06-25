@@ -25,8 +25,8 @@ export interface QuotaState {
 const EMPTY: QuotaState = {
   plan: 'free',
   isUnlimited: false,
-  usage: { date: '', summaries: 0, questions: 0, translations: 0, quoteChats: 0, minute: '', minuteCount: 0 },
-  limits: { summary: 0, question: 0, translation: 0, quote_chat: 0 },
+  usage: { date: '', summaries: 0, questions: 0, translations: 0, quoteChats: 0, ielts: 0, minute: '', minuteCount: 0 },
+  limits: { summary: 0, question: 0, translation: 0, quote_chat: 0, ielts: 0 },
   perMinuteLimit: 0,
   resetAt: '',
   loading: true,
@@ -59,6 +59,7 @@ export function useAIQuota(enabled = true) {
           question: isUnlimited ? null : Number(data.limits?.question) || 0,
           translation: isUnlimited ? null : Number(data.limits?.translation) || 0,
           quote_chat: isUnlimited ? null : Number(data.limits?.quote_chat) || 0,
+          ielts: isUnlimited ? null : Number(data.limits?.ielts) || 0,
         },
         perMinuteLimit: isUnlimited ? null : Number(data.perMinuteLimit) || 0,
         resetAt: data.resetAt || '',

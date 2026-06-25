@@ -1,23 +1,19 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono, Lora } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/ui/toaster";
 import { RootLayoutInner } from "@/components/root-layout-inner";
 
-const geistSans = Geist({
+const geistSans = {
   variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+};
 
-const geistMono = Geist_Mono({
+const geistMono = {
   variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+};
 
-const lora = Lora({
+const lora = {
   variable: "--font-geist-serif",
-  subsets: ["latin"],
-});
+};
 
 export const viewport: Viewport = {
   width: "device-width",

@@ -78,6 +78,7 @@ export async function getQuotaStatus(userId: string): Promise<{
       question: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'question'),
       translation: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'translation'),
       quote_chat: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'quote_chat'),
+      ielts: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'ielts'),
     },
     resetAt: nextMidnightUtc(),
     perMinuteLimit: isUnlimited ? Number.POSITIVE_INFINITY : getPerMinuteLimit(plan),
@@ -114,7 +115,9 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
       ? 'questions'
       : feature === 'quote_chat'
         ? 'quoteChats'
-        : 'translations'
+        : feature === 'ielts'
+          ? 'ielts'
+          : 'translations'
 
   // Fast-path: admins always allowed, no DB write needed
   const user = await db.collection('users').findOne(
@@ -164,12 +167,13 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
   // 2. If count < limit, increment
   // 3. Otherwise, no-op
   // Also: reset minute counter if minute is stale, then increment
-  type UsageField = 'summaries' | 'questions' | 'translations' | 'quoteChats'
+  type UsageField = 'summaries' | 'questions' | 'translations' | 'quoteChats' | 'ielts'
   const targetField: UsageField =
     feature === 'summary' ? 'summaries'
       : feature === 'question' ? 'questions'
         : feature === 'quote_chat' ? 'quoteChats'
-          : 'translations'
+          : feature === 'ielts' ? 'ielts'
+            : 'translations'
   const incExpr = (field: UsageField) =>
     field === targetField
       ? { $add: [{ $ifNull: [`$aiUsage.${field}`, 0] }, 1] }
@@ -204,6 +208,7 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
                 questions: incExpr('questions'),
                 translations: incExpr('translations'),
                 quoteChats: incExpr('quoteChats'),
+                ielts: incExpr('ielts'),
                 minute: minute,
                 minuteCount: minuteIncExpr(),
               },
@@ -213,6 +218,7 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
                 questions: feature === 'question' ? 1 : 0,
                 translations: feature === 'translation' ? 1 : 0,
                 quoteChats: feature === 'quote_chat' ? 1 : 0,
+                ielts: feature === 'ielts' ? 1 : 0,
                 minute: minute,
                 minuteCount: 1,
               },
@@ -269,7 +275,9 @@ export async function refundQuota(userId: string, feature: AIFeature): Promise<v
       ? 'questions'
       : feature === 'quote_chat'
         ? 'quoteChats'
-        : 'translations'
+        : feature === 'ielts'
+          ? 'ielts'
+          : 'translations'
   await conn.db.collection('users').updateOne(
     { _id: objectId, [`aiUsage.${usageField}`]: { $gt: 0 }, 'aiUsage.minuteCount': { $gt: 0 } },
     {
