@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { authFetch } from '@/lib/api'
+import { BookOpen, Clock, Flame, Brain } from 'lucide-react'
 
 type ReadingStats = {
   todayPages: number
@@ -46,30 +47,37 @@ export function ReadingStatsRow() {
   if (!stats) return null
 
   const items = [
-    { label: 'Pages Today', value: stats.todayPages.toString() },
-    { label: 'Reading Today', value: `${stats.todayMinutes}m` },
-    { label: 'Day Streak', value: stats.streak.toString() },
-    { label: 'Words Lookup', value: stats.totalWords.toLocaleString() },
+    { label: 'Pages Today', value: stats.todayPages.toString(), icon: BookOpen, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/10' },
+    { label: 'Reading Today', value: `${stats.todayMinutes}m`, icon: Clock, color: 'text-blue-500 bg-blue-500/10 border-blue-500/10' },
+    { label: 'Day Streak', value: stats.streak.toString(), icon: Flame, color: 'text-orange-500 bg-orange-500/10 border-orange-500/10' },
+    { label: 'Words Lookup', value: stats.totalWords.toLocaleString(), icon: Brain, color: 'text-violet-500 bg-violet-500/10 border-violet-500/10' },
   ]
 
   return (
-    <div
-      className="grid grid-cols-2 gap-px border md:grid-cols-4"
-      style={{ backgroundColor: 'var(--paper-border)', borderColor: 'var(--paper-border)' }}
-    >
-      {items.map((s) => (
-        <div key={s.label} className="p-5" style={{ backgroundColor: 'var(--canvas)' }}>
-          <span
-            className="mb-1 block text-[9px] uppercase tracking-tighter"
-            style={{ color: 'var(--accent-warm)' }}
+    <div className="grid grid-cols-2 gap-4 md:grid-cols-4">
+      {items.map((s) => {
+        const Icon = s.icon
+        const borderClass = s.color.split(' ')[2]
+        const iconClasses = s.color.split(' ').slice(0, 2).join(' ')
+        return (
+          <div
+            key={s.label}
+            className={`flex flex-col justify-between rounded-2xl border bg-background/40 backdrop-blur-md p-5 shadow-sm transition-all duration-300 hover:shadow-md hover:scale-[1.01] ${borderClass}`}
           >
-            {s.label}
-          </span>
-          <span className="text-2xl font-semibold" style={{ color: 'var(--ink)' }}>
-            {s.value}
-          </span>
-        </div>
-      ))}
+            <div className="flex items-center justify-between gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground/80">
+                {s.label}
+              </span>
+              <div className={`flex h-7 w-7 items-center justify-center rounded-lg ${iconClasses}`}>
+                <Icon className="h-4 w-4" />
+              </div>
+            </div>
+            <span className="mt-4 text-2xl font-black tracking-tight text-foreground">
+              {s.value}
+            </span>
+          </div>
+        )
+      })}
     </div>
   )
 }

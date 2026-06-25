@@ -239,59 +239,55 @@ export function ReadingChallenge() {
   }
 
   return (
-    <div
-      className="relative overflow-hidden rounded-sm border"
-      style={{ borderColor: 'var(--paper-border)', backgroundColor: 'var(--canvas)' }}
-    >
+    <div className="relative overflow-hidden rounded-2xl border border-emerald-500/10 bg-background/40 shadow-xl shadow-emerald-500/5 backdrop-blur-md transition-all hover:border-emerald-500/20 duration-300">
       {/* Header */}
-      <div className="flex items-center justify-between border-b px-5 py-3" style={{ borderColor: 'var(--paper-border)' }}>
+      <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
         <div>
-          <h3 className="text-sm italic tracking-tight" style={{ color: 'var(--ink)' }}>
+          <h3 className="text-sm font-bold text-foreground">
             Monthly Reading Challenge
           </h3>
-          <p className="mt-0.5 text-[10px] uppercase tracking-widest" style={{ color: 'var(--accent-warm)' }}>
+          <p className="mt-0.5 text-[9px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
             {new Date().toLocaleDateString('en-GB', { month: 'long', year: 'numeric' })}
           </p>
         </div>
         <button
           onClick={() => setSelecting(true)}
-          className="flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-[10px] font-semibold uppercase tracking-wider transition-all hover:opacity-70"
-          style={{ borderColor: 'var(--paper-border)', color: 'var(--ink)' }}
+          className="flex items-center gap-1.5 rounded-xl border border-border px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-muted-foreground transition-all hover:bg-muted hover:text-foreground active:scale-[0.97]"
         >
-          <BookPlus className="h-3 w-3" />
+          <BookPlus className="h-3.5 w-3.5 text-emerald-500" />
           {selectedBooks.length > 0 ? 'Edit' : 'Select Books'}
         </button>
       </div>
 
       {/* Selected books list */}
       {selectedBooks.length > 0 && (
-        <div className="border-b px-5 py-3 space-y-2" style={{ borderColor: 'var(--paper-border)' }}>
+        <div className="border-b border-border/40 px-5 py-3.5 space-y-2">
           {selectedBooks.map((book) => {
             const pct = book.pageCount > 0 ? Math.round((book.lastPage / book.pageCount) * 100) : 0
             const done = book.pageCount > 0 && book.lastPage >= book.pageCount
             return (
               <div key={book.fileName} className="flex items-center gap-3">
                 <div
-                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-bold text-white"
-                  style={{ backgroundColor: done ? '#059669' : 'var(--accent-warm)' }}
+                  className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-[9px] font-extrabold text-white shadow-sm"
+                  style={{ backgroundColor: done ? '#10b981' : 'var(--accent-warm)' }}
                 >
                   {done ? <Check className="h-3 w-3" /> : pct}
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="truncate text-xs" style={{ color: 'var(--ink)' }}>
+                  <p className="truncate text-xs font-medium text-foreground">
                     {titleOf(book.fileName)}
                   </p>
-                  <div className="mt-1 h-1 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'var(--paper-border)' }}>
+                  <div className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted/60">
                     <div
                       className="h-full rounded-full transition-all duration-500"
                       style={{
                         width: `${pct}%`,
-                        backgroundColor: done ? '#059669' : 'var(--accent-warm)',
+                        backgroundColor: done ? '#10b981' : 'var(--accent-warm)',
                       }}
                     />
                   </div>
                 </div>
-                <span className="text-[9px] tabular-nums" style={{ color: 'var(--accent-warm)' }}>
+                <span className="text-[9px] font-bold tabular-nums text-muted-foreground/80">
                   {pct}%
                 </span>
               </div>
@@ -303,35 +299,35 @@ export function ReadingChallenge() {
       {/* No books selected */}
       {selectedBooks.length === 0 && (
         <div className="px-5 py-6 text-center">
-          <p className="text-xs italic" style={{ color: 'var(--accent-warm)' }}>
+          <p className="text-xs italic text-muted-foreground/75">
             Select the books you plan to finish this month
           </p>
         </div>
       )}
 
       {/* Body */}
-      <div className="flex items-center gap-6 px-5 py-4">
+      <div className="flex items-center gap-6 px-5 py-5">
         <div className="h-28 w-20 shrink-0">
           <TreeSVG ratio={avgProgress} animated />
         </div>
         <div className="flex-1">
           <div className="flex items-baseline gap-2">
-            <span className="text-2xl italic" style={{ color: 'var(--ink)' }}>
+            <span className="text-2xl font-black text-foreground">
               {finishedCount}
             </span>
-            <span className="text-sm" style={{ color: 'var(--accent-warm)' }}>/ {goal}</span>
-            <span className="ml-1 text-[10px] uppercase tracking-wider" style={{ color: 'var(--accent-warm)' }}>
-              books
+            <span className="text-xs text-muted-foreground/60">/ {goal}</span>
+            <span className="ml-1 text-[9px] font-bold uppercase tracking-wider text-muted-foreground/80">
+              books completed
             </span>
           </div>
-          <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full" style={{ backgroundColor: 'var(--paper-border)' }}>
+          <div className="mt-2.5 h-2 w-full overflow-hidden rounded-full bg-muted/60">
             <div className="h-full rounded-full transition-all duration-1000 ease-out"
-              style={{ width: `${avgProgress * 100}%`, background: 'linear-gradient(90deg, #6b5c52, #059669)' }}
+              style={{ width: `${avgProgress * 100}%`, background: 'linear-gradient(90deg, #8b5cf6, #10b981)' }}
             />
           </div>
-          <p className="mt-1.5 text-[10px] italic" style={{ color: 'var(--accent-warm)' }}>
+          <p className="mt-2 text-[10px] italic text-muted-foreground/85">
             {avgProgress >= 1
-              ? 'Challenge complete! \uD83C\uDF31'
+              ? 'Challenge complete! 🌱'
               : goal > 0 ? `${daysLeftInMonth()} days left this month` : ''
             }
           </p>
@@ -341,26 +337,24 @@ export function ReadingChallenge() {
       {/* Book selector modal */}
       {selecting && (
         <div
-          className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16"
-          style={{ backgroundColor: 'rgba(28,25,23,0.35)', backdropFilter: 'blur(4px)' }}
+          className="fixed inset-0 z-50 flex items-start justify-center p-4 pt-16 bg-black/40 backdrop-blur-sm"
           onClick={() => setSelecting(false)}
         >
           <div
-            className="w-full max-w-md rounded-sm border shadow-xl"
-            style={{ backgroundColor: 'var(--canvas)', borderColor: 'var(--paper-border)' }}
+            className="w-full max-w-md rounded-2xl border border-border/60 bg-background shadow-2xl overflow-hidden"
             onClick={(e) => e.stopPropagation()}
           >
-            <div className="flex items-center justify-between border-b px-5 py-3" style={{ borderColor: 'var(--paper-border)' }}>
-              <p className="text-sm italic" style={{ color: 'var(--ink)' }}>
+            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
+              <p className="text-sm font-bold text-foreground">
                 Select Books for Challenge
               </p>
-              <button onClick={() => setSelecting(false)} className="rounded p-1 hover:opacity-60" style={{ color: 'var(--accent-warm)' }}>
+              <button onClick={() => setSelecting(false)} className="rounded-lg p-1 text-muted-foreground hover:bg-muted hover:text-foreground">
                 <X className="h-4 w-4" />
               </button>
             </div>
-            <div className="max-h-72 overflow-y-auto px-3 py-2">
+            <div className="max-h-72 overflow-y-auto px-3 py-2 space-y-0.5">
               {allBooks.length === 0 ? (
-                <p className="py-6 text-center text-xs italic" style={{ color: 'var(--accent-warm)' }}>No books in your library yet</p>
+                <p className="py-6 text-center text-xs italic text-muted-foreground/70">No books in your library yet</p>
               ) : (
                 allBooks.map((book) => {
                   const selected = selectedFiles.includes(book.fileName)
@@ -370,19 +364,19 @@ export function ReadingChallenge() {
                     <button
                       key={book.fileName}
                       onClick={() => toggleBook(book.fileName)}
-                      className={`flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left text-xs transition-colors ${
-                        selected ? 'bg-emerald-50 dark:bg-emerald-950/20' : 'hover:bg-muted/50'
+                      className={`flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-xs transition-colors ${
+                        selected ? 'bg-emerald-500/5 text-emerald-600 dark:text-emerald-400' : 'hover:bg-muted/50 text-foreground/80'
                       }`}
                     >
                       <div
                         className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border transition-colors ${
-                          selected ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-border/60'
+                          selected ? 'border-emerald-500 bg-emerald-500 text-white' : 'border-border/60 bg-background'
                         }`}
                       >
                         {selected && <Check className="h-3 w-3" />}
                       </div>
-                      <span className="flex-1 truncate" style={{ color: 'var(--ink)' }}>{titleOf(book.fileName)}</span>
-                      <span className="text-[9px] tabular-nums" style={{ color: done ? '#059669' : 'var(--accent-warm)' }}>
+                      <span className="flex-1 truncate font-medium">{titleOf(book.fileName)}</span>
+                      <span className="text-[10px] font-semibold tabular-nums" style={{ color: done ? '#10b981' : 'var(--accent-warm)' }}>
                         {done ? 'Done' : `${pct}%`}
                       </span>
                     </button>
@@ -390,11 +384,10 @@ export function ReadingChallenge() {
                 })
               )}
             </div>
-            <div className="border-t px-5 py-3 text-center" style={{ borderColor: 'var(--paper-border)' }}>
+            <div className="border-t border-border/40 px-5 py-4 text-center bg-muted/20">
               <button
                 onClick={() => setSelecting(false)}
-                className="rounded px-6 py-1.5 text-[10px] font-semibold uppercase tracking-wider text-white transition-all hover:opacity-80"
-                style={{ backgroundColor: 'var(--ink)' }}
+                className="rounded-xl bg-emerald-600 hover:bg-emerald-700 px-6 py-2 text-xs font-bold uppercase tracking-wider text-white shadow-md shadow-emerald-500/20 transition-all active:scale-[0.97]"
               >
                 Done ({selectedFiles.length})
               </button>

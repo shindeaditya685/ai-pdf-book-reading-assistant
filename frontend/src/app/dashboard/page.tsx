@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2, Gift } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2, Gift, GraduationCap } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
@@ -603,6 +603,14 @@ export default function DashboardPage() {
             >
               <BookText className="h-3 w-3" />
             </Link>
+            <Link
+              href="/ielts"
+              className="inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-muted-foreground hover:text-emerald-600 hover:bg-muted/40 transition-colors"
+              title="IELTS Prep"
+            >
+              <GraduationCap className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="hidden lg:inline">IELTS Prep</span>
+            </Link>
             {user?.isAdmin && (
               <Link
                 href="/admin"
@@ -643,6 +651,11 @@ export default function DashboardPage() {
               <DropdownMenuItem asChild>
                 <Link href="/vocabulary" className="flex items-center gap-2">
                   <BookText className="h-3.5 w-3.5" /> Vocabulary
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/ielts" className="flex items-center gap-2">
+                  <GraduationCap className="h-3.5 w-3.5 text-emerald-500" /> IELTS Prep
                 </Link>
               </DropdownMenuItem>
               {user?.isAdmin && (
@@ -716,33 +729,27 @@ export default function DashboardPage() {
           <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--emerald-500)/0.05)_0%,transparent_40%,hsl(var(--background))_100%)]" />
           <div className="relative mx-auto flex min-h-full w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 lg:px-8">
             <section className="grid items-start gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-              <div className="min-w-0 pt-2">
-                <p
-                  className="text-[10px] uppercase tracking-widest mb-3"
-                  style={{ color: 'var(--accent-warm)' }}
-                >
-                  Reading Desk
-                </p>
-                <h1 className="mb-3 text-4xl italic tracking-tight md:text-5xl">
-                  Pick up your next page
+              <div className="min-w-0 pt-2 space-y-2">
+                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/10 bg-emerald-500/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
+                  <BookOpen className="h-3 w-3" /> Reading Desk
+                </div>
+                <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl text-foreground">
+                  Pick up your <span className="bg-clip-text text-transparent bg-gradient-to-r from-emerald-500 via-teal-400 to-indigo-500">next page</span>
                 </h1>
-                <p className="max-w-2xl text-sm leading-6" style={{ color: 'var(--accent-warm)' }}>
-                  Recent books, saved words, bookmarks, and reading progress arranged in one calm workspace.
+                <p className="max-w-2xl text-sm leading-6 text-muted-foreground/80">
+                  Recent books, saved words, bookmarks, and reading progress arranged in one calm, AI-powered workspace.
                 </p>
               </div>
 
-              <aside className="relative overflow-hidden border p-5" style={{ backgroundColor: 'var(--canvas)', borderColor: 'var(--paper-border)' }}>
+              <aside className="relative overflow-hidden rounded-2xl border border-emerald-500/10 bg-background/40 p-5 shadow-xl shadow-emerald-500/5 backdrop-blur-md transition-all hover:border-emerald-500/25 duration-300">
                 <div className="relative mb-4 flex items-center justify-between gap-3">
                   <div>
-                    <p className="text-xs uppercase tracking-widest" style={{ color: 'var(--accent-warm)' }}>
+                    <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
                       Start Reading
                     </p>
-                    <p className="mt-1 text-sm" style={{ color: 'var(--accent-warm)' }}>Upload a PDF to open the reader.</p>
+                    <p className="mt-1 text-xs text-muted-foreground">Upload a PDF to open the interactive reader.</p>
                   </div>
-                  <div
-                    className="flex h-8 w-8 items-center justify-center"
-                    style={{ backgroundColor: 'var(--ink)', color: 'var(--canvas)' }}
-                  >
+                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white shadow-md shadow-emerald-500/25">
                     <Sparkles className="h-4 w-4" />
                   </div>
                 </div>
@@ -789,23 +796,20 @@ export default function DashboardPage() {
             ))}
 
             {resumeBook && !dismissedResume && (
-              <div className="relative overflow-hidden border p-6" style={{ backgroundColor: 'var(--canvas)', borderColor: 'var(--paper-border)' }}>
+              <div className="group relative overflow-hidden rounded-2xl border border-violet-500/10 bg-gradient-to-br from-violet-500/5 to-transparent p-6 shadow-xl shadow-violet-500/5 backdrop-blur-md transition-all hover:border-violet-500/20 duration-300">
                 <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
                   <div className="flex min-w-0 items-start gap-4">
-                    <div
-                      className="flex h-11 w-11 shrink-0 items-center justify-center sm:h-12 sm:w-12"
-                      style={{ backgroundColor: 'var(--ink)', color: 'var(--canvas)' }}
-                    >
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 text-white shadow-md shadow-violet-500/20 transition-transform group-hover:scale-105 duration-300">
                       <BookOpen className="h-5 w-5" />
                     </div>
                     <div className="min-w-0">
-                      <p className="text-[10px] uppercase tracking-widest" style={{ color: 'var(--accent-warm)' }}>
+                      <p className="text-[10px] font-bold uppercase tracking-widest text-violet-600 dark:text-violet-400">
                         Resume Reading
                       </p>
-                      <p className="mt-2 text-base font-bold truncate sm:text-lg" style={{ color: 'var(--ink)' }}>
+                      <p className="mt-2 text-base font-extrabold truncate sm:text-lg text-foreground">
                         {resumeBook.fileName}
                       </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs" style={{ color: 'var(--accent-warm)' }}>
+                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground/80">
                         <span className="inline-flex items-center gap-1.5">
                           Page {resumeBook.lastPage}{resumeBook.pageCount > 0 ? ` of ${resumeBook.pageCount}` : ''}
                         </span>
@@ -815,16 +819,16 @@ export default function DashboardPage() {
                           </span>
                         )}
                         {resumeBook.pageCount > 0 && (
-                          <span>
+                          <span className="font-medium text-emerald-600 dark:text-emerald-400">
                             {Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}% complete
                           </span>
                         )}
                       </div>
                       {resumeBook.pageCount > 0 && (
-                        <div className="mt-3 h-1 w-full max-w-xs" style={{ backgroundColor: 'rgba(28,25,23,0.1)' }}>
+                        <div className="mt-3 h-1.5 w-full max-w-xs rounded-full bg-muted/60 overflow-hidden">
                           <div
-                            className="h-full transition-all"
-                            style={{ backgroundColor: 'var(--ink)', width: `${Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}%` }}
+                            className="h-full rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 transition-all duration-500 shadow-sm"
+                            style={{ width: `${Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}%` }}
                           />
                         </div>
                       )}
@@ -834,8 +838,7 @@ export default function DashboardPage() {
                     <button
                       onClick={() => handleLoadRecentPdf(resumeBook.fileName, resumeBook.lastPage)}
                       disabled={recentLoading === resumeBook.fileName}
-                      className="inline-flex flex-1 items-center justify-center gap-2 px-5 py-2.5 text-sm font-bold tracking-wider transition-all active:scale-[0.97] disabled:cursor-wait disabled:opacity-40 sm:flex-none"
-                      style={{ backgroundColor: 'var(--ink)', color: 'var(--canvas)' }}
+                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-violet-600 px-5 py-2.5 text-xs font-extrabold uppercase tracking-wider text-white shadow-md shadow-violet-500/25 transition-all hover:bg-violet-700 active:scale-[0.97] disabled:cursor-wait disabled:opacity-40 sm:flex-none"
                     >
                       {recentLoading === resumeBook.fileName ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
@@ -853,8 +856,7 @@ export default function DashboardPage() {
                         }
                         setDismissedResume(true)
                       }}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center border transition-all hover:bg-black/5"
-                      style={{ borderColor: 'var(--paper-border)', color: 'var(--accent-warm)' }}
+                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/60 text-muted-foreground/60 transition-all hover:bg-muted hover:text-foreground"
                       title="Dismiss"
                     >
                       <X className="h-3.5 w-3.5" />
