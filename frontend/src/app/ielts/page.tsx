@@ -20,14 +20,14 @@ function BandScoreRuler({ score, target = 7 }: { score: number | null; target?: 
   const bands = [1, 2, 3, 4, 5, 6, 7, 8, 9]
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/40">
+    <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/40">
       <div className="mb-2 flex items-center justify-between">
-        <span className="font-serif text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+        <span className="font-serif text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
           Estimated Band Score
         </span>
         {score !== null && (
-          <span className="text-[11px] text-slate-400 dark:text-slate-500">
-            Target: <span className="font-semibold text-slate-600 dark:text-slate-300">{target}.0</span>
+          <span className="text-[11px] text-stone-400 dark:text-stone-500">
+            Target: <span className="font-semibold text-stone-600 dark:text-stone-300">{target}.0</span>
           </span>
         )}
       </div>
@@ -39,14 +39,14 @@ function BandScoreRuler({ score, target = 7 }: { score: number | null; target?: 
             const segmentColor =
               band <= 4 ? 'bg-rose-200 dark:bg-rose-900/40' :
               band <= 6 ? 'bg-amber-200 dark:bg-amber-900/40' :
-              'bg-teal-200 dark:bg-teal-900/40'
+              'bg-orange-200 dark:bg-orange-900/40'
 
             return (
               <div key={band} className="relative flex-1">
                 <div
                   className={`h-2 rounded-full transition-all duration-700 ${
                     i === 0 ? 'rounded-l-full' : i === bands.length - 1 ? 'rounded-r-full' : ''
-                  } ${filled ? 'bg-teal-500 dark:bg-teal-500' : segmentColor}`}
+                  } ${filled ? 'bg-orange-500 dark:bg-orange-500' : segmentColor}`}
                   style={{
                     marginLeft: i === 0 ? 0 : '-1px',
                     marginRight: i === bands.length - 1 ? 0 : '-1px',
@@ -54,7 +54,7 @@ function BandScoreRuler({ score, target = 7 }: { score: number | null; target?: 
                 />
                 {isMarker && (
                   <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-teal-500 shadow-[0_0_0_3px_rgba(13,148,136,0.2)] dark:shadow-[0_0_0_3px_rgba(13,148,136,0.35)]">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 shadow-[0_0_0_3px_rgba(234,88,12,0.2)] dark:shadow-[0_0_0_3px_rgba(234,88,12,0.35)]">
                       <span className="text-[9px] font-bold text-white">{score}</span>
                     </div>
                   </div>
@@ -67,7 +67,7 @@ function BandScoreRuler({ score, target = 7 }: { score: number | null; target?: 
           {bands.map((band) => (
             <span
               key={band}
-              className="flex-1 text-center text-[10px] font-medium text-slate-400 dark:text-slate-500"
+              className="flex-1 text-center text-[10px] font-medium text-stone-400 dark:text-stone-500"
             >
               {band}
             </span>
@@ -75,13 +75,13 @@ function BandScoreRuler({ score, target = 7 }: { score: number | null; target?: 
         </div>
         {score === null && (
           <div className="absolute inset-0 flex items-center justify-center">
-            <span className="rounded-full bg-slate-100 px-4 py-1 text-[10px] font-semibold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+            <span className="rounded-full bg-stone-100 px-4 py-1 text-[10px] font-semibold text-stone-400 dark:bg-stone-800 dark:text-stone-500">
               Complete a practice to see your band
             </span>
           </div>
         )}
       </div>
-      <div className="mt-2 flex gap-3 text-[10px] text-slate-400 dark:text-slate-500">
+      <div className="mt-2 flex gap-3 text-[10px] text-stone-400 dark:text-stone-500">
         <span className="flex items-center gap-1">
           <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
           Limited (1–4)
@@ -91,7 +91,7 @@ function BandScoreRuler({ score, target = 7 }: { score: number | null; target?: 
           Moderate (5–6)
         </span>
         <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-teal-300" />
+          <span className="h-1.5 w-1.5 rounded-full bg-orange-300" />
           Proficient (7–9)
         </span>
       </div>
@@ -676,7 +676,7 @@ function TimerDisplay({ seconds, className }: { seconds: number; className?: str
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   return (
-    <span className={`tabular-nums ${m < 5 ? 'text-rose-500' : m < 10 ? 'text-amber-500' : 'text-teal-500'} ${className || ''}`}>
+    <span className={`tabular-nums ${m < 5 ? 'text-rose-500' : m < 10 ? 'text-amber-500' : 'text-orange-500'} ${className || ''}`}>
       {String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
     </span>
   )
@@ -813,14 +813,14 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
   return (
     <div className="space-y-6">
       {/* AI Generate section */}
-      <div className="rounded-xl border border-teal-200/50 bg-white p-4 shadow-sm dark:border-teal-800/30 dark:bg-slate-900/60">
+      <div className="rounded-xl border border-orange-200/50 bg-white p-4 shadow-sm dark:border-orange-800/30 dark:bg-stone-900/60">
         <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 shadow-sm dark:bg-white">
-            <Sparkles className="h-4 w-4 text-white dark:text-slate-900" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-900 shadow-sm dark:bg-white">
+            <Sparkles className="h-4 w-4 text-white dark:text-stone-900" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Generate IELTS Passage with AI</p>
-            <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">Enter any topic — AI creates a full passage with questions following IELTS format</p>
+            <p className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Generate IELTS Passage with AI</p>
+            <p className="mt-0.5 text-[10px] text-stone-400 dark:text-stone-500">Enter any topic — AI creates a full passage with questions following IELTS format</p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
@@ -828,13 +828,13 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
                 onChange={(e) => setAiTopic(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !generating) generatePassage() }}
                 placeholder="e.g. Solar energy, Ocean pollution, The history of maps..."
-                className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                className="h-10 flex-1 rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none transition-all placeholder:text-stone-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/15 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
                 disabled={generating}
               />
               <select
                 value={aiDifficulty}
                 onChange={(e) => setAiDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
-                className="h-10 w-28 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
+                className="h-10 w-28 rounded-lg border border-stone-200 bg-white px-2 text-sm text-stone-900 outline-none dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100"
                 disabled={generating}
               >
                 <option value="easy">🟢 Easy</option>
@@ -844,7 +844,7 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
               <button
                 onClick={generatePassage}
                 disabled={generating || !aiTopic.trim()}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] disabled:opacity-40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-stone-900 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-stone-700 active:scale-[0.97] disabled:opacity-40 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
               >
                 {generating ? (
                   <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating...</>
@@ -866,8 +866,8 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
             onClick={() => changePassage(i)}
             className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
               i === passageIndex
-                ? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900'
-                : 'border border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 dark:hover:text-slate-300'
+                ? 'bg-stone-900 text-white shadow-sm dark:bg-white dark:text-stone-900'
+                : 'border border-stone-200 text-stone-500 hover:border-stone-300 hover:bg-white hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:bg-stone-800/50 dark:hover:text-stone-300'
             }`}
           >
             {p.difficulty === 'easy' ? '🟢' : p.difficulty === 'medium' ? '🟡' : '🔴'} {p.title}
@@ -876,15 +876,15 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
       </div>
 
       {!started ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-700/50 dark:bg-slate-900/40">
-          <BookText className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600" />
-          <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-slate-900 dark:text-white">{passage.title}</h3>
-          <p className="mt-1.5 text-sm text-slate-400 dark:text-slate-500">
+        <div className="rounded-xl border border-stone-200 bg-white p-10 text-center shadow-sm dark:border-stone-700/50 dark:bg-stone-900/40">
+          <BookText className="mx-auto h-10 w-10 text-stone-300 dark:text-stone-600" />
+          <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-stone-900 dark:text-white">{passage.title}</h3>
+          <p className="mt-1.5 text-sm text-stone-400 dark:text-stone-500">
             {passage.wordCount} words &middot; {passage.questions.length} questions &middot; {passage.difficulty} difficulty &middot; 20 minutes
           </p>
           <button
             onClick={startPassage}
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-stone-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-stone-700 active:scale-[0.97] dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
           >
             <Play className="h-4 w-4" />
             Start Reading
@@ -893,22 +893,22 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
       ) : (
         <>
           {/* Timer + controls */}
-          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
-            <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
+          <div className="flex items-center justify-between rounded-xl border border-stone-200 bg-white p-3 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
+            <div className="flex items-center gap-2 text-sm font-semibold text-stone-500 dark:text-stone-400">
               <Timer className="h-4 w-4" />
               <TimerDisplay seconds={timer.seconds} />
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => timer.running ? timer.pause() : timer.start()}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-300"
+                className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-500 transition-colors hover:border-stone-300 hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:text-stone-300"
               >
                 {timer.running ? 'Pause' : 'Resume'}
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={Object.keys(answers).length === 0}
-                className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] disabled:opacity-40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                className="rounded-lg bg-stone-900 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-stone-700 active:scale-[0.97] disabled:opacity-40 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
               >
                 Submit Answers
               </button>
@@ -916,24 +916,24 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
           </div>
 
           {/* Answer Navigation Grid */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
-            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Question Navigator</p>
+          <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-stone-400 dark:text-stone-500">Question Navigator</p>
             <div className="mt-2 flex flex-wrap gap-1.5">
               {questions.map((q, i) => {
                 const isAnswered = answers[q.id] !== undefined && answers[q.id] !== '';
                 const isCorrect = isAnswerCorrect(q, answers[q.id]);
                 
-                let btnStyle = "border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600 dark:border-slate-700 dark:text-slate-500 dark:hover:border-slate-600 dark:hover:text-slate-300";
+                let btnStyle = "border-stone-200 text-stone-400 hover:border-stone-300 hover:text-stone-600 dark:border-stone-700 dark:text-stone-500 dark:hover:border-stone-600 dark:hover:text-stone-300";
                 if (showResults) {
                   if (isCorrect) {
-                    btnStyle = "bg-teal-500 border-teal-500 text-white shadow-sm";
+                    btnStyle = "bg-orange-500 border-orange-500 text-white shadow-sm";
                   } else if (isAnswered) {
                     btnStyle = "bg-rose-500 border-rose-500 text-white shadow-sm";
                   } else {
                     btnStyle = "bg-amber-400 border-amber-400 text-white shadow-sm";
                   }
                 } else if (isAnswered) {
-                  btnStyle = "border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900";
+                  btnStyle = "border-stone-900 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-stone-900";
                 }
 
                 return (
@@ -953,11 +953,11 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
 
           {/* Passage + Questions side by side */}
           <div className="grid gap-5 lg:grid-cols-2">
-            <div className="max-h-[600px] overflow-y-auto rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
-              <p className="font-serif text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Reading Passage</p>
+            <div className="max-h-[600px] overflow-y-auto rounded-xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
+              <p className="font-serif text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-400 dark:text-stone-500">Reading Passage</p>
               <div className="mt-3 space-y-3">
                 {passage.text.split('\n\n').map((p, i) => (
-                  <p key={i} className="text-sm leading-7 text-slate-700 dark:text-slate-300">{p.trim()}</p>
+                  <p key={i} className="text-sm leading-7 text-stone-700 dark:text-stone-300">{p.trim()}</p>
                 ))}
               </div>
             </div>
@@ -971,32 +971,32 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
                   <div key={q.id} id={`q-container-${q.id}`} className={`rounded-xl border p-4 shadow-sm scroll-mt-20 transition-all ${
                     showResults
                       ? isCorrect
-                        ? 'border-teal-200 bg-teal-50/30 dark:border-teal-800/30 dark:bg-teal-950/10'
+                        ? 'border-orange-200 bg-orange-50/30 dark:border-orange-800/30 dark:bg-orange-950/10'
                         : isAnswered
                           ? 'border-rose-200 bg-rose-50/30 dark:border-rose-800/30 dark:bg-rose-950/10'
-                          : 'border-slate-200 bg-white dark:border-slate-700/50 dark:bg-slate-900/60'
-                      : 'border-slate-200 bg-white dark:border-slate-700/50 dark:bg-slate-900/60'
+                          : 'border-stone-200 bg-white dark:border-stone-700/50 dark:bg-stone-900/60'
+                      : 'border-stone-200 bg-white dark:border-stone-700/50 dark:bg-stone-900/60'
                   }`}>
                     <div className="flex items-start gap-3">
                       <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
                         showResults
                           ? isCorrect
-                            ? 'bg-teal-500 text-white'
+                            ? 'bg-orange-500 text-white'
                             : isAnswered
                               ? 'bg-rose-500 text-white'
-                              : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
-                          : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                              : 'bg-stone-200 text-stone-500 dark:bg-stone-700 dark:text-stone-400'
+                          : 'bg-stone-900 text-white dark:bg-white dark:text-stone-900'
                       }`}>
                         {i + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
                           {q.type === 'mcq' && 'Multiple Choice'}
                           {q.type === 'tfng' && 'True / False / Not Given'}
                           {q.type === 'heading' && 'Matching Headings'}
                           {q.type === 'completion' && 'Sentence Completion'}
                         </p>
-                        <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{q.question}</p>
+                        <p className="mt-1 text-sm font-medium text-stone-800 dark:text-stone-200">{q.question}</p>
 
                         {q.type === 'mcq' && q.options && (
                           <div className="mt-2 space-y-1">
@@ -1006,14 +1006,14 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
                               const optStyle = showResults
                                 ? isSelected
                                   ? isOptCorrect
-                                    ? 'border-teal-500 bg-teal-50 text-teal-700 font-semibold dark:border-teal-500 dark:bg-teal-950/20 dark:text-teal-400'
+                                    ? 'border-orange-500 bg-orange-50 text-orange-700 font-semibold dark:border-orange-500 dark:bg-orange-950/20 dark:text-orange-400'
                                     : 'border-rose-500 bg-rose-50 text-rose-700 font-semibold dark:border-rose-500 dark:bg-rose-950/20 dark:text-rose-400'
                                   : isOptCorrect
-                                    ? 'border-teal-400/50 bg-teal-50/50 text-teal-700 font-semibold dark:border-teal-600/30 dark:bg-teal-950/10 dark:text-teal-400'
-                                    : 'border-slate-100 opacity-50 pointer-events-none dark:border-slate-700/30'
+                                    ? 'border-orange-400/50 bg-orange-50/50 text-orange-700 font-semibold dark:border-orange-600/30 dark:bg-orange-950/10 dark:text-orange-400'
+                                    : 'border-stone-100 opacity-50 pointer-events-none dark:border-stone-700/30'
                                 : isSelected
-                                  ? 'border-slate-900 bg-slate-50 text-slate-900 dark:border-white dark:bg-slate-800 dark:text-white'
-                                  : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50';
+                                  ? 'border-stone-900 bg-stone-50 text-stone-900 dark:border-white dark:bg-stone-800 dark:text-white'
+                                  : 'border-stone-200 text-stone-600 hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:bg-stone-800/50';
 
                               return (
                                 <label key={opt} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-all ${optStyle}`}>
@@ -1026,11 +1026,11 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
                                     className="sr-only"
                                     disabled={showResults}
                                   />
-                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-teal-500 shrink-0" />}
+                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-orange-500 shrink-0" />}
                                   {showResults && isSelected && !isOptCorrect && <XCircle className="h-3.5 w-3.5 text-rose-500 shrink-0" />}
                                   {!showResults && (
                                     <div className={`h-3 w-3 shrink-0 rounded-full border-2 ${
-                                      isSelected ? 'border-slate-900 bg-slate-900 dark:border-white dark:bg-white' : 'border-slate-300 dark:border-slate-600'
+                                      isSelected ? 'border-stone-900 bg-stone-900 dark:border-white dark:bg-white' : 'border-stone-300 dark:border-stone-600'
                                     }`} />
                                   )}
                                   {opt}
@@ -1048,14 +1048,14 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
                               const btnStyle = showResults
                                 ? isSelected
                                   ? isOptCorrect
-                                    ? 'border-teal-500 bg-teal-50 text-teal-700 font-semibold dark:border-teal-500 dark:bg-teal-950/20 dark:text-teal-400'
+                                    ? 'border-orange-500 bg-orange-50 text-orange-700 font-semibold dark:border-orange-500 dark:bg-orange-950/20 dark:text-orange-400'
                                     : 'border-rose-500 bg-rose-50 text-rose-700 font-semibold dark:border-rose-500 dark:bg-rose-950/20 dark:text-rose-400'
                                   : isOptCorrect
-                                    ? 'border-teal-400/50 bg-teal-50/50 text-teal-700 font-semibold dark:border-teal-600/30 dark:bg-teal-950/10 dark:text-teal-400'
-                                    : 'border-slate-100 opacity-50 pointer-events-none dark:border-slate-700/30'
+                                    ? 'border-orange-400/50 bg-orange-50/50 text-orange-700 font-semibold dark:border-orange-600/30 dark:bg-orange-950/10 dark:text-orange-400'
+                                    : 'border-stone-100 opacity-50 pointer-events-none dark:border-stone-700/30'
                                 : isSelected
-                                  ? 'border-slate-900 bg-slate-50 text-slate-900 dark:border-white dark:bg-slate-800 dark:text-white'
-                                  : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50';
+                                  ? 'border-stone-900 bg-stone-50 text-stone-900 dark:border-white dark:bg-stone-800 dark:text-white'
+                                  : 'border-stone-200 text-stone-500 hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:bg-stone-800/50';
 
                               return (
                                 <button
@@ -1064,7 +1064,7 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
                                   disabled={showResults}
                                   className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1 ${btnStyle}`}
                                 >
-                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3 w-3 text-teal-500 shrink-0" />}
+                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3 w-3 text-orange-500 shrink-0" />}
                                   {showResults && isSelected && !isOptCorrect && <XCircle className="h-3 w-3 text-rose-500 shrink-0" />}
                                   {opt}
                                 </button>
@@ -1081,14 +1081,14 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
                               const optStyle = showResults
                                 ? isSelected
                                   ? isOptCorrect
-                                    ? 'border-teal-500 bg-teal-50 text-teal-700 font-semibold dark:border-teal-500 dark:bg-teal-950/20 dark:text-teal-400'
+                                    ? 'border-orange-500 bg-orange-50 text-orange-700 font-semibold dark:border-orange-500 dark:bg-orange-950/20 dark:text-orange-400'
                                     : 'border-rose-500 bg-rose-50 text-rose-700 font-semibold dark:border-rose-500 dark:bg-rose-950/20 dark:text-rose-400'
                                   : isOptCorrect
-                                    ? 'border-teal-400/50 bg-teal-50/50 text-teal-700 font-semibold dark:border-teal-600/30 dark:bg-teal-950/10 dark:text-teal-400'
-                                    : 'border-slate-100 opacity-50 pointer-events-none dark:border-slate-700/30'
+                                    ? 'border-orange-400/50 bg-orange-50/50 text-orange-700 font-semibold dark:border-orange-600/30 dark:bg-orange-950/10 dark:text-orange-400'
+                                    : 'border-stone-100 opacity-50 pointer-events-none dark:border-stone-700/30'
                                 : isSelected
-                                  ? 'border-slate-900 bg-slate-50 text-slate-900 dark:border-white dark:bg-slate-800 dark:text-white'
-                                  : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50';
+                                  ? 'border-stone-900 bg-stone-50 text-stone-900 dark:border-white dark:bg-stone-800 dark:text-white'
+                                  : 'border-stone-200 text-stone-600 hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:bg-stone-800/50';
 
                               return (
                                 <label key={opt} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-all ${optStyle}`}>
@@ -1101,7 +1101,7 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
                                     className="sr-only"
                                     disabled={showResults}
                                   />
-                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-teal-500 shrink-0" />}
+                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-orange-500 shrink-0" />}
                                   {showResults && isSelected && !isOptCorrect && <XCircle className="h-3.5 w-3.5 text-rose-500 shrink-0" />}
                                   {opt}
                                 </label>
@@ -1117,12 +1117,12 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
                             onChange={(e) => handleAnswer(q.id, e.target.value)}
                             disabled={showResults}
                             placeholder="Type your answer..."
-                            className={`mt-2 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-all disabled:opacity-50 dark:bg-slate-800 dark:text-slate-100 ${
+                            className={`mt-2 w-full rounded-lg border bg-white px-3 py-2 text-sm text-stone-900 outline-none transition-all disabled:opacity-50 dark:bg-stone-800 dark:text-stone-100 ${
                               showResults && isCorrect
-                                ? 'border-teal-500 ring-2 ring-teal-500/15'
+                                ? 'border-orange-500 ring-2 ring-orange-500/15'
                                 : showResults && isAnswered
                                   ? 'border-rose-500 ring-2 ring-rose-500/15'
-                                  : 'border-slate-200 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700'
+                                  : 'border-stone-200 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/15 dark:border-stone-700'
                             }`}
                           />
                         )}
@@ -1153,20 +1153,20 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
           </div>
 
           {showResults && (
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+            <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
               <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-900 dark:bg-white">
-                  <GraduationCap className="h-8 w-8 text-white dark:text-slate-900" />
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-stone-900 dark:bg-white">
+                  <GraduationCap className="h-8 w-8 text-white dark:text-stone-900" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="font-serif text-lg font-bold tracking-tight text-slate-900 dark:text-white">Practice Complete</h3>
-                  <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
-                    You scored <span className="font-bold text-teal-600 dark:text-teal-400">{score}/{questions.length}</span>
-                    {' · '}Estimated Band: <span className="font-bold text-teal-600 dark:text-teal-400">{band}.0</span>
+                  <h3 className="font-serif text-lg font-bold tracking-tight text-stone-900 dark:text-white">Practice Complete</h3>
+                  <p className="mt-1 text-sm text-stone-400 dark:text-stone-500">
+                    You scored <span className="font-bold text-orange-600 dark:text-orange-400">{score}/{questions.length}</span>
+                    {' · '}Estimated Band: <span className="font-bold text-orange-600 dark:text-orange-400">{band}.0</span>
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-400 dark:text-slate-500">
+                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-stone-400 dark:text-stone-500">
                     <span className="flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3 text-teal-500" />
+                      <CheckCircle2 className="h-3 w-3 text-orange-500" />
                       {questions.filter((q) => isAnswerCorrect(q, answers[q.id])).length} correct
                     </span>
                     <span className="flex items-center gap-1">
@@ -1181,7 +1181,7 @@ function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => v
                 </div>
                 <button
                   onClick={startPassage}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-stone-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-stone-700 active:scale-[0.97] dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
                 >
                   <RefreshCw className="h-4 w-4" />
                   Retry
@@ -1205,8 +1205,8 @@ function WritingTaskGraphic({ taskId }: { taskId: string }) {
     // Renewable energy consumption in 5 countries: 2000 to 2020
     // Country A (5% to 45%), B (8% to 35%), C (3% to 25%), D (12% to 30%), E (2% to 50%)
     return (
-      <div className="mt-4 rounded-xl border bg-white p-4 dark:bg-slate-900/50">
-        <p className="text-center text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">
+      <div className="mt-4 rounded-xl border bg-white p-4 dark:bg-stone-900/50">
+        <p className="text-center text-xs font-bold text-stone-800 dark:text-stone-200 mb-2">
           Renewable Energy Consumption (% of total energy)
         </p>
         <svg viewBox="0 0 500 300" className="w-full h-auto">
@@ -1219,19 +1219,19 @@ function WritingTaskGraphic({ taskId }: { taskId: string }) {
           <line x1="50" y1="250" x2="50" y2="30" stroke="#cbd5e1" strokeWidth="1.5" />
 
           {/* Y Axis labels (0% to 50%) */}
-          <text x="40" y="254" className="text-[10px] text-slate-500 fill-current text-right">0%</text>
-          <text x="40" y="204" className="text-[10px] text-slate-500 fill-current text-right">10%</text>
-          <text x="40" y="154" className="text-[10px] text-slate-500 fill-current text-right">20%</text>
-          <text x="40" y="104" className="text-[10px] text-slate-500 fill-current text-right">30%</text>
-          <text x="40" y="54" className="text-[10px] text-slate-500 fill-current text-right">40%</text>
-          <text x="40" y="34" className="text-[10px] text-slate-500 fill-current text-right">50%</text>
+          <text x="40" y="254" className="text-[10px] text-stone-500 fill-current text-right">0%</text>
+          <text x="40" y="204" className="text-[10px] text-stone-500 fill-current text-right">10%</text>
+          <text x="40" y="154" className="text-[10px] text-stone-500 fill-current text-right">20%</text>
+          <text x="40" y="104" className="text-[10px] text-stone-500 fill-current text-right">30%</text>
+          <text x="40" y="54" className="text-[10px] text-stone-500 fill-current text-right">40%</text>
+          <text x="40" y="34" className="text-[10px] text-stone-500 fill-current text-right">50%</text>
 
           {/* X Axis labels (2000, 2005, 2010, 2015, 2020) */}
-          <text x="50" y="270" className="text-[10px] text-slate-500 fill-current text-center" textAnchor="middle">2000</text>
-          <text x="150" y="270" className="text-[10px] text-slate-500 fill-current text-center" textAnchor="middle">2005</text>
-          <text x="250" y="270" className="text-[10px] text-slate-500 fill-current text-center" textAnchor="middle">2010</text>
-          <text x="350" y="270" className="text-[10px] text-slate-500 fill-current text-center" textAnchor="middle">2015</text>
-          <text x="450" y="270" className="text-[10px] text-slate-500 fill-current text-center" textAnchor="middle">2020</text>
+          <text x="50" y="270" className="text-[10px] text-stone-500 fill-current text-center" textAnchor="middle">2000</text>
+          <text x="150" y="270" className="text-[10px] text-stone-500 fill-current text-center" textAnchor="middle">2005</text>
+          <text x="250" y="270" className="text-[10px] text-stone-500 fill-current text-center" textAnchor="middle">2010</text>
+          <text x="350" y="270" className="text-[10px] text-stone-500 fill-current text-center" textAnchor="middle">2015</text>
+          <text x="450" y="270" className="text-[10px] text-stone-500 fill-current text-center" textAnchor="middle">2020</text>
 
           {/* Country Lines */}
           {/* Country A: Red */}
@@ -1276,7 +1276,7 @@ function WritingTaskGraphic({ taskId }: { taskId: string }) {
         </svg>
 
         {/* Legend */}
-        <div className="mt-3 flex flex-wrap justify-center gap-4 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
+        <div className="mt-3 flex flex-wrap justify-center gap-4 text-[10px] font-semibold text-stone-700 dark:text-stone-300">
           <span className="flex items-center gap-1"><span className="h-2 w-4 bg-red-500 rounded" /> Country A</span>
           <span className="flex items-center gap-1"><span className="h-2 w-4 bg-blue-500 rounded" /> Country B</span>
           <span className="flex items-center gap-1"><span className="h-2 w-4 bg-emerald-500 rounded" /> Country C</span>
@@ -1298,8 +1298,8 @@ function WritingTaskGraphic({ taskId }: { taskId: string }) {
       { name: 'Podcasts', v10: 5, v20: 30 },
     ];
     return (
-      <div className="mt-4 rounded-xl border bg-white p-4 dark:bg-slate-900/50">
-        <p className="text-center text-xs font-bold text-slate-800 dark:text-slate-200 mb-2">
+      <div className="mt-4 rounded-xl border bg-white p-4 dark:bg-stone-900/50">
+        <p className="text-center text-xs font-bold text-stone-800 dark:text-stone-200 mb-2">
           Media Time Spent by UK Teenagers (minutes per day)
         </p>
         <svg viewBox="0 0 500 300" className="w-full h-auto">
@@ -1312,11 +1312,11 @@ function WritingTaskGraphic({ taskId }: { taskId: string }) {
           <line x1="50" y1="250" x2="50" y2="30" stroke="#cbd5e1" strokeWidth="1.5" />
 
           {/* Y Axis labels */}
-          <text x="40" y="254" className="text-[10px] text-slate-500 fill-current text-right">0</text>
-          <text x="40" y="200" className="text-[10px] text-slate-500 fill-current text-right">30</text>
-          <text x="40" y="150" className="text-[10px] text-slate-500 fill-current text-right">60</text>
-          <text x="40" y="100" className="text-[10px] text-slate-500 fill-current text-right">90</text>
-          <text x="40" y="50" className="text-[10px] text-slate-500 fill-current text-right">120</text>
+          <text x="40" y="254" className="text-[10px] text-stone-500 fill-current text-right">0</text>
+          <text x="40" y="200" className="text-[10px] text-stone-500 fill-current text-right">30</text>
+          <text x="40" y="150" className="text-[10px] text-stone-500 fill-current text-right">60</text>
+          <text x="40" y="100" className="text-[10px] text-stone-500 fill-current text-right">90</text>
+          <text x="40" y="50" className="text-[10px] text-stone-500 fill-current text-right">120</text>
 
           {/* Grouped bars */}
           {categories.map((cat, idx) => {
@@ -1334,7 +1334,7 @@ function WritingTaskGraphic({ taskId }: { taskId: string }) {
                 <text
                   x={xGroup + barWidth + 2}
                   y="270"
-                  className="text-[9px] text-slate-600 dark:text-slate-400 fill-current text-center font-medium"
+                  className="text-[9px] text-stone-600 dark:text-stone-400 fill-current text-center font-medium"
                   textAnchor="middle"
                 >
                   {cat.name}
@@ -1345,7 +1345,7 @@ function WritingTaskGraphic({ taskId }: { taskId: string }) {
         </svg>
 
         {/* Legend */}
-        <div className="mt-3 flex justify-center gap-6 text-[10px] font-semibold text-slate-700 dark:text-slate-300">
+        <div className="mt-3 flex justify-center gap-6 text-[10px] font-semibold text-stone-700 dark:text-stone-300">
           <span className="flex items-center gap-1.5"><span className="h-3 w-3 bg-amber-500 rounded" /> 2010</span>
           <span className="flex items-center gap-1.5"><span className="h-3 w-3 bg-indigo-500 rounded" /> 2020</span>
         </div>
@@ -1368,22 +1368,22 @@ function WritingTaskGraphic({ taskId }: { taskId: string }) {
       { num: 10, text: 'Retail Shop' },
     ];
     return (
-      <div className="mt-4 rounded-xl border bg-white p-4 dark:bg-slate-900/50">
-        <p className="text-center text-xs font-bold text-slate-800 dark:text-slate-200 mb-4">
+      <div className="mt-4 rounded-xl border bg-white p-4 dark:bg-stone-900/50">
+        <p className="text-center text-xs font-bold text-stone-800 dark:text-stone-200 mb-4">
           Commercial Bottled Water Production Process Flow
         </p>
         
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
           {steps.map((step, idx) => (
-            <div key={step.num} className="relative flex flex-col items-center justify-between rounded-xl border border-emerald-500/10 bg-emerald-50/10 dark:bg-emerald-950/5 p-3 text-center shadow-sm">
-              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-emerald-500 text-[10px] font-bold text-white mb-2">
+            <div key={step.num} className="relative flex flex-col items-center justify-between rounded-xl border border-stone-200 bg-white p-3 text-center shadow-sm dark:border-stone-700/50 dark:bg-stone-900/40">
+              <div className="flex h-6 w-6 items-center justify-center rounded-full bg-orange-500 text-[10px] font-bold text-white mb-2">
                 {step.num}
               </div>
-              <p className="text-[11px] font-bold text-slate-700 dark:text-slate-300 leading-tight">
+              <p className="text-[11px] font-bold text-stone-700 dark:text-stone-300 leading-tight">
                 {step.text}
               </p>
               {idx < steps.length - 1 && (
-                <div className="hidden sm:block absolute top-1/2 -right-2 -translate-y-1/2 z-10 text-emerald-500 font-bold text-sm">
+                <div className="hidden sm:block absolute top-1/2 -right-2 -translate-y-1/2 z-10 text-orange-500 font-bold text-sm">
                   →
                 </div>
               )}
@@ -1461,15 +1461,15 @@ function WritingModule() {
     <div className="space-y-5">
       {/* Task type selector */}
       <div className="flex flex-wrap gap-1.5">
-        <span className="self-center mr-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500">Academic Writing:</span>
+        <span className="self-center mr-1 text-[11px] font-semibold text-stone-400 dark:text-stone-500">Academic Writing:</span>
         {WRITING_TASKS.map((t, i) => (
           <button
             key={t.id}
             onClick={() => { setTaskIndex(i); setStarted(false); setEvaluation(null); setEvalError(''); timer.reset(t.timeMinutes * 60) }}
             className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
               i === taskIndex
-                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                : 'border border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 dark:hover:text-slate-300'
+                ? 'bg-stone-900 text-white dark:bg-white dark:text-stone-900'
+                : 'border border-stone-200 text-stone-500 hover:border-stone-300 hover:bg-white hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:bg-stone-800/50 dark:hover:text-stone-300'
             }`}
           >
             {t.type === 'task1' ? '📊 ' : '📝 '}{t.title}
@@ -1478,23 +1478,23 @@ function WritingModule() {
       </div>
 
       {!started ? (
-        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-700/50 dark:bg-slate-900/40">
-          <PenLine className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600" />
-          <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-slate-900 dark:text-white">{task.title}</h3>
-          <p className="mt-1.5 text-sm text-slate-400 dark:text-slate-500">
+        <div className="rounded-xl border border-stone-200 bg-white p-10 text-center shadow-sm dark:border-stone-700/50 dark:bg-stone-900/40">
+          <PenLine className="mx-auto h-10 w-10 text-stone-300 dark:text-stone-600" />
+          <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-stone-900 dark:text-white">{task.title}</h3>
+          <p className="mt-1.5 text-sm text-stone-400 dark:text-stone-500">
             {task.timeMinutes} minutes &middot; {task.type === 'task1' ? '150 words minimum' : '250 words minimum'}
           </p>
           <div className="mt-5 text-left max-w-lg mx-auto space-y-2">
             {task.tips.map((tip, i) => (
-              <p key={i} className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
-                <span className="mt-0.5 text-slate-300 dark:text-slate-600">•</span>
+              <p key={i} className="flex items-start gap-2 text-xs text-stone-500 dark:text-stone-400">
+                <span className="mt-0.5 text-stone-300 dark:text-stone-600">•</span>
                 {tip}
               </p>
             ))}
           </div>
           <button
             onClick={startTask}
-            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-stone-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-stone-700 active:scale-[0.97] dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
           >
             <Play className="h-4 w-4" />
             Start Writing
@@ -1503,15 +1503,15 @@ function WritingModule() {
       ) : (
         <>
           {/* Timer + toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-stone-200 bg-white p-3 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
+              <div className="flex items-center gap-2 text-sm font-semibold text-stone-500 dark:text-stone-400">
                 <Timer className="h-4 w-4" />
                 <TimerDisplay seconds={timer.seconds} />
               </div>
-              <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
+              <div className="h-4 w-px bg-stone-200 dark:bg-stone-700" />
               <div className={`text-xs font-semibold ${
-                wordCount < targetMin ? 'text-rose-500' : wordCount <= targetMax ? 'text-teal-500' : 'text-amber-500'
+                wordCount < targetMin ? 'text-rose-500' : wordCount <= targetMax ? 'text-orange-500' : 'text-amber-500'
               }`}>
                 {wordCount} words
                 {wordCount < targetMin ? ` (min ${targetMin})` : ''}
@@ -1520,14 +1520,14 @@ function WritingModule() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => timer.running ? timer.pause() : timer.start()}
-                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-300"
+                className="rounded-lg border border-stone-200 px-3 py-1.5 text-xs font-semibold text-stone-500 transition-colors hover:border-stone-300 hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:text-stone-300"
               >
                 {timer.running ? 'Pause' : 'Resume'}
               </button>
               <button
                 onClick={() => setShowChecklist(!showChecklist)}
                 className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  showChecklist ? 'border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900' : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-300'
+                  showChecklist ? 'border-stone-900 bg-stone-900 text-white dark:border-white dark:bg-white dark:text-stone-900' : 'border-stone-200 text-stone-500 hover:border-stone-300 hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:text-stone-300'
                 }`}
               >
                 <ListChecks className="inline h-3 w-3 mr-1" />
@@ -1536,7 +1536,7 @@ function WritingModule() {
               <button
                 onClick={evaluateEssay}
                 disabled={evaluating || !content.trim()}
-                className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] disabled:opacity-40 flex items-center gap-1.5 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                className="rounded-lg bg-stone-900 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-stone-700 active:scale-[0.97] disabled:opacity-40 flex items-center gap-1.5 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
               >
                 {evaluating ? (
                   <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Evaluating...</>
@@ -1555,9 +1555,9 @@ function WritingModule() {
 
           {/* Prompt + editor */}
           <div className="grid gap-5 lg:grid-cols-2">
-            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
-              <p className="font-serif text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Task Prompt</p>
-              <p className="mt-3 text-sm leading-7 text-slate-700 whitespace-pre-line dark:text-slate-300">{task.prompt}</p>
+            <div className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
+              <p className="font-serif text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-400 dark:text-stone-500">Task Prompt</p>
+              <p className="mt-3 text-sm leading-7 text-stone-700 whitespace-pre-line dark:text-stone-300">{task.prompt}</p>
               <WritingTaskGraphic taskId={task.id} />
             </div>
 
@@ -1566,33 +1566,33 @@ function WritingModule() {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write your response here..."
-                className="h-[400px] w-full resize-none rounded-xl border border-slate-200 bg-white p-4 text-sm leading-7 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                className="h-[400px] w-full resize-none rounded-xl border border-stone-200 bg-white p-4 text-sm leading-7 text-stone-900 outline-none transition-all placeholder:text-stone-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/15 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
               />
             </div>
           </div>
 
           {/* Checklist */}
           {showChecklist && (
-            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700/50 dark:bg-slate-900/40">
-              <h4 className="font-serif text-xs font-bold tracking-tight text-slate-700 dark:text-slate-300">Writing Checklist</h4>
-              <div className="mt-2 grid gap-2 text-xs text-slate-500 dark:text-slate-400 sm:grid-cols-2">
+            <div className="rounded-xl border border-stone-200 bg-stone-50/50 p-4 dark:border-stone-700/50 dark:bg-stone-900/40">
+              <h4 className="font-serif text-xs font-bold tracking-tight text-stone-700 dark:text-stone-300">Writing Checklist</h4>
+              <div className="mt-2 grid gap-2 text-xs text-stone-500 dark:text-stone-400 sm:grid-cols-2">
                 {task.type === 'task1' ? (
                   <>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Overview sentence included</label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Specific figures mentioned</label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Comparisons made where relevant</label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Appropriate tense used</label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> No personal opinions or explanations</label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Minimum 150 words reached</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> Overview sentence included</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> Specific figures mentioned</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> Comparisons made where relevant</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> Appropriate tense used</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> No personal opinions or explanations</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> Minimum 150 words reached</label>
                   </>
                 ) : (
                   <>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Clear introduction paraphrasing the question</label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Position stated clearly</label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Each paragraph has one main idea</label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Specific examples used for support</label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Cohesive devices used (however, moreover, etc.)</label>
-                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Minimum 250 words reached</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> Clear introduction paraphrasing the question</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> Position stated clearly</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> Each paragraph has one main idea</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> Specific examples used for support</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> Cohesive devices used (however, moreover, etc.)</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-stone-300 dark:border-stone-600" /> Minimum 250 words reached</label>
                   </>
                 )}
               </div>
@@ -1609,20 +1609,20 @@ function WritingModule() {
 
           {/* Evaluation Results */}
           {evaluation && (
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60 mt-5 space-y-6">
+            <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60 mt-5 space-y-6">
               <div className="flex flex-col gap-6 md:flex-row md:items-start">
                 {/* Score card */}
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm w-full md:w-48 shrink-0 dark:border-slate-700 dark:bg-slate-800">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Overall Band</span>
-                  <div className="mt-4 flex h-20 w-20 items-center justify-center rounded-full bg-slate-900 text-2xl font-black text-white shadow-sm dark:bg-white dark:text-slate-900">
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-stone-200 bg-white p-6 text-center shadow-sm w-full md:w-48 shrink-0 dark:border-stone-700 dark:bg-stone-800">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-stone-400 dark:text-stone-500">Overall Band</span>
+                  <div className="mt-4 flex h-20 w-20 items-center justify-center rounded-full bg-stone-900 text-2xl font-black text-white shadow-sm dark:bg-white dark:text-stone-900">
                     {evaluation.overallBand.toFixed(1)}
                   </div>
-                  <span className="mt-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500">Estimated Band Score</span>
+                  <span className="mt-2 text-[10px] font-semibold text-stone-400 dark:text-stone-500">Estimated Band Score</span>
                 </div>
 
                 {/* Criteria breakdown */}
                 <div className="flex-1 space-y-3">
-                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Criteria Breakdown</h4>
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Criteria Breakdown</h4>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {[
                       { key: 'taskAchievement', label: task.type === 'task1' ? 'Task Achievement' : 'Task Response', score: evaluation.scores.taskAchievement },
@@ -1630,14 +1630,14 @@ function WritingModule() {
                       { key: 'lexicalResource', label: 'Lexical Resource', score: evaluation.scores.lexicalResource },
                       { key: 'grammarAccuracy', label: 'Grammatical Range & Accuracy', score: evaluation.scores.grammarAccuracy },
                     ].map((item) => (
-                      <div key={item.key} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                      <div key={item.key} className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm dark:border-stone-700 dark:bg-stone-800/50">
                         <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-slate-500 dark:text-slate-400">{item.label}</span>
-                          <span className="text-slate-900 dark:text-white">Band {item.score.toFixed(1)}</span>
+                          <span className="text-stone-500 dark:text-stone-400">{item.label}</span>
+                          <span className="text-stone-900 dark:text-white">Band {item.score.toFixed(1)}</span>
                         </div>
-                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-stone-700">
                           <div
-                            className="h-full rounded-full bg-slate-900 dark:bg-white transition-all"
+                            className="h-full rounded-full bg-stone-900 dark:bg-white transition-all"
                             style={{ width: `${(item.score / 9) * 100}%` }}
                           />
                         </div>
@@ -1649,7 +1649,7 @@ function WritingModule() {
 
               {/* Detailed criteria reviews */}
               <div className="space-y-3">
-                <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Detailed Examiner Comments</h4>
+                <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Detailed Examiner Comments</h4>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {[
                     { label: task.type === 'task1' ? 'Task Achievement' : 'Task Response', content: evaluation.criteriaAnalysis.taskAchievement },
@@ -1657,9 +1657,9 @@ function WritingModule() {
                     { label: 'Lexical Resource', content: evaluation.criteriaAnalysis.lexicalResource },
                     { label: 'Grammatical Range & Accuracy', content: evaluation.criteriaAnalysis.grammarAccuracy },
                   ].map((item, idx) => (
-                    <div key={idx} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
-                      <h5 className="font-serif text-[11px] font-bold tracking-tight text-slate-700 dark:text-slate-300 mb-1">{item.label}</h5>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-5">{item.content}</p>
+                    <div key={idx} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-800/50">
+                      <h5 className="font-serif text-[11px] font-bold tracking-tight text-stone-700 dark:text-stone-300 mb-1">{item.label}</h5>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 leading-5">{item.content}</p>
                     </div>
                   ))}
                 </div>
@@ -1668,20 +1668,20 @@ function WritingModule() {
               {/* Grammar & vocabulary corrections */}
               {evaluation.corrections && evaluation.corrections.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Suggested Edits &amp; Corrections</h4>
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Suggested Edits &amp; Corrections</h4>
                   <div className="space-y-2">
                     {evaluation.corrections.map((corr: any, idx: number) => (
-                      <div key={idx} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                      <div key={idx} className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm dark:border-stone-700 dark:bg-stone-800/50">
                         <div className="flex flex-wrap items-center gap-1.5 text-xs">
                           <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 line-through dark:bg-rose-950/40 dark:text-rose-400">
                             {corr.original}
                           </span>
-                          <ChevronRight className="h-3 w-3 text-slate-400" />
-                          <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
+                          <ChevronRight className="h-3 w-3 text-stone-400" />
+                          <span className="rounded bg-orange-100 px-1.5 py-0.5 text-[10px] font-semibold text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
                             {corr.corrected}
                           </span>
                         </div>
-                        <p className="mt-1 text-[11px] italic text-slate-400 dark:text-slate-500">{corr.reason}</p>
+                        <p className="mt-1 text-[11px] italic text-stone-400 dark:text-stone-500">{corr.reason}</p>
                       </div>
                     ))}
                   </div>
@@ -1691,17 +1691,17 @@ function WritingModule() {
               {/* Model essay comparison */}
               <div className="grid gap-5 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Your Response</h4>
-                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-xs leading-6 text-slate-600 whitespace-pre-line max-h-80 overflow-y-auto dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Your Response</h4>
+                  <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm text-xs leading-6 text-stone-600 whitespace-pre-line max-h-80 overflow-y-auto dark:border-stone-700 dark:bg-stone-800/50 dark:text-stone-400">
                     {content}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Band 8.5+ Model Response</h4>
-                    <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">Exemplar</span>
+                    <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Band 8.5+ Model Response</h4>
+                    <span className="rounded bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500 dark:bg-stone-800 dark:text-stone-400">Exemplar</span>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 shadow-sm text-xs leading-6 text-slate-700 whitespace-pre-line max-h-80 overflow-y-auto dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300">
+                  <div className="rounded-xl border border-stone-200 bg-stone-50/50 p-4 shadow-sm text-xs leading-6 text-stone-700 whitespace-pre-line max-h-80 overflow-y-auto dark:border-stone-700 dark:bg-stone-800/30 dark:text-stone-300">
                     {evaluation.improvedText}
                   </div>
                 </div>
@@ -1946,8 +1946,8 @@ function SpeakingModule() {
             onClick={() => { setFilterPart(p); setCurrentCardIndex(0); setPhase('select'); setEvaluation(null); setAudioUrl(null); setTranscript('') }}
             className={`rounded-lg px-4 py-2 text-xs font-semibold transition-all ${
               filterPart === p
-                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                : 'border border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 dark:hover:text-slate-300'
+                ? 'bg-stone-900 text-white dark:bg-white dark:text-stone-900'
+                : 'border border-stone-200 text-stone-500 hover:border-stone-300 hover:bg-white hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:bg-stone-800/50 dark:hover:text-stone-300'
             }`}
           >
             Part {p}
@@ -1959,14 +1959,14 @@ function SpeakingModule() {
       {phase === 'select' && (
         <>
           {/* AI Speaking Card Generator */}
-          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+          <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
             <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 shadow-sm dark:bg-white">
-                <Sparkles className="h-4 w-4 text-white dark:text-slate-900" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-900 shadow-sm dark:bg-white">
+                <Sparkles className="h-4 w-4 text-white dark:text-stone-900" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Generate IELTS Speaking Cue Card with AI</p>
-                <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">Enter any topic — AI generates a Cue Card (Part 2) &amp; follow-ups (Part 3)</p>
+                <p className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Generate IELTS Speaking Cue Card with AI</p>
+                <p className="mt-0.5 text-[10px] text-stone-400 dark:text-stone-500">Enter any topic — AI generates a Cue Card (Part 2) &amp; follow-ups (Part 3)</p>
                 <div className="mt-3 flex gap-2">
                   <input
                     type="text"
@@ -1974,13 +1974,13 @@ function SpeakingModule() {
                     onChange={(e) => setAiTopic(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !generatingCard) generateSpeakingCard() }}
                     placeholder="e.g. A memorable journey, Dynamic cities, Climate change, Art..."
-                    className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                    className="h-10 flex-1 rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none transition-all placeholder:text-stone-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/15 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
                     disabled={generatingCard}
                   />
                   <button
                     onClick={generateSpeakingCard}
                     disabled={generatingCard || !aiTopic.trim()}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] disabled:opacity-40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-stone-900 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-stone-700 active:scale-[0.97] disabled:opacity-40 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
                   >
                     {generatingCard ? (
                       <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating...</>
@@ -2001,22 +2001,22 @@ function SpeakingModule() {
                 key={card.id}
                 onClick={() => { setCurrentCardIndex(i); startPrep() }}
                 className={`w-full rounded-xl border p-4 text-left shadow-sm transition-all ${
-                  i === currentCardIndex ? 'border-slate-900 bg-slate-50 dark:border-white dark:bg-slate-800' : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700/50 dark:bg-slate-900/40 dark:hover:border-slate-600'
+                  i === currentCardIndex ? 'border-stone-900 bg-stone-50 dark:border-white dark:bg-stone-800' : 'border-stone-200 bg-white hover:border-stone-300 dark:border-stone-700/50 dark:bg-stone-900/40 dark:hover:border-stone-600'
                 }`}
               >
                 <div className="flex items-start gap-3">
                   <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
-                    i === currentCardIndex ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                    i === currentCardIndex ? 'bg-stone-900 text-white dark:bg-white dark:text-stone-900' : 'bg-stone-200 text-stone-500 dark:bg-stone-700 dark:text-stone-400'
                   }`}>
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
+                    <p className="text-[10px] font-semibold text-stone-400 dark:text-stone-500">
                       {card.prepTime ? `${card.prepTime / 60} min prep · ${(card.speakTime || 120) / 60} min speak` : 'Discussion questions'}
                     </p>
-                    <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-300 line-clamp-2 whitespace-pre-line">{card.question}</p>
+                    <p className="mt-1 text-sm font-medium text-stone-700 dark:text-stone-300 line-clamp-2 whitespace-pre-line">{card.question}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-stone-300 dark:text-stone-600" />
                 </div>
               </button>
             ))}
@@ -2025,11 +2025,11 @@ function SpeakingModule() {
       )}
 
       {(phase === 'prep' || phase === 'speak') && (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+        <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
           {/* Timer */}
-          <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
+          <div className="flex items-center justify-between border-b border-stone-200 pb-4 dark:border-stone-700">
             <div className="flex items-center gap-2">
-              <span className="font-serif text-sm font-bold tracking-tight text-slate-900 dark:text-white">
+              <span className="font-serif text-sm font-bold tracking-tight text-stone-900 dark:text-white">
                 {phase === 'prep' ? 'Preparation Time' : 'Speaking Time'}
               </span>
               <TimerDisplay seconds={phase === 'prep' ? prepTimer.seconds : speakTimer.seconds} className="text-base" />
@@ -2037,7 +2037,7 @@ function SpeakingModule() {
             {phase === 'prep' && (
               <button
                 onClick={startSpeak}
-                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                className="inline-flex items-center gap-2 rounded-lg bg-stone-900 px-5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-stone-700 active:scale-[0.97] dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
               >
                 <Volume2 className="h-3.5 w-3.5" />
                 Start Speaking
@@ -2046,7 +2046,7 @@ function SpeakingModule() {
             {phase === 'speak' && (
               <button
                 onClick={finishCard}
-                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                className="rounded-lg border border-stone-200 px-4 py-2 text-xs font-semibold text-stone-500 hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:text-stone-300"
               >
                 Finish Test
               </button>
@@ -2054,16 +2054,16 @@ function SpeakingModule() {
           </div>
 
           {/* Card content */}
-          <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50/50 p-5 dark:border-slate-700 dark:bg-slate-800/30">
-            <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white mb-3">
+          <div className="mt-5 rounded-lg border border-stone-200 bg-stone-50/50 p-5 dark:border-stone-700 dark:bg-stone-800/30">
+            <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white mb-3">
               {currentCard?.part === 2 ? 'Cue Card' : 'Questions'}
             </h4>
-            <p className="text-sm leading-7 text-slate-700 whitespace-pre-line dark:text-slate-300">{currentCard?.question}</p>
+            <p className="text-sm leading-7 text-stone-700 whitespace-pre-line dark:text-stone-300">{currentCard?.question}</p>
             {currentCard?.followUp && currentCard.followUp.length > 0 && (
-              <div className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-700">
-                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Follow-up questions (Part 3):</p>
+              <div className="mt-4 border-t border-stone-200 pt-3 dark:border-stone-700">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500 mb-2">Follow-up questions (Part 3):</p>
                 {currentCard.followUp.map((q, i) => (
-                  <p key={i} className="text-xs text-slate-500 mt-1 dark:text-slate-400">• {q}</p>
+                  <p key={i} className="text-xs text-stone-500 mt-1 dark:text-stone-400">• {q}</p>
                 ))}
               </div>
             )}
@@ -2071,8 +2071,8 @@ function SpeakingModule() {
 
           {/* Recording & Speech-to-Text pane */}
           {phase === 'speak' && (
-            <div className="mt-5 border-t border-slate-200 pt-5 space-y-4 dark:border-slate-700">
-              <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+            <div className="mt-5 border-t border-stone-200 pt-5 space-y-4 dark:border-stone-700">
+              <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white flex items-center gap-2">
                 <Mic className="h-3.5 w-3.5" /> Speech Recording &amp; Transcription
               </h4>
               
@@ -2080,7 +2080,7 @@ function SpeakingModule() {
                 {!isRecording ? (
                   <button
                     onClick={startRecording}
-                    className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                    className="inline-flex items-center gap-2 rounded-lg bg-stone-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-stone-700 active:scale-[0.97] dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
                   >
                     <Play className="h-3.5 w-3.5" /> Record Response
                   </button>
@@ -2107,14 +2107,14 @@ function SpeakingModule() {
               )}
 
               <div className="space-y-1.5">
-                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-stone-400 dark:text-stone-500">
                   Speech Transcript (Editable):
                 </label>
                 <textarea
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
                   placeholder="Your transcription will appear here in real-time as you speak. You can edit the text directly if there are any mistakes."
-                  className="h-28 w-full resize-none rounded-xl border border-slate-200 bg-white p-3.5 text-xs leading-5 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                  className="h-28 w-full resize-none rounded-xl border border-stone-200 bg-white p-3.5 text-xs leading-5 text-stone-900 outline-none transition-all placeholder:text-stone-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/15 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
                 />
               </div>
             </div>
@@ -2125,10 +2125,10 @@ function SpeakingModule() {
       {phase === 'done' && (
         <div className="space-y-5">
           {!evaluation ? (
-            <div className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
-              <Mic className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600" />
-              <h3 className="mt-4 font-serif text-lg font-bold tracking-tight text-slate-900 dark:text-white">Speaking Session Completed</h3>
-              <p className="mt-1.5 text-sm text-slate-400 dark:text-slate-500 max-w-md mx-auto">
+            <div className="rounded-xl border border-stone-200 bg-white p-8 text-center shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
+              <Mic className="mx-auto h-10 w-10 text-stone-300 dark:text-stone-600" />
+              <h3 className="mt-4 font-serif text-lg font-bold tracking-tight text-stone-900 dark:text-white">Speaking Session Completed</h3>
+              <p className="mt-1.5 text-sm text-stone-400 dark:text-stone-500 max-w-md mx-auto">
                 {transcript.trim() 
                   ? "Your transcript is ready! Submit it for AI examiner feedback on vocabulary, grammar, and fluency."
                   : "Session finished. You did not record or type a transcript. You can retry the card or evaluate if you type one below."}
@@ -2136,20 +2136,20 @@ function SpeakingModule() {
 
               {audioUrl && (
                 <div className="max-w-xs mx-auto mt-4">
-                  <p className="text-[10px] font-semibold text-slate-400 mb-1">Recorded Response:</p>
+                  <p className="text-[10px] font-semibold text-stone-400 mb-1">Recorded Response:</p>
                   <audio src={audioUrl} controls className="w-full h-8" />
                 </div>
               )}
 
               <div className="max-w-xl mx-auto mt-5 space-y-2 text-left">
-                <label className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
+                <label className="text-[10px] font-semibold uppercase tracking-[0.08em] text-stone-400 dark:text-stone-500">
                   Speech Transcript:
                 </label>
                 <textarea
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
                   placeholder="Type your spoken response here to evaluate..."
-                  className="h-28 w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                  className="h-28 w-full resize-none rounded-xl border border-stone-200 bg-white p-3 text-xs leading-5 text-stone-900 outline-none transition-all placeholder:text-stone-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/15 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
                 />
               </div>
 
@@ -2162,7 +2162,7 @@ function SpeakingModule() {
               <div className="flex justify-center gap-3 mt-6">
                 <button
                   onClick={() => { setPhase('select'); prepTimer.reset(currentCard?.prepTime || 30); speakTimer.reset(currentCard?.speakTime || 120) }}
-                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                  className="inline-flex items-center gap-2 rounded-lg border border-stone-200 px-4 py-2 text-xs font-semibold text-stone-500 hover:border-stone-300 hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:text-stone-300"
                 >
                   <RefreshCw className="h-3 w-3" />
                   Try Again
@@ -2170,7 +2170,7 @@ function SpeakingModule() {
                 <button
                   onClick={evaluateSpeaking}
                   disabled={evaluating || !transcript.trim()}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-700 disabled:opacity-40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-stone-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-stone-700 disabled:opacity-40 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
                 >
                   {evaluating ? (
                     <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Evaluating...</>
@@ -2182,34 +2182,34 @@ function SpeakingModule() {
             </div>
           ) : (
             /* AI Speaking evaluation dashboard */
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60 space-y-6">
+            <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60 space-y-6">
               <div className="flex flex-col gap-6 md:flex-row md:items-start">
                 {/* Score card */}
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm w-full md:w-48 shrink-0 dark:border-slate-700 dark:bg-slate-800">
-                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Overall Band</span>
-                  <div className="mt-4 flex h-20 w-20 items-center justify-center rounded-full bg-slate-900 text-2xl font-black text-white shadow-sm dark:bg-white dark:text-slate-900">
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-stone-200 bg-white p-6 text-center shadow-sm w-full md:w-48 shrink-0 dark:border-stone-700 dark:bg-stone-800">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-stone-400 dark:text-stone-500">Overall Band</span>
+                  <div className="mt-4 flex h-20 w-20 items-center justify-center rounded-full bg-stone-900 text-2xl font-black text-white shadow-sm dark:bg-white dark:text-stone-900">
                     {evaluation.overallBand.toFixed(1)}
                   </div>
-                  <span className="mt-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500">Estimated Band Score</span>
+                  <span className="mt-2 text-[10px] font-semibold text-stone-400 dark:text-stone-500">Estimated Band Score</span>
                 </div>
 
                 {/* Criteria breakdown */}
                 <div className="flex-1 space-y-3">
-                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Criteria Breakdown</h4>
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Criteria Breakdown</h4>
                   <div className="grid gap-2 sm:grid-cols-3">
                     {[
                       { key: 'fluencyCoherence', label: 'Fluency & Coherence', score: evaluation.scores.fluencyCoherence },
                       { key: 'lexicalResource', label: 'Lexical Resource', score: evaluation.scores.lexicalResource },
                       { key: 'grammarAccuracy', label: 'Grammar Range & Accuracy', score: evaluation.scores.grammarAccuracy },
                     ].map((item) => (
-                      <div key={item.key} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                      <div key={item.key} className="rounded-xl border border-stone-200 bg-white p-3 shadow-sm dark:border-stone-700 dark:bg-stone-800/50">
                         <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-slate-500 dark:text-slate-400">{item.label}</span>
-                          <span className="text-slate-900 dark:text-white">Band {item.score.toFixed(1)}</span>
+                          <span className="text-stone-500 dark:text-stone-400">{item.label}</span>
+                          <span className="text-stone-900 dark:text-white">Band {item.score.toFixed(1)}</span>
                         </div>
-                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-stone-700">
                           <div
-                            className="h-full rounded-full bg-slate-900 dark:bg-white transition-all"
+                            className="h-full rounded-full bg-stone-900 dark:bg-white transition-all"
                             style={{ width: `${(item.score / 9) * 100}%` }}
                           />
                         </div>
@@ -2221,16 +2221,16 @@ function SpeakingModule() {
 
               {/* Detailed criteria reviews */}
               <div className="space-y-3">
-                <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Detailed Examiner Comments</h4>
+                <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Detailed Examiner Comments</h4>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {[
                     { label: 'Fluency & Coherence', content: evaluation.analysis.fluencyCoherence },
                     { label: 'Lexical Resource', content: evaluation.analysis.lexicalResource },
                     { label: 'Grammar Range & Accuracy', content: evaluation.analysis.grammarAccuracy },
                   ].map((item, idx) => (
-                    <div key={idx} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
-                      <h5 className="font-serif text-[11px] font-bold tracking-tight text-slate-700 dark:text-slate-300 mb-1">{item.label}</h5>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-5">{item.content}</p>
+                    <div key={idx} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700 dark:bg-stone-800/50">
+                      <h5 className="font-serif text-[11px] font-bold tracking-tight text-stone-700 dark:text-stone-300 mb-1">{item.label}</h5>
+                      <p className="text-xs text-stone-500 dark:text-stone-400 leading-5">{item.content}</p>
                     </div>
                   ))}
                 </div>
@@ -2239,11 +2239,11 @@ function SpeakingModule() {
               {/* Suggestions */}
               {evaluation.suggestions && evaluation.suggestions.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Vocabulary &amp; Delivery Suggestions</h4>
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Vocabulary &amp; Delivery Suggestions</h4>
                   <div className="grid gap-2 sm:grid-cols-2">
                     {evaluation.suggestions.map((sug: string, idx: number) => (
-                      <div key={idx} className="flex gap-2 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm text-xs text-slate-600 leading-5 items-start dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
-                        <Lightbulb className="h-4 w-4 text-slate-400 shrink-0 mt-0.5 dark:text-slate-500" />
+                      <div key={idx} className="flex gap-2 rounded-xl border border-stone-200 bg-white p-3.5 shadow-sm text-xs text-stone-600 leading-5 items-start dark:border-stone-700 dark:bg-stone-800/50 dark:text-stone-400">
+                        <Lightbulb className="h-4 w-4 text-stone-400 shrink-0 mt-0.5 dark:text-stone-500" />
                         <span>{sug}</span>
                       </div>
                     ))}
@@ -2254,27 +2254,27 @@ function SpeakingModule() {
               {/* Response Comparison */}
               <div className="grid gap-5 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Your Transcript</h4>
-                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-xs leading-6 text-slate-600 whitespace-pre-line max-h-80 overflow-y-auto dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Your Transcript</h4>
+                  <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm text-xs leading-6 text-stone-600 whitespace-pre-line max-h-80 overflow-y-auto dark:border-stone-700 dark:bg-stone-800/50 dark:text-stone-400">
                     {transcript}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Recommended Band 8.5+ Response</h4>
-                    <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">Exemplar</span>
+                    <h4 className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Recommended Band 8.5+ Response</h4>
+                    <span className="rounded bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500 dark:bg-stone-800 dark:text-stone-400">Exemplar</span>
                   </div>
-                  <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 shadow-sm text-xs leading-6 text-slate-700 whitespace-pre-line max-h-80 overflow-y-auto dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300">
+                  <div className="rounded-xl border border-stone-200 bg-stone-50/50 p-4 shadow-sm text-xs leading-6 text-stone-700 whitespace-pre-line max-h-80 overflow-y-auto dark:border-stone-700 dark:bg-stone-800/30 dark:text-stone-300">
                     {evaluation.modelAnswer}
                   </div>
                 </div>
               </div>
 
               {/* Footer controls */}
-              <div className="flex justify-center gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
+              <div className="flex justify-center gap-3 pt-4 border-t border-stone-200 dark:border-stone-700">
                 <button
                   onClick={() => { setPhase('select'); setEvaluation(null); setAudioUrl(null); setTranscript('') }}
-                  className="rounded-lg border border-slate-200 px-5 py-2.5 text-xs font-semibold text-slate-500 hover:border-slate-300 hover:text-slate-700 transition-all dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                  className="rounded-lg border border-stone-200 px-5 py-2.5 text-xs font-semibold text-stone-500 hover:border-stone-300 hover:text-stone-700 transition-all dark:border-stone-700 dark:text-stone-400 dark:hover:text-stone-300"
                 >
                   Close &amp; Choose Another
                 </button>
@@ -2285,7 +2285,7 @@ function SpeakingModule() {
                     setTranscript('')
                     startPrep()
                   }}
-                  className="rounded-lg bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white hover:bg-slate-700 active:scale-[0.97] transition-all dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                  className="rounded-lg bg-stone-900 px-5 py-2.5 text-xs font-semibold text-white hover:bg-stone-700 active:scale-[0.97] transition-all dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
                 >
                   Retry This Card
                 </button>
@@ -2392,14 +2392,14 @@ function VocabModule() {
   return (
     <div className="space-y-5">
       {/* AI Vocabulary Generator */}
-      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+      <div className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
         <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 shadow-sm dark:bg-white">
-            <Sparkles className="h-4 w-4 text-white dark:text-slate-900" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-stone-900 shadow-sm dark:bg-white">
+            <Sparkles className="h-4 w-4 text-white dark:text-stone-900" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Generate Custom Vocabulary List with AI</p>
-            <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">Enter any topic — AI generates 8 high-level Band 7–9 IELTS academic words with definitions and example sentences</p>
+            <p className="font-serif text-xs font-bold tracking-tight text-stone-900 dark:text-white">Generate Custom Vocabulary List with AI</p>
+            <p className="mt-0.5 text-[10px] text-stone-400 dark:text-stone-500">Enter any topic — AI generates 8 high-level Band 7–9 IELTS academic words with definitions and example sentences</p>
             <div className="mt-3 flex gap-2">
               <input
                 type="text"
@@ -2407,13 +2407,13 @@ function VocabModule() {
                 onChange={(e) => setAiTopic(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !generatingVocab) generateVocabTopic() }}
                 placeholder="e.g. Climate Change, Legal Matters, Space Exploration, Art..."
-                className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                className="h-10 flex-1 rounded-lg border border-stone-200 bg-white px-3 text-sm text-stone-900 outline-none transition-all placeholder:text-stone-400 focus:border-orange-400 focus:ring-2 focus:ring-orange-500/15 dark:border-stone-700 dark:bg-stone-800 dark:text-stone-100 dark:placeholder:text-stone-500"
                 disabled={generatingVocab}
               />
               <button
                 onClick={generateVocabTopic}
                 disabled={generatingVocab || !aiTopic.trim()}
-                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white shadow-sm hover:bg-slate-700 disabled:opacity-40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-stone-900 px-4 text-xs font-semibold text-white shadow-sm hover:bg-stone-700 disabled:opacity-40 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
               >
                 {generatingVocab ? (
                   <>
@@ -2443,8 +2443,8 @@ function VocabModule() {
             onClick={() => { setSelectedTopic(t.topic); setShowQuiz(false) }}
             className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
               t.topic === selectedTopic
-                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
-                : 'border border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 dark:hover:text-slate-300'
+                ? 'bg-stone-900 text-white dark:bg-white dark:text-stone-900'
+                : 'border border-stone-200 text-stone-500 hover:border-stone-300 hover:bg-white hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:bg-stone-800/50 dark:hover:text-stone-300'
             }`}
           >
             {t.icon} {t.topic}
@@ -2457,17 +2457,17 @@ function VocabModule() {
           {/* Word cards */}
           <div className="grid gap-2 sm:grid-cols-2">
             {topic.items.map((item) => (
-              <div key={item.word} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 dark:border-slate-700/50 dark:bg-slate-900/40 dark:hover:border-slate-600">
+              <div key={item.word} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm transition-all hover:border-stone-300 dark:border-stone-700/50 dark:bg-stone-900/40 dark:hover:border-stone-600">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-bold text-slate-900 dark:text-white">{item.word}</p>
-                    <p className="mt-0.5 text-[11px] italic text-slate-400 dark:text-slate-500">{item.definition}</p>
+                    <p className="text-sm font-bold text-stone-900 dark:text-white">{item.word}</p>
+                    <p className="mt-0.5 text-[11px] italic text-stone-400 dark:text-stone-500">{item.definition}</p>
                   </div>
-                  <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
+                  <span className="shrink-0 rounded-md bg-stone-100 px-2 py-0.5 text-[10px] font-semibold text-stone-500 dark:bg-stone-800 dark:text-stone-400">
                     IELTS
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-slate-400 border-t border-slate-100 pt-2 leading-5 dark:border-slate-700 dark:text-slate-500">
+                <p className="mt-2 text-xs text-stone-400 border-t border-stone-100 pt-2 leading-5 dark:border-stone-700 dark:text-stone-500">
                   &ldquo;{item.example}&rdquo;
                 </p>
               </div>
@@ -2477,7 +2477,7 @@ function VocabModule() {
           <div className="text-center">
             <button
               onClick={startQuiz}
-              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+              className="inline-flex items-center gap-2 rounded-lg bg-stone-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-stone-700 active:scale-[0.97] dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
             >
               <Brain className="h-4 w-4" />
               Test Yourself
@@ -2485,22 +2485,22 @@ function VocabModule() {
           </div>
         </>
       ) : (
-        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+        <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">
+            <p className="text-xs font-semibold text-stone-400 dark:text-stone-500">
               Question {quizIndex + 1} of {shuffled.length}
             </p>
             <button
               onClick={() => setShowQuiz(false)}
-              className="text-xs font-medium text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
+              className="text-xs font-medium text-stone-400 hover:text-stone-600 dark:text-stone-500 dark:hover:text-stone-300"
             >
               Back to list
             </button>
           </div>
 
           <div className="mb-6 text-center">
-            <p className="text-sm text-slate-400 mb-2">What does this word mean?</p>
-            <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{currentQuizWord?.word}</p>
+            <p className="text-sm text-stone-400 mb-2">What does this word mean?</p>
+            <p className="text-2xl font-bold tracking-tight text-stone-900 dark:text-white">{currentQuizWord?.word}</p>
           </div>
 
           <div className="space-y-2">
@@ -2512,13 +2512,13 @@ function VocabModule() {
                 className={`w-full rounded-lg border p-3 text-left text-xs transition-all ${
                   quizRevealed
                     ? def === currentQuizWord?.definition
-                      ? 'border-teal-500 bg-teal-50 text-teal-700 dark:border-teal-500 dark:bg-teal-950/20 dark:text-teal-400'
+                      ? 'border-orange-500 bg-orange-50 text-orange-700 dark:border-orange-500 dark:bg-orange-950/20 dark:text-orange-400'
                       : def === quizAnswer
                         ? 'border-rose-500 bg-rose-50 text-rose-600 dark:border-rose-500 dark:bg-rose-950/20 dark:text-rose-400'
-                        : 'border-slate-100 opacity-50 dark:border-slate-700/30'
+                        : 'border-stone-100 opacity-50 dark:border-stone-700/30'
                     : def === quizAnswer
-                      ? 'border-slate-900 bg-slate-50 text-slate-900 dark:border-white dark:bg-slate-800 dark:text-white'
-                      : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50'
+                      ? 'border-stone-900 bg-stone-50 text-stone-900 dark:border-white dark:bg-stone-800 dark:text-white'
+                      : 'border-stone-200 text-stone-600 hover:border-stone-300 hover:bg-stone-50 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:bg-stone-800/50'
                 }`}
               >
                 {def}
@@ -2528,13 +2528,13 @@ function VocabModule() {
 
           {quizRevealed && (
             <div className="mt-4 text-center">
-              <p className={`text-sm font-bold ${quizAnswer === currentQuizWord?.definition ? 'text-teal-600' : 'text-rose-500'}`}>
+              <p className={`text-sm font-bold ${quizAnswer === currentQuizWord?.definition ? 'text-orange-600' : 'text-rose-500'}`}>
                 {quizAnswer === currentQuizWord?.definition ? 'Correct!' : `The correct answer was: ${currentQuizWord?.definition}`}
               </p>
-              <p className="mt-1 text-xs italic text-slate-400 dark:text-slate-500">&ldquo;{currentQuizWord?.example}&rdquo;</p>
+              <p className="mt-1 text-xs italic text-stone-400 dark:text-stone-500">&ldquo;{currentQuizWord?.example}&rdquo;</p>
               <button
                 onClick={handleNextQuestion}
-                className="mt-4 rounded-lg bg-slate-900 px-5 py-2 text-xs font-semibold text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                className="mt-4 rounded-lg bg-stone-900 px-5 py-2 text-xs font-semibold text-white hover:bg-stone-700 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
               >
                 {quizIndex < shuffled.length - 1 ? 'Next Question' : 'Done'}
               </button>
@@ -2542,9 +2542,9 @@ function VocabModule() {
           )}
 
           {/* Progress bar */}
-          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
+          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-stone-100 dark:bg-stone-700">
             <div
-              className="h-full rounded-full bg-slate-900 dark:bg-white transition-all"
+              className="h-full rounded-full bg-stone-900 dark:bg-white transition-all"
               style={{ width: `${((quizIndex + (quizRevealed ? 1 : 0)) / shuffled.length) * 100}%` }}
             />
           </div>
@@ -2588,8 +2588,8 @@ export default function IELTSPage() {
 
   if (authLoading || !mounted) {
     return (
-      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
-        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
+      <div className="flex h-screen items-center justify-center bg-stone-50 dark:bg-stone-950">
+        <Loader2 className="h-8 w-8 animate-spin text-orange-500" />
       </div>
     )
   }
@@ -2597,18 +2597,18 @@ export default function IELTSPage() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
+    <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
       {/* HEADER */}
-      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-stone-200 bg-white/80 px-4 backdrop-blur-xl dark:border-stone-800 dark:bg-stone-900/80">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:border-slate-300 hover:text-slate-600 dark:border-slate-700 dark:hover:border-slate-600 dark:hover:text-slate-300">
+          <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-stone-200 text-stone-400 transition-all hover:border-stone-300 hover:text-stone-600 dark:border-stone-700 dark:hover:border-stone-600 dark:hover:text-stone-300">
             <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-900 shadow-sm dark:bg-white">
-            <GraduationCap className="h-3.5 w-3.5 text-white dark:text-slate-900" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-stone-900 shadow-sm dark:bg-white">
+            <GraduationCap className="h-3.5 w-3.5 text-white dark:text-stone-900" />
           </div>
-          <span className="font-serif text-sm font-bold tracking-tight text-slate-900 dark:text-white">IELTS Prep</span>
-          <span className="rounded-md border border-teal-200 bg-teal-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-teal-600 dark:border-teal-800/50 dark:bg-teal-950/30 dark:text-teal-400">
+          <span className="font-serif text-sm font-bold tracking-tight text-stone-900 dark:text-white">IELTS Prep</span>
+          <span className="rounded-md border border-orange-200 bg-orange-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-orange-600 dark:border-orange-800/50 dark:bg-orange-950/30 dark:text-orange-400">
             Free Practice
           </span>
         </div>
@@ -2629,8 +2629,8 @@ export default function IELTSPage() {
                 onClick={() => setActiveTab(tab.id)}
                 className={`flex items-center justify-center gap-2 rounded-xl px-2 py-3 text-xs font-semibold transition-all ${
                   isActive
-                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:text-white dark:ring-slate-700'
-                    : 'text-slate-400 hover:bg-white/50 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800/50 dark:hover:text-slate-300'
+                    ? 'bg-white text-stone-900 shadow-sm ring-1 ring-stone-200 dark:bg-stone-800 dark:text-white dark:ring-stone-700'
+                    : 'text-stone-400 hover:bg-white/50 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-stone-800/50 dark:hover:text-stone-300'
                 }`}
               >
                 <Icon className="h-3.5 w-3.5 shrink-0" />
