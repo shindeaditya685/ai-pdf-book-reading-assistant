@@ -24,6 +24,7 @@ import { ReadingChallenge } from '@/components/reading-challenge'
 import { QuestionGeneratorPanel } from '@/components/question-generator-panel'
 import { SummarizerPanel } from '@/components/summarizer-panel'
 import { ErrorBoundary } from '@/components/error-boundary'
+import { WordLabPreview } from '@/components/word-lab/word-lab-preview'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -756,6 +757,8 @@ export default function DashboardPage() {
                 <UploadZone variant="panel" />
               </aside>
             </section>
+
+            <WordLabPreview />
 
             {rewardNotification && (
               <div className="relative rounded-xl border border-emerald-500/15 bg-emerald-50/50 px-5 py-4 pr-12 dark:border-emerald-800/15 dark:bg-emerald-950/10">
