@@ -39,6 +39,6 @@ export interface WordLabStats {
   level: 'bronze' | 'silver' | 'gold' | 'diamond'
 }
 
-export type LabPhase = 'study' | 'test' | 'results'
+export type LabPhase = 'study' | 'test' | 'results' | 'history'
 
 export type QuestionType = 'fill-blank' | 'multiple-choice' | 'reverse-recall'

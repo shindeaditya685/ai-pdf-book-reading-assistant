@@ -10,6 +10,7 @@ import { DailyRing } from '@/components/word-lab/daily-ring'
 import { StudyPhase } from '@/components/word-lab/study-phase'
 import { TestPhase } from '@/components/word-lab/test-phase'
 import { ResultsView } from '@/components/word-lab/results-view'
+import { HistoryView } from '@/components/word-lab/history-view'
 import { WordLabWord, LabPhase, TestResult, WordLabStats } from '@/components/word-lab/types'
 
 export default function WordLabPage() {
@@ -134,11 +135,17 @@ export default function WordLabPage() {
             </span>
           )}
         </div>
-        {phase === 'study' && (
-          <div className="flex items-center gap-2">
-            <DailyRing studied={studiedIds.length} total={words.length} size={32} strokeWidth={3} />
-          </div>
-        )}
+          <button
+            onClick={() => setPhase(phase === 'history' ? 'study' : 'history')}
+            className="rounded-lg border border-stone-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-stone-500 transition-all hover:border-stone-300 hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:text-stone-200"
+          >
+            {phase === 'history' ? 'Today' : 'History'}
+          </button>
+          {phase === 'study' && (
+            <div className="flex items-center gap-2">
+              <DailyRing studied={studiedIds.length} total={words.length} size={32} strokeWidth={3} />
+            </div>
+          )}
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
@@ -187,6 +194,10 @@ export default function WordLabPage() {
                 stats={stats}
                 onDone={() => router.push('/dashboard')}
               />
+            )}
+
+            {phase === 'history' && (
+              <HistoryView onBack={() => setPhase(words.length > 0 ? 'study' : 'history')} />
             )}
 
             {saving && (
