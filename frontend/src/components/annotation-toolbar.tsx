@@ -114,7 +114,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
             variant="outline"
             size="icon"
             aria-label={isMinimized ? "Show toolbar" : "Hide toolbar"}
-            className="h-9 w-9 rounded-full bg-background/95 shadow-md border hover:bg-muted sm:h-8 sm:w-8"
+            className="h-9 w-9 rounded-full bg-background/90 shadow-sm border border-border/30 hover:bg-muted sm:h-8 sm:w-8"
             onClick={() => {
               setIsMinimized(!isMinimized);
               setOpenPanel(null);
@@ -143,8 +143,8 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
             transition={{ duration: 0.2, ease: "easeOut" }}
             className={
               isMobile
-                ? "fixed inset-x-2 bottom-2 z-40 pointer-events-auto select-none flex items-center justify-center gap-0.5 overflow-x-auto rounded-2xl border border-border/70 bg-background/95 p-1 shadow-2xl backdrop-blur-md pb-[max(0.375rem,env(safe-area-inset-bottom))]"
-                : "fixed left-[calc(0.75rem+28px+4px)] top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none flex flex-col gap-1.5 rounded-2xl border border-border/70 bg-background/95 p-1.5 shadow-2xl backdrop-blur-md"
+                ? "fixed inset-x-2 bottom-2 z-40 pointer-events-auto select-none flex items-center justify-center gap-0.5 overflow-x-auto rounded-2xl border border-border/30 bg-background/90 p-1 shadow-lg backdrop-blur-xl pb-[max(0.375rem,env(safe-area-inset-bottom))]"
+                : "fixed left-[calc(0.75rem+28px+4px)] top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none flex flex-col gap-1.5 rounded-2xl border border-border/30 bg-background/90 p-1.5 shadow-lg backdrop-blur-xl"
             }
           >
             {/* ── 1. SELECT ── */}
@@ -250,7 +250,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                         max={12}
                         value={penWidth}
                         onChange={(e) => setPenWidth(Number(e.target.value))}
-                        className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-emerald-500 bg-muted"
+                        className="w-full h-1.5 rounded-full appearance-none cursor-pointer accent-emerald-500 bg-muted/70"
                       />
                     </div>
                   </Popover>
@@ -289,7 +289,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
               onClick={undo}
               disabled={undoStack.length === 0}
               title="Undo last annotation (Ctrl+Z)"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90 sm:h-9 sm:w-9"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90 sm:h-9 sm:w-9"
             >
               <Undo2 className="h-4 w-4" />
             </button>
@@ -298,12 +298,12 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
               onClick={redo}
               disabled={redoStack.length === 0}
               title="Redo last annotation (Ctrl+Shift+Z)"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90 sm:h-9 sm:w-9"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-muted-foreground hover:bg-muted/60 hover:text-foreground disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-muted-foreground transition-all active:scale-90 sm:h-9 sm:w-9"
             >
               <Redo2 className="h-4 w-4" />
             </button>
 
-            <div className="mx-0.5 h-6 w-px bg-border/60 sm:mx-0 sm:my-0.5 sm:h-auto sm:w-auto sm:border-t sm:border-border/60" />
+            <div className="mx-0.5 h-6 w-px bg-border/30 sm:mx-0 sm:my-0.5 sm:h-auto sm:w-auto sm:border-t sm:border-border/30" />
 
             {/* ── 6. CLEAR ALL ── */}
             <button
@@ -312,7 +312,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                 setOpenPanel(null);
               }}
               title="Clear all page annotations"
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 hover:text-red-500 transition-all active:scale-90 sm:h-9 sm:w-9"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl text-red-400 hover:bg-red-50 dark:hover:bg-red-950/20 hover:text-red-500 transition-all active:scale-90 sm:h-9 sm:w-9"
             >
               <Trash2 className="h-4 w-4" />
             </button>
@@ -327,8 +327,8 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                   transition={{ duration: 0.14 }}
                   className={
                     isMobile
-                      ? "absolute bottom-full left-1/2 mb-2 z-50 w-[calc(100vw-2rem)] max-w-xs -translate-x-1/2 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md"
-                      : "absolute left-[calc(100%+10px)] top-0 z-50 w-72 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md"
+                      ? "absolute bottom-full left-1/2 mb-2 z-50 w-[calc(100vw-2rem)] max-w-xs -translate-x-1/2 rounded-xl border border-border/30 bg-background/95 p-3 shadow-lg backdrop-blur-lg"
+                      : "absolute left-[calc(100%+10px)] top-0 z-50 w-72 rounded-xl border border-border/30 bg-background/95 p-3 shadow-lg backdrop-blur-lg"
                   }
                   onMouseDown={(e) => e.stopPropagation()}
                   onClick={(e) => e.stopPropagation()}
@@ -390,7 +390,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
                         }
                         setSummarizing(false);
                       }}
-                      className="w-full rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors"
+                      className="w-full rounded-lg bg-emerald-500 px-3 py-1.5 text-xs font-semibold text-white shadow-sm hover:bg-emerald-600 transition-colors"
                     >
                       Generate Summary
                     </button>
@@ -450,10 +450,10 @@ function ToolBtn({
       className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-xl transition-all active:scale-90 sm:h-9 sm:w-9
         ${
           active
-            ? "bg-emerald-600 text-white shadow-md shadow-emerald-500/30"
+            ? "bg-emerald-500 text-white shadow-sm"
             : panelOpen
-              ? "bg-muted text-foreground"
-              : "text-muted-foreground hover:bg-muted/80 hover:text-foreground"
+              ? "bg-muted/70 text-foreground"
+              : "text-muted-foreground hover:bg-muted/60 hover:text-foreground"
         }`}
     >
       {children}
@@ -478,8 +478,8 @@ function Popover({
       transition={{ duration: 0.14 }}
       className={
         isMobile
-          ? `absolute bottom-full left-1/2 mb-2 z-50 -translate-x-1/2 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md ${wide ? "w-44" : "w-auto"}`
-          : `absolute left-[calc(100%+10px)] top-0 z-50 rounded-xl border border-border bg-background/98 p-3 shadow-xl backdrop-blur-md ${wide ? "w-44" : "w-auto"}`
+          ? `absolute bottom-full left-1/2 mb-2 z-50 -translate-x-1/2 rounded-xl border border-border/30 bg-background/95 p-3 shadow-lg backdrop-blur-lg ${wide ? "w-44" : "w-auto"}`
+          : `absolute left-[calc(100%+10px)] top-0 z-50 rounded-xl border border-border/30 bg-background/95 p-3 shadow-lg backdrop-blur-lg ${wide ? "w-44" : "w-auto"}`
       }
       // Prevent clicks inside the popover from propagating to the PDF canvas
       onMouseDown={(e) => e.stopPropagation()}
@@ -507,7 +507,7 @@ function ColorSwatch({
       title={label}
       className={`h-5 w-5 rounded-full border-2 transition-all hover:scale-125 active:scale-95
         ${tailwind}
-        ${active ? "ring-2 ring-emerald-500 ring-offset-1 border-white" : "border-transparent"}`}
+        ${active ? "ring-2 ring-emerald-500 ring-offset-2 border-white" : "border-transparent"}`}
     />
   );
 }

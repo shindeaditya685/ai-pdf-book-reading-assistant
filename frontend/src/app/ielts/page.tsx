@@ -12,6 +12,93 @@ import {
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 
+// ── Band Score Ruler (signature element) ──
+
+const BAND_LABELS = ['', '', '', '', '', '', '', '', '', ''] as const
+
+function BandScoreRuler({ score, target = 7 }: { score: number | null; target?: number }) {
+  const bands = [1, 2, 3, 4, 5, 6, 7, 8, 9]
+
+  return (
+    <div className="rounded-xl border border-slate-200 bg-white px-5 py-4 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/40">
+      <div className="mb-2 flex items-center justify-between">
+        <span className="font-serif text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-500 dark:text-slate-400">
+          Estimated Band Score
+        </span>
+        {score !== null && (
+          <span className="text-[11px] text-slate-400 dark:text-slate-500">
+            Target: <span className="font-semibold text-slate-600 dark:text-slate-300">{target}.0</span>
+          </span>
+        )}
+      </div>
+      <div className="relative">
+        <div className="flex h-8 items-center">
+          {bands.map((band, i) => {
+            const filled = score !== null && band <= score
+            const isMarker = score !== null && Math.round(score) === band
+            const segmentColor =
+              band <= 4 ? 'bg-rose-200 dark:bg-rose-900/40' :
+              band <= 6 ? 'bg-amber-200 dark:bg-amber-900/40' :
+              'bg-teal-200 dark:bg-teal-900/40'
+
+            return (
+              <div key={band} className="relative flex-1">
+                <div
+                  className={`h-2 rounded-full transition-all duration-700 ${
+                    i === 0 ? 'rounded-l-full' : i === bands.length - 1 ? 'rounded-r-full' : ''
+                  } ${filled ? 'bg-teal-500 dark:bg-teal-500' : segmentColor}`}
+                  style={{
+                    marginLeft: i === 0 ? 0 : '-1px',
+                    marginRight: i === bands.length - 1 ? 0 : '-1px',
+                  }}
+                />
+                {isMarker && (
+                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-teal-500 shadow-[0_0_0_3px_rgba(13,148,136,0.2)] dark:shadow-[0_0_0_3px_rgba(13,148,136,0.35)]">
+                      <span className="text-[9px] font-bold text-white">{score}</span>
+                    </div>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+        <div className="mt-1.5 flex">
+          {bands.map((band) => (
+            <span
+              key={band}
+              className="flex-1 text-center text-[10px] font-medium text-slate-400 dark:text-slate-500"
+            >
+              {band}
+            </span>
+          ))}
+        </div>
+        {score === null && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <span className="rounded-full bg-slate-100 px-4 py-1 text-[10px] font-semibold text-slate-400 dark:bg-slate-800 dark:text-slate-500">
+              Complete a practice to see your band
+            </span>
+          </div>
+        )}
+      </div>
+      <div className="mt-2 flex gap-3 text-[10px] text-slate-400 dark:text-slate-500">
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
+          Limited (1–4)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
+          Moderate (5–6)
+        </span>
+        <span className="flex items-center gap-1">
+          <span className="h-1.5 w-1.5 rounded-full bg-teal-300" />
+          Proficient (7–9)
+        </span>
+      </div>
+    </div>
+  )
+}
+
 // ═══════════════════════════════════════════════════════════════
 // DATA
 // ═══════════════════════════════════════════════════════════════
@@ -589,7 +676,7 @@ function TimerDisplay({ seconds, className }: { seconds: number; className?: str
   const m = Math.floor(seconds / 60)
   const s = seconds % 60
   return (
-    <span className={`tabular-nums ${m < 5 ? 'text-red-500' : m < 10 ? 'text-amber-500' : 'text-emerald-500'} ${className || ''}`}>
+    <span className={`tabular-nums ${m < 5 ? 'text-rose-500' : m < 10 ? 'text-amber-500' : 'text-teal-500'} ${className || ''}`}>
       {String(m).padStart(2, '0')}:{String(s).padStart(2, '0')}
     </span>
   )
@@ -631,7 +718,7 @@ function useTimer(initialSeconds: number, onExpire?: () => void) {
 // READING MODULE
 // ═══════════════════════════════════════════════════════════════
 
-function ReadingModule() {
+function ReadingModule({ onScoreUpdate }: { onScoreUpdate?: (score: number) => void }) {
   const [passageIndex, setPassageIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [submitted, setSubmitted] = useState(false)
@@ -667,6 +754,10 @@ function ReadingModule() {
 
   const score = questions.filter((q) => isAnswerCorrect(q, answers[q.id])).length
   const band = score >= 7 ? 9 : score >= 6 ? 8 : score >= 5 ? 7 : score >= 4 ? 6 : score >= 3 ? 5 : 4
+
+  useEffect(() => {
+    if (showResults) onScoreUpdate?.(band)
+  }, [showResults, band, onScoreUpdate])
 
   const startPassage = () => {
     setAnswers({})
@@ -722,14 +813,14 @@ function ReadingModule() {
   return (
     <div className="space-y-6">
       {/* AI Generate section */}
-      <div className="rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-50/30 to-transparent p-4 shadow-sm dark:from-emerald-950/10">
+      <div className="rounded-xl border border-teal-200/50 bg-white p-4 shadow-sm dark:border-teal-800/30 dark:bg-slate-900/60">
         <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/25">
-            <Sparkles className="h-4 w-4 text-white" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 shadow-sm dark:bg-white">
+            <Sparkles className="h-4 w-4 text-white dark:text-slate-900" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-foreground">Generate IELTS Passage with AI</p>
-            <p className="text-[10px] text-muted-foreground/65 mt-0.5">Enter any topic — AI creates a full passage with questions following IELTS format</p>
+            <p className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Generate IELTS Passage with AI</p>
+            <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">Enter any topic — AI creates a full passage with questions following IELTS format</p>
             <div className="mt-3 flex flex-col gap-2 sm:flex-row">
               <input
                 type="text"
@@ -737,13 +828,13 @@ function ReadingModule() {
                 onChange={(e) => setAiTopic(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !generating) generatePassage() }}
                 placeholder="e.g. Solar energy, Ocean pollution, The history of maps..."
-                className="h-10 flex-1 rounded-lg border border-border/60 bg-background/80 px-3 text-sm outline-none transition-all focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+                className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 disabled={generating}
               />
               <select
                 value={aiDifficulty}
                 onChange={(e) => setAiDifficulty(e.target.value as 'easy' | 'medium' | 'hard')}
-                className="h-10 w-28 rounded-lg border border-border/60 bg-background/80 px-2 text-sm outline-none"
+                className="h-10 w-28 rounded-lg border border-slate-200 bg-white px-2 text-sm text-slate-900 outline-none dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100"
                 disabled={generating}
               >
                 <option value="easy">🟢 Easy</option>
@@ -753,7 +844,7 @@ function ReadingModule() {
               <button
                 onClick={generatePassage}
                 disabled={generating || !aiTopic.trim()}
-                className="inline-flex h-10 items-center gap-2 rounded-lg bg-emerald-500 px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-600 active:scale-[0.97] disabled:opacity-40"
+                className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] disabled:opacity-40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
               >
                 {generating ? (
                   <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating...</>
@@ -762,21 +853,21 @@ function ReadingModule() {
                 )}
               </button>
             </div>
-            {genError && <p className="mt-2 text-xs text-red-500">{genError}</p>}
+            {genError && <p className="mt-2 text-xs text-rose-500">{genError}</p>}
           </div>
         </div>
       </div>
 
       {/* Passage selector */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {allPassages.map((p, i) => (
           <button
             key={p.id}
             onClick={() => changePassage(i)}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+            className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
               i === passageIndex
-                ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-                : 'border border-border/60 text-muted-foreground hover:bg-muted/50'
+                ? 'bg-slate-900 text-white shadow-sm dark:bg-white dark:text-slate-900'
+                : 'border border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 dark:hover:text-slate-300'
             }`}
           >
             {p.difficulty === 'easy' ? '🟢' : p.difficulty === 'medium' ? '🟡' : '🔴'} {p.title}
@@ -785,15 +876,15 @@ function ReadingModule() {
       </div>
 
       {!started ? (
-        <div className="rounded-xl border bg-background/60 p-8 text-center shadow-sm">
-          <BookText className="mx-auto h-12 w-12 text-emerald-500/50" />
-          <h3 className="mt-4 text-lg font-bold text-foreground">{passage.title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {passage.wordCount} words · {passage.questions.length} questions · {passage.difficulty} difficulty · 20 minutes
+        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-700/50 dark:bg-slate-900/40">
+          <BookText className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600" />
+          <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-slate-900 dark:text-white">{passage.title}</h3>
+          <p className="mt-1.5 text-sm text-slate-400 dark:text-slate-500">
+            {passage.wordCount} words &middot; {passage.questions.length} questions &middot; {passage.difficulty} difficulty &middot; 20 minutes
           </p>
           <button
             onClick={startPassage}
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-600 hover:shadow-xl active:scale-[0.97]"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
           >
             <Play className="h-4 w-4" />
             Start Reading
@@ -802,22 +893,22 @@ function ReadingModule() {
       ) : (
         <>
           {/* Timer + controls */}
-          <div className="flex items-center justify-between rounded-xl border bg-background/60 p-3 shadow-sm">
-            <div className="flex items-center gap-2 text-sm font-semibold text-muted-foreground">
+          <div className="flex items-center justify-between rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+            <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
               <Timer className="h-4 w-4" />
               <TimerDisplay seconds={timer.seconds} />
             </div>
             <div className="flex items-center gap-2">
               <button
                 onClick={() => timer.running ? timer.pause() : timer.start()}
-                className="rounded-lg border border-border/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-300"
               >
                 {timer.running ? 'Pause' : 'Resume'}
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={Object.keys(answers).length === 0}
-                className="rounded-lg bg-emerald-500 px-4 py-1.5 text-xs font-bold text-white transition-all hover:bg-emerald-600 disabled:opacity-40"
+                className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] disabled:opacity-40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
               >
                 Submit Answers
               </button>
@@ -825,24 +916,24 @@ function ReadingModule() {
           </div>
 
           {/* Answer Navigation Grid */}
-          <div className="rounded-xl border bg-background/60 p-4 shadow-sm">
-            <p className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider mb-2">Question Navigation</p>
-            <div className="flex flex-wrap gap-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+            <p className="text-[9px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Question Navigator</p>
+            <div className="mt-2 flex flex-wrap gap-1.5">
               {questions.map((q, i) => {
                 const isAnswered = answers[q.id] !== undefined && answers[q.id] !== '';
                 const isCorrect = isAnswerCorrect(q, answers[q.id]);
                 
-                let btnStyle = "border-border/60 text-muted-foreground hover:border-muted-foreground/30";
+                let btnStyle = "border-slate-200 text-slate-400 hover:border-slate-300 hover:text-slate-600 dark:border-slate-700 dark:text-slate-500 dark:hover:border-slate-600 dark:hover:text-slate-300";
                 if (showResults) {
                   if (isCorrect) {
-                    btnStyle = "bg-emerald-500 border-emerald-600 text-white shadow-sm shadow-emerald-500/20";
+                    btnStyle = "bg-teal-500 border-teal-500 text-white shadow-sm";
                   } else if (isAnswered) {
-                    btnStyle = "bg-red-500 border-red-600 text-white shadow-sm shadow-red-500/20";
+                    btnStyle = "bg-rose-500 border-rose-500 text-white shadow-sm";
                   } else {
-                    btnStyle = "bg-amber-500 border-amber-600 text-white shadow-sm shadow-amber-500/20";
+                    btnStyle = "bg-amber-400 border-amber-400 text-white shadow-sm";
                   }
                 } else if (isAnswered) {
-                  btnStyle = "bg-emerald-50 border-emerald-500 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 font-bold";
+                  btnStyle = "border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900";
                 }
 
                 return (
@@ -851,7 +942,7 @@ function ReadingModule() {
                     onClick={() => {
                       document.getElementById(`q-container-${q.id}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                     }}
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg border text-xs font-semibold transition-all hover:scale-105 active:scale-95 ${btnStyle}`}
+                    className={`flex h-7 w-7 items-center justify-center rounded-lg border text-[11px] font-semibold transition-all hover:scale-105 active:scale-95 ${btnStyle}`}
                   >
                     {i + 1}
                   </button>
@@ -861,16 +952,17 @@ function ReadingModule() {
           </div>
 
           {/* Passage + Questions side by side */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="max-h-[600px] overflow-y-auto rounded-xl border bg-background/60 p-5 shadow-sm">
-              <div className="prose prose-sm dark:prose-invert max-w-none">
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="max-h-[600px] overflow-y-auto rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+              <p className="font-serif text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Reading Passage</p>
+              <div className="mt-3 space-y-3">
                 {passage.text.split('\n\n').map((p, i) => (
-                  <p key={i} className="text-sm leading-6 text-foreground/90">{p.trim()}</p>
+                  <p key={i} className="text-sm leading-7 text-slate-700 dark:text-slate-300">{p.trim()}</p>
                 ))}
               </div>
             </div>
 
-            <div className="space-y-4">
+            <div className="space-y-3">
               {questions.map((q, i) => {
                 const isAnswered = answers[q.id] !== undefined && answers[q.id] !== '';
                 const isCorrect = isAnswerCorrect(q, answers[q.id]);
@@ -879,41 +971,49 @@ function ReadingModule() {
                   <div key={q.id} id={`q-container-${q.id}`} className={`rounded-xl border p-4 shadow-sm scroll-mt-20 transition-all ${
                     showResults
                       ? isCorrect
-                        ? 'border-emerald-500/30 bg-emerald-500/5'
+                        ? 'border-teal-200 bg-teal-50/30 dark:border-teal-800/30 dark:bg-teal-950/10'
                         : isAnswered
-                          ? 'border-red-500/30 bg-red-500/5'
-                          : 'border-border/40'
-                      : 'border-border/40 bg-background/40'
+                          ? 'border-rose-200 bg-rose-50/30 dark:border-rose-800/30 dark:bg-rose-950/10'
+                          : 'border-slate-200 bg-white dark:border-slate-700/50 dark:bg-slate-900/60'
+                      : 'border-slate-200 bg-white dark:border-slate-700/50 dark:bg-slate-900/60'
                   }`}>
                     <div className="flex items-start gap-3">
-                      <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-emerald-100 text-[11px] font-bold text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                      <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
+                        showResults
+                          ? isCorrect
+                            ? 'bg-teal-500 text-white'
+                            : isAnswered
+                              ? 'bg-rose-500 text-white'
+                              : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                          : 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                      }`}>
                         {i + 1}
                       </span>
                       <div className="flex-1 min-w-0">
-                        <p className="text-xs font-medium text-foreground">
-                          {q.type === 'mcq' && '❓ Multiple Choice'}
-                          {q.type === 'tfng' && '✅ True / False / Not Given'}
-                          {q.type === 'heading' && '📑 Matching Headings'}
-                          {q.type === 'completion' && '✏️ Sentence Completion'}
+                        <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
+                          {q.type === 'mcq' && 'Multiple Choice'}
+                          {q.type === 'tfng' && 'True / False / Not Given'}
+                          {q.type === 'heading' && 'Matching Headings'}
+                          {q.type === 'completion' && 'Sentence Completion'}
                         </p>
-                        <p className="mt-1 text-sm text-foreground/80">{q.question}</p>
+                        <p className="mt-1 text-sm font-medium text-slate-800 dark:text-slate-200">{q.question}</p>
 
                         {q.type === 'mcq' && q.options && (
-                          <div className="mt-2 space-y-1.5">
+                          <div className="mt-2 space-y-1">
                             {q.options.map((opt) => {
                               const isSelected = answers[q.id] === opt;
                               const isOptCorrect = opt === q.answer;
                               const optStyle = showResults
                                 ? isSelected
                                   ? isOptCorrect
-                                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold'
-                                    : 'border-red-500 bg-red-500/10 text-red-600 dark:text-red-400 font-semibold'
+                                    ? 'border-teal-500 bg-teal-50 text-teal-700 font-semibold dark:border-teal-500 dark:bg-teal-950/20 dark:text-teal-400'
+                                    : 'border-rose-500 bg-rose-50 text-rose-700 font-semibold dark:border-rose-500 dark:bg-rose-950/20 dark:text-rose-400'
                                   : isOptCorrect
-                                    ? 'border-emerald-500/50 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 font-semibold'
-                                    : 'border-border/40 opacity-60 pointer-events-none'
+                                    ? 'border-teal-400/50 bg-teal-50/50 text-teal-700 font-semibold dark:border-teal-600/30 dark:bg-teal-950/10 dark:text-teal-400'
+                                    : 'border-slate-100 opacity-50 pointer-events-none dark:border-slate-700/30'
                                 : isSelected
-                                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                  : 'border-border/40 hover:border-muted-foreground/30 hover:bg-muted/30';
+                                  ? 'border-slate-900 bg-slate-50 text-slate-900 dark:border-white dark:bg-slate-800 dark:text-white'
+                                  : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50';
 
                               return (
                                 <label key={opt} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-all ${optStyle}`}>
@@ -926,11 +1026,11 @@ function ReadingModule() {
                                     className="sr-only"
                                     disabled={showResults}
                                   />
-                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
-                                  {showResults && isSelected && !isOptCorrect && <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-teal-500 shrink-0" />}
+                                  {showResults && isSelected && !isOptCorrect && <XCircle className="h-3.5 w-3.5 text-rose-500 shrink-0" />}
                                   {!showResults && (
                                     <div className={`h-3 w-3 shrink-0 rounded-full border-2 ${
-                                      isSelected ? 'border-emerald-500 bg-emerald-500' : 'border-muted-foreground/30'
+                                      isSelected ? 'border-slate-900 bg-slate-900 dark:border-white dark:bg-white' : 'border-slate-300 dark:border-slate-600'
                                     }`} />
                                   )}
                                   {opt}
@@ -948,14 +1048,14 @@ function ReadingModule() {
                               const btnStyle = showResults
                                 ? isSelected
                                   ? isOptCorrect
-                                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold'
-                                    : 'border-red-500 bg-red-500/10 text-red-600 dark:text-red-400 font-semibold'
+                                    ? 'border-teal-500 bg-teal-50 text-teal-700 font-semibold dark:border-teal-500 dark:bg-teal-950/20 dark:text-teal-400'
+                                    : 'border-rose-500 bg-rose-50 text-rose-700 font-semibold dark:border-rose-500 dark:bg-rose-950/20 dark:text-rose-400'
                                   : isOptCorrect
-                                    ? 'border-emerald-500/50 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 font-semibold'
-                                    : 'border-border/40 opacity-60 pointer-events-none'
+                                    ? 'border-teal-400/50 bg-teal-50/50 text-teal-700 font-semibold dark:border-teal-600/30 dark:bg-teal-950/10 dark:text-teal-400'
+                                    : 'border-slate-100 opacity-50 pointer-events-none dark:border-slate-700/30'
                                 : isSelected
-                                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                  : 'border-border/40 text-muted-foreground hover:bg-muted/50';
+                                  ? 'border-slate-900 bg-slate-50 text-slate-900 dark:border-white dark:bg-slate-800 dark:text-white'
+                                  : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50';
 
                               return (
                                 <button
@@ -964,8 +1064,8 @@ function ReadingModule() {
                                   disabled={showResults}
                                   className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-all flex items-center gap-1 ${btnStyle}`}
                                 >
-                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3 w-3 text-emerald-500 shrink-0" />}
-                                  {showResults && isSelected && !isOptCorrect && <XCircle className="h-3 w-3 text-red-500 shrink-0" />}
+                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3 w-3 text-teal-500 shrink-0" />}
+                                  {showResults && isSelected && !isOptCorrect && <XCircle className="h-3 w-3 text-rose-500 shrink-0" />}
                                   {opt}
                                 </button>
                               );
@@ -974,21 +1074,21 @@ function ReadingModule() {
                         )}
 
                         {q.type === 'heading' && q.options && (
-                          <div className="mt-2 space-y-1.5">
+                          <div className="mt-2 space-y-1">
                             {q.options.map((opt) => {
                               const isSelected = answers[q.id] === opt;
                               const isOptCorrect = opt === q.answer;
                               const optStyle = showResults
                                 ? isSelected
                                   ? isOptCorrect
-                                    ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold'
-                                    : 'border-red-500 bg-red-500/10 text-red-600 dark:text-red-400 font-semibold'
+                                    ? 'border-teal-500 bg-teal-50 text-teal-700 font-semibold dark:border-teal-500 dark:bg-teal-950/20 dark:text-teal-400'
+                                    : 'border-rose-500 bg-rose-50 text-rose-700 font-semibold dark:border-rose-500 dark:bg-rose-950/20 dark:text-rose-400'
                                   : isOptCorrect
-                                    ? 'border-emerald-500/50 bg-emerald-500/5 text-emerald-600 dark:text-emerald-400 font-semibold'
-                                    : 'border-border/40 opacity-60 pointer-events-none'
+                                    ? 'border-teal-400/50 bg-teal-50/50 text-teal-700 font-semibold dark:border-teal-600/30 dark:bg-teal-950/10 dark:text-teal-400'
+                                    : 'border-slate-100 opacity-50 pointer-events-none dark:border-slate-700/30'
                                 : isSelected
-                                  ? 'border-emerald-500 bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                                  : 'border-border/40 hover:border-muted-foreground/30 hover:bg-muted/30';
+                                  ? 'border-slate-900 bg-slate-50 text-slate-900 dark:border-white dark:bg-slate-800 dark:text-white'
+                                  : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50';
 
                               return (
                                 <label key={opt} className={`flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-xs transition-all ${optStyle}`}>
@@ -1001,8 +1101,8 @@ function ReadingModule() {
                                     className="sr-only"
                                     disabled={showResults}
                                   />
-                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-emerald-500 shrink-0" />}
-                                  {showResults && isSelected && !isOptCorrect && <XCircle className="h-3.5 w-3.5 text-red-500 shrink-0" />}
+                                  {showResults && isOptCorrect && <CheckCircle2 className="h-3.5 w-3.5 text-teal-500 shrink-0" />}
+                                  {showResults && isSelected && !isOptCorrect && <XCircle className="h-3.5 w-3.5 text-rose-500 shrink-0" />}
                                   {opt}
                                 </label>
                               );
@@ -1017,30 +1117,30 @@ function ReadingModule() {
                             onChange={(e) => handleAnswer(q.id, e.target.value)}
                             disabled={showResults}
                             placeholder="Type your answer..."
-                            className={`mt-2 w-full rounded-lg border bg-background/60 px-3 py-2 text-sm outline-none transition-all disabled:opacity-50 ${
+                            className={`mt-2 w-full rounded-lg border bg-white px-3 py-2 text-sm text-slate-900 outline-none transition-all disabled:opacity-50 dark:bg-slate-800 dark:text-slate-100 ${
                               showResults && isCorrect
-                                ? 'border-emerald-500 ring-2 ring-emerald-500/15'
+                                ? 'border-teal-500 ring-2 ring-teal-500/15'
                                 : showResults && isAnswered
-                                  ? 'border-red-500 ring-2 ring-red-500/15'
-                                  : 'border-border/60 focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15'
+                                  ? 'border-rose-500 ring-2 ring-rose-500/15'
+                                  : 'border-slate-200 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700'
                             }`}
                           />
                         )}
 
                         {showResults && !isCorrect && (
-                          <div className="mt-2 flex items-start gap-2 rounded-lg bg-amber-50 p-2.5 dark:bg-amber-950/20">
+                          <div className="mt-2 flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50/50 p-2.5 dark:border-amber-800/30 dark:bg-amber-950/10">
                             <Lightbulb className="h-3.5 w-3.5 shrink-0 text-amber-500 mt-0.5" />
                             <div>
                               {isAnswered ? (
-                                <p className="text-xs text-amber-700 dark:text-amber-400">
+                                <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
                                   Correct answer: <span className="font-bold">{q.answer}</span>
                                 </p>
                               ) : (
-                                <p className="text-xs text-amber-700 dark:text-amber-400">
+                                <p className="text-xs font-medium text-amber-700 dark:text-amber-400">
                                   <span className="font-bold">No answer</span> — correct answer: {q.answer}
                                 </p>
                               )}
-                              <p className="mt-0.5 text-[11px] text-amber-600/70 dark:text-amber-500/70">{q.explanation}</p>
+                              <p className="mt-0.5 text-[10px] text-amber-600/70 dark:text-amber-500/70">{q.explanation}</p>
                             </div>
                           </div>
                         )}
@@ -1053,24 +1153,24 @@ function ReadingModule() {
           </div>
 
           {showResults && (
-            <div className="rounded-xl border-2 border-emerald-500/20 bg-gradient-to-br from-emerald-50 to-emerald-50/50 p-6 shadow-sm dark:from-emerald-950/20 dark:to-emerald-950/10">
-              <div className="flex flex-col items-center gap-4 text-center sm:flex-row sm:text-left">
-                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-emerald-100 dark:bg-emerald-900/30">
-                  <GraduationCap className="h-8 w-8 text-emerald-600 dark:text-emerald-400" />
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+              <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:text-left">
+                <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl bg-slate-900 dark:bg-white">
+                  <GraduationCap className="h-8 w-8 text-white dark:text-slate-900" />
                 </div>
                 <div className="flex-1">
-                  <h3 className="text-lg font-bold text-foreground">Practice Complete</h3>
-                  <p className="text-sm text-muted-foreground">
-                    You scored <span className="font-bold text-emerald-600 dark:text-emerald-400">{score}/{questions.length}</span>
-                    {' · '}Estimated Band: <span className="font-bold text-emerald-600 dark:text-emerald-400">{band}.0</span>
+                  <h3 className="font-serif text-lg font-bold tracking-tight text-slate-900 dark:text-white">Practice Complete</h3>
+                  <p className="mt-1 text-sm text-slate-400 dark:text-slate-500">
+                    You scored <span className="font-bold text-teal-600 dark:text-teal-400">{score}/{questions.length}</span>
+                    {' · '}Estimated Band: <span className="font-bold text-teal-600 dark:text-teal-400">{band}.0</span>
                   </p>
-                  <div className="mt-2 flex flex-wrap gap-2 text-xs text-muted-foreground">
+                  <div className="mt-2 flex flex-wrap gap-3 text-xs text-slate-400 dark:text-slate-500">
                     <span className="flex items-center gap-1">
-                      <CheckCircle2 className="h-3 w-3 text-emerald-500" />
+                      <CheckCircle2 className="h-3 w-3 text-teal-500" />
                       {questions.filter((q) => isAnswerCorrect(q, answers[q.id])).length} correct
                     </span>
                     <span className="flex items-center gap-1">
-                      <XCircle className="h-3 w-3 text-red-500" />
+                      <XCircle className="h-3 w-3 text-rose-500" />
                       {questions.filter((q) => answers[q.id] !== undefined && answers[q.id] !== '' && !isAnswerCorrect(q, answers[q.id])).length} incorrect
                     </span>
                     <span className="flex items-center gap-1">
@@ -1081,7 +1181,7 @@ function ReadingModule() {
                 </div>
                 <button
                   onClick={startPassage}
-                  className="inline-flex shrink-0 items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-sm font-bold text-white shadow-lg shadow-emerald-500/25 transition-all hover:bg-emerald-600 active:scale-[0.97]"
+                  className="inline-flex shrink-0 items-center gap-2 rounded-lg bg-slate-900 px-5 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
                 >
                   <RefreshCw className="h-4 w-4" />
                   Retry
@@ -1358,18 +1458,18 @@ function WritingModule() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Task type selector */}
-      <div className="flex flex-wrap gap-2">
-        <span className="text-xs font-semibold text-muted-foreground self-center mr-1">Academic Writing:</span>
+      <div className="flex flex-wrap gap-1.5">
+        <span className="self-center mr-1 text-[11px] font-semibold text-slate-400 dark:text-slate-500">Academic Writing:</span>
         {WRITING_TASKS.map((t, i) => (
           <button
             key={t.id}
             onClick={() => { setTaskIndex(i); setStarted(false); setEvaluation(null); setEvalError(''); timer.reset(t.timeMinutes * 60) }}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+            className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
               i === taskIndex
-                ? 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-                : 'border border-border/60 text-muted-foreground hover:bg-muted/50'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                : 'border border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 dark:hover:text-slate-300'
             }`}
           >
             {t.type === 'task1' ? '📊 ' : '📝 '}{t.title}
@@ -1378,23 +1478,23 @@ function WritingModule() {
       </div>
 
       {!started ? (
-        <div className="rounded-xl border bg-background/60 p-8 text-center shadow-sm">
-          <PenLine className="mx-auto h-12 w-12 text-amber-500/50" />
-          <h3 className="mt-4 text-lg font-bold text-foreground">{task.title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {task.timeMinutes} minutes · {task.type === 'task1' ? '150 words minimum' : '250 words minimum'}
+        <div className="rounded-xl border border-slate-200 bg-white p-10 text-center shadow-sm dark:border-slate-700/50 dark:bg-slate-900/40">
+          <PenLine className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600" />
+          <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-slate-900 dark:text-white">{task.title}</h3>
+          <p className="mt-1.5 text-sm text-slate-400 dark:text-slate-500">
+            {task.timeMinutes} minutes &middot; {task.type === 'task1' ? '150 words minimum' : '250 words minimum'}
           </p>
-          <div className="mt-4 text-left max-w-lg mx-auto space-y-2 text-sm text-muted-foreground/80">
+          <div className="mt-5 text-left max-w-lg mx-auto space-y-2">
             {task.tips.map((tip, i) => (
-              <p key={i} className="flex items-start gap-2">
-                <span className="text-amber-500 mt-0.5">•</span>
+              <p key={i} className="flex items-start gap-2 text-xs text-slate-500 dark:text-slate-400">
+                <span className="mt-0.5 text-slate-300 dark:text-slate-600">•</span>
                 {tip}
               </p>
             ))}
           </div>
           <button
             onClick={startTask}
-            className="mt-6 inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-amber-500/25 transition-all hover:bg-amber-600 active:scale-[0.97]"
+            className="mt-6 inline-flex items-center gap-2 rounded-lg bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
           >
             <Play className="h-4 w-4" />
             Start Writing
@@ -1403,15 +1503,15 @@ function WritingModule() {
       ) : (
         <>
           {/* Timer + toolbar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border bg-background/60 p-3 shadow-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
             <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-sm font-semibold">
-                <Timer className="h-4 w-4 text-amber-500" />
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-500 dark:text-slate-400">
+                <Timer className="h-4 w-4" />
                 <TimerDisplay seconds={timer.seconds} />
               </div>
-              <div className="h-4 w-px bg-border" />
+              <div className="h-4 w-px bg-slate-200 dark:bg-slate-700" />
               <div className={`text-xs font-semibold ${
-                wordCount < targetMin ? 'text-red-500' : wordCount <= targetMax ? 'text-emerald-500' : 'text-amber-500'
+                wordCount < targetMin ? 'text-rose-500' : wordCount <= targetMax ? 'text-teal-500' : 'text-amber-500'
               }`}>
                 {wordCount} words
                 {wordCount < targetMin ? ` (min ${targetMin})` : ''}
@@ -1420,14 +1520,14 @@ function WritingModule() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => timer.running ? timer.pause() : timer.start()}
-                className="rounded-lg border border-border/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                className="rounded-lg border border-slate-200 px-3 py-1.5 text-xs font-semibold text-slate-500 transition-colors hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-300"
               >
                 {timer.running ? 'Pause' : 'Resume'}
               </button>
               <button
                 onClick={() => setShowChecklist(!showChecklist)}
                 className={`rounded-lg border px-3 py-1.5 text-xs font-semibold transition-colors ${
-                  showChecklist ? 'border-amber-500 bg-amber-500/10 text-amber-600' : 'border-border/60 text-muted-foreground hover:text-foreground'
+                  showChecklist ? 'border-slate-900 bg-slate-900 text-white dark:border-white dark:bg-white dark:text-slate-900' : 'border-slate-200 text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:text-slate-300'
                 }`}
               >
                 <ListChecks className="inline h-3 w-3 mr-1" />
@@ -1436,7 +1536,7 @@ function WritingModule() {
               <button
                 onClick={evaluateEssay}
                 disabled={evaluating || !content.trim()}
-                className="rounded-lg bg-amber-500 px-4 py-1.5 text-xs font-bold text-white transition-all hover:bg-amber-600 active:scale-[0.97] disabled:opacity-40 flex items-center gap-1.5 shadow-sm shadow-amber-500/15"
+                className="rounded-lg bg-slate-900 px-4 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] disabled:opacity-40 flex items-center gap-1.5 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
               >
                 {evaluating ? (
                   <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Evaluating...</>
@@ -1448,18 +1548,16 @@ function WritingModule() {
           </div>
 
           {evalError && (
-            <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-500">
+            <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-3 text-xs text-rose-600 dark:border-rose-800/30 dark:bg-rose-950/10 dark:text-rose-400">
               {evalError}
             </div>
           )}
 
           {/* Prompt + editor */}
-          <div className="grid gap-6 lg:grid-cols-2">
-            <div className="rounded-xl border bg-background/60 p-5 shadow-sm space-y-4">
-              <div>
-                <h4 className="text-sm font-bold text-amber-500 mb-3">Task Prompt</h4>
-                <p className="text-sm leading-6 text-foreground/90 whitespace-pre-line">{task.prompt}</p>
-              </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+              <p className="font-serif text-[11px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Task Prompt</p>
+              <p className="mt-3 text-sm leading-7 text-slate-700 whitespace-pre-line dark:text-slate-300">{task.prompt}</p>
               <WritingTaskGraphic taskId={task.id} />
             </div>
 
@@ -1468,33 +1566,33 @@ function WritingModule() {
                 value={content}
                 onChange={(e) => setContent(e.target.value)}
                 placeholder="Write your response here..."
-                className="h-[400px] w-full resize-none rounded-xl border border-border/60 bg-background/80 p-4 text-sm leading-6 text-foreground outline-none transition-all focus:border-amber-400 focus:ring-2 focus:ring-amber-500/15"
+                className="h-[400px] w-full resize-none rounded-xl border border-slate-200 bg-white p-4 text-sm leading-7 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
               />
             </div>
           </div>
 
           {/* Checklist */}
           {showChecklist && (
-            <div className="rounded-xl border border-amber-500/20 bg-amber-50/50 p-4 dark:bg-amber-950/10">
-              <h4 className="mb-2 text-sm font-bold text-amber-700 dark:text-amber-400">Writing Checklist</h4>
-              <div className="grid gap-2 text-xs text-muted-foreground sm:grid-cols-2">
+            <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 dark:border-slate-700/50 dark:bg-slate-900/40">
+              <h4 className="font-serif text-xs font-bold tracking-tight text-slate-700 dark:text-slate-300">Writing Checklist</h4>
+              <div className="mt-2 grid gap-2 text-xs text-slate-500 dark:text-slate-400 sm:grid-cols-2">
                 {task.type === 'task1' ? (
                   <>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> Overview sentence included</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> Specific figures mentioned</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> Comparisons made where relevant</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> Appropriate tense used</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> No personal opinions or explanations</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> Minimum 150 words reached</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Overview sentence included</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Specific figures mentioned</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Comparisons made where relevant</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Appropriate tense used</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> No personal opinions or explanations</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Minimum 150 words reached</label>
                   </>
                 ) : (
                   <>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> Clear introduction paraphrasing the question</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> Position stated clearly</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> Each paragraph has one main idea</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> Specific examples used for support</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> Cohesive devices used (however, moreover, etc.)</label>
-                    <label className="flex items-center gap-2"><input type="checkbox" className="rounded border-amber-300" /> Minimum 250 words reached</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Clear introduction paraphrasing the question</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Position stated clearly</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Each paragraph has one main idea</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Specific examples used for support</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Cohesive devices used (however, moreover, etc.)</label>
+                    <label className="flex items-center gap-2 cursor-pointer"><input type="checkbox" className="rounded border-slate-300 dark:border-slate-600" /> Minimum 250 words reached</label>
                   </>
                 )}
               </div>
@@ -1502,44 +1600,44 @@ function WritingModule() {
           )}
 
           {timer.seconds === 0 && (
-            <div className="rounded-xl border-2 border-amber-500/20 bg-amber-50 p-4 dark:bg-amber-950/20">
-              <p className="text-center text-sm font-bold text-amber-700 dark:text-amber-400">
-                ⏰ Time is up! Review your response and check the checklist above.
+            <div className="rounded-xl border border-amber-200 bg-amber-50/50 p-4 text-center dark:border-amber-800/30 dark:bg-amber-950/10">
+              <p className="text-sm font-semibold text-amber-700 dark:text-amber-400">
+                Time is up! Review your response and check the checklist above.
               </p>
             </div>
           )}
 
           {/* Evaluation Results */}
           {evaluation && (
-            <div className="rounded-xl border border-amber-500/20 bg-gradient-to-br from-amber-50/10 to-transparent p-6 shadow-md dark:from-amber-950/5 mt-6 space-y-6">
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60 mt-5 space-y-6">
               <div className="flex flex-col gap-6 md:flex-row md:items-start">
                 {/* Score card */}
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-amber-500/10 bg-background/80 p-6 text-center shadow-sm w-full md:w-56 shrink-0">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Overall Band</span>
-                  <div className="mt-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-tr from-amber-500 to-orange-500 text-3xl font-black text-white shadow-lg shadow-amber-500/20">
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm w-full md:w-48 shrink-0 dark:border-slate-700 dark:bg-slate-800">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Overall Band</span>
+                  <div className="mt-4 flex h-20 w-20 items-center justify-center rounded-full bg-slate-900 text-2xl font-black text-white shadow-sm dark:bg-white dark:text-slate-900">
                     {evaluation.overallBand.toFixed(1)}
                   </div>
-                  <span className="mt-3 text-xs font-semibold text-amber-600 dark:text-amber-400">Estimated Band Score</span>
+                  <span className="mt-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500">Estimated Band Score</span>
                 </div>
 
                 {/* Criteria breakdown */}
-                <div className="flex-1 space-y-4">
-                  <h4 className="text-sm font-bold text-foreground">Criteria Breakdown</h4>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                <div className="flex-1 space-y-3">
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Criteria Breakdown</h4>
+                  <div className="grid gap-2 sm:grid-cols-2">
                     {[
                       { key: 'taskAchievement', label: task.type === 'task1' ? 'Task Achievement' : 'Task Response', score: evaluation.scores.taskAchievement },
                       { key: 'coherenceCohesion', label: 'Coherence & Cohesion', score: evaluation.scores.coherenceCohesion },
                       { key: 'lexicalResource', label: 'Lexical Resource', score: evaluation.scores.lexicalResource },
                       { key: 'grammarAccuracy', label: 'Grammatical Range & Accuracy', score: evaluation.scores.grammarAccuracy },
                     ].map((item) => (
-                      <div key={item.key} className="rounded-xl border bg-background/50 p-3 shadow-sm">
+                      <div key={item.key} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                         <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-muted-foreground">{item.label}</span>
-                          <span className="text-foreground">Band {item.score.toFixed(1)}</span>
+                          <span className="text-slate-500 dark:text-slate-400">{item.label}</span>
+                          <span className="text-slate-900 dark:text-white">Band {item.score.toFixed(1)}</span>
                         </div>
-                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                           <div
-                            className="h-full rounded-full bg-amber-500 transition-all"
+                            className="h-full rounded-full bg-slate-900 dark:bg-white transition-all"
                             style={{ width: `${(item.score / 9) * 100}%` }}
                           />
                         </div>
@@ -1551,7 +1649,7 @@ function WritingModule() {
 
               {/* Detailed criteria reviews */}
               <div className="space-y-3">
-                <h4 className="text-sm font-bold text-foreground">Detailed Examiner Comments</h4>
+                <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Detailed Examiner Comments</h4>
                 <div className="grid gap-3 sm:grid-cols-2">
                   {[
                     { label: task.type === 'task1' ? 'Task Achievement' : 'Task Response', content: evaluation.criteriaAnalysis.taskAchievement },
@@ -1559,9 +1657,9 @@ function WritingModule() {
                     { label: 'Lexical Resource', content: evaluation.criteriaAnalysis.lexicalResource },
                     { label: 'Grammatical Range & Accuracy', content: evaluation.criteriaAnalysis.grammarAccuracy },
                   ].map((item, idx) => (
-                    <div key={idx} className="rounded-xl border bg-background/50 p-4 shadow-sm">
-                      <h5 className="text-xs font-bold text-amber-600 dark:text-amber-400 mb-1.5">{item.label}</h5>
-                      <p className="text-xs text-foreground/80 leading-5">{item.content}</p>
+                    <div key={idx} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                      <h5 className="font-serif text-[11px] font-bold tracking-tight text-slate-700 dark:text-slate-300 mb-1">{item.label}</h5>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-5">{item.content}</p>
                     </div>
                   ))}
                 </div>
@@ -1570,20 +1668,20 @@ function WritingModule() {
               {/* Grammar & vocabulary corrections */}
               {evaluation.corrections && evaluation.corrections.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="text-sm font-bold text-foreground">Suggested Edits & Corrections</h4>
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Suggested Edits &amp; Corrections</h4>
                   <div className="space-y-2">
                     {evaluation.corrections.map((corr: any, idx: number) => (
-                      <div key={idx} className="rounded-xl border bg-background/50 p-3 shadow-sm text-xs leading-5">
-                        <div className="flex flex-wrap items-center gap-1.5">
-                          <span className="rounded bg-red-100 dark:bg-red-950/40 px-1.5 py-0.5 text-[10px] font-semibold text-red-700 dark:text-red-400 line-through">
+                      <div key={idx} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                        <div className="flex flex-wrap items-center gap-1.5 text-xs">
+                          <span className="rounded bg-rose-100 px-1.5 py-0.5 text-[10px] font-semibold text-rose-700 line-through dark:bg-rose-950/40 dark:text-rose-400">
                             {corr.original}
                           </span>
-                          <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
-                          <span className="rounded bg-emerald-100 dark:bg-emerald-950/40 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">
+                          <ChevronRight className="h-3 w-3 text-slate-400" />
+                          <span className="rounded bg-teal-100 px-1.5 py-0.5 text-[10px] font-semibold text-teal-700 dark:bg-teal-950/40 dark:text-teal-400">
                             {corr.corrected}
                           </span>
                         </div>
-                        <p className="mt-1 text-[11px] text-muted-foreground italic">{corr.reason}</p>
+                        <p className="mt-1 text-[11px] italic text-slate-400 dark:text-slate-500">{corr.reason}</p>
                       </div>
                     ))}
                   </div>
@@ -1591,19 +1689,19 @@ function WritingModule() {
               )}
 
               {/* Model essay comparison */}
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid gap-5 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <h4 className="text-sm font-bold text-foreground">Your Response</h4>
-                  <div className="rounded-xl border bg-background/50 p-4 shadow-sm text-xs leading-6 text-foreground/80 whitespace-pre-line max-h-80 overflow-y-auto">
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Your Response</h4>
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-xs leading-6 text-slate-600 whitespace-pre-line max-h-80 overflow-y-auto dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
                     {content}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-foreground font-semibold">Band 8.5+ Model Response</h4>
-                    <span className="rounded bg-amber-500/10 px-2 py-0.5 text-[10px] font-bold text-amber-600 dark:text-amber-400">Exemplar</span>
+                    <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Band 8.5+ Model Response</h4>
+                    <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">Exemplar</span>
                   </div>
-                  <div className="rounded-xl border border-amber-500/10 bg-amber-50/5 dark:bg-amber-950/5 p-4 shadow-sm text-xs leading-6 text-foreground/90 whitespace-pre-line max-h-80 overflow-y-auto">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 shadow-sm text-xs leading-6 text-slate-700 whitespace-pre-line max-h-80 overflow-y-auto dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300">
                     {evaluation.improvedText}
                   </div>
                 </div>
@@ -1839,17 +1937,17 @@ function SpeakingModule() {
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* Part selector */}
-      <div className="flex gap-2">
+      <div className="flex gap-1.5">
         {([1, 2, 3] as const).map((p) => (
           <button
             key={p}
             onClick={() => { setFilterPart(p); setCurrentCardIndex(0); setPhase('select'); setEvaluation(null); setAudioUrl(null); setTranscript('') }}
             className={`rounded-lg px-4 py-2 text-xs font-semibold transition-all ${
               filterPart === p
-                ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
-                : 'border border-border/60 text-muted-foreground hover:bg-muted/50'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                : 'border border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 dark:hover:text-slate-300'
             }`}
           >
             Part {p}
@@ -1861,14 +1959,14 @@ function SpeakingModule() {
       {phase === 'select' && (
         <>
           {/* AI Speaking Card Generator */}
-          <div className="rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-50/30 to-transparent p-4 shadow-sm dark:from-violet-950/10 mb-2">
+          <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
             <div className="flex items-start gap-3">
-              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 shadow-md shadow-violet-500/25">
-                <Sparkles className="h-4 w-4 text-white" />
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 shadow-sm dark:bg-white">
+                <Sparkles className="h-4 w-4 text-white dark:text-slate-900" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-foreground">Generate IELTS Speaking Cue Card with AI</p>
-                <p className="text-[10px] text-muted-foreground/65 mt-0.5">Enter any topic — AI generates a Cue Card (Part 2) & follow-ups (Part 3)</p>
+                <p className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Generate IELTS Speaking Cue Card with AI</p>
+                <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">Enter any topic — AI generates a Cue Card (Part 2) &amp; follow-ups (Part 3)</p>
                 <div className="mt-3 flex gap-2">
                   <input
                     type="text"
@@ -1876,13 +1974,13 @@ function SpeakingModule() {
                     onChange={(e) => setAiTopic(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter' && !generatingCard) generateSpeakingCard() }}
                     placeholder="e.g. A memorable journey, Dynamic cities, Climate change, Art..."
-                    className="h-10 flex-1 rounded-lg border border-border/60 bg-background/80 px-3 text-sm outline-none transition-all focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+                    className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                     disabled={generatingCard}
                   />
                   <button
                     onClick={generateSpeakingCard}
                     disabled={generatingCard || !aiTopic.trim()}
-                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-violet-500 px-4 text-xs font-bold text-white shadow-sm transition-all hover:bg-violet-600 active:scale-[0.97] disabled:opacity-40"
+                    className="inline-flex h-10 items-center gap-2 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] disabled:opacity-40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
                   >
                     {generatingCard ? (
                       <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Generating...</>
@@ -1891,7 +1989,7 @@ function SpeakingModule() {
                     )}
                   </button>
                 </div>
-                {genErrorCard && <p className="mt-2 text-xs text-red-500">{genErrorCard}</p>}
+                {genErrorCard && <p className="mt-2 text-xs text-rose-500">{genErrorCard}</p>}
               </div>
             </div>
           </div>
@@ -1902,21 +2000,23 @@ function SpeakingModule() {
               <button
                 key={card.id}
                 onClick={() => { setCurrentCardIndex(i); startPrep() }}
-                className={`w-full rounded-xl border p-4 text-left shadow-sm transition-all hover:border-violet-400/50 ${
-                  i === currentCardIndex ? 'border-violet-400/50 bg-violet-500/5' : 'border-border/40 bg-background/40'
+                className={`w-full rounded-xl border p-4 text-left shadow-sm transition-all ${
+                  i === currentCardIndex ? 'border-slate-900 bg-slate-50 dark:border-white dark:bg-slate-800' : 'border-slate-200 bg-white hover:border-slate-300 dark:border-slate-700/50 dark:bg-slate-900/40 dark:hover:border-slate-600'
                 }`}
               >
                 <div className="flex items-start gap-3">
-                  <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md bg-violet-100 text-[11px] font-bold text-violet-700 dark:bg-violet-900/30 dark:text-violet-400">
+                  <span className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-bold ${
+                    i === currentCardIndex ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900' : 'bg-slate-200 text-slate-500 dark:bg-slate-700 dark:text-slate-400'
+                  }`}>
                     {i + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <p className="text-xs font-medium text-violet-600 dark:text-violet-400">
+                    <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500">
                       {card.prepTime ? `${card.prepTime / 60} min prep · ${(card.speakTime || 120) / 60} min speak` : 'Discussion questions'}
                     </p>
-                    <p className="mt-1 text-sm text-foreground/80 line-clamp-2 whitespace-pre-line">{card.question}</p>
+                    <p className="mt-1 text-sm font-medium text-slate-700 dark:text-slate-300 line-clamp-2 whitespace-pre-line">{card.question}</p>
                   </div>
-                  <ChevronRight className="h-4 w-4 shrink-0 text-muted-foreground/30" />
+                  <ChevronRight className="h-4 w-4 shrink-0 text-slate-300 dark:text-slate-600" />
                 </div>
               </button>
             ))}
@@ -1925,28 +2025,28 @@ function SpeakingModule() {
       )}
 
       {(phase === 'prep' || phase === 'speak') && (
-        <div className="rounded-xl border bg-background/60 p-6 shadow-sm space-y-6">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
           {/* Timer */}
-          <div className="flex items-center justify-between border-b border-border/20 pb-4">
-            <div className={`flex items-center gap-2 text-lg font-bold ${
-              phase === 'prep' ? 'text-amber-500' : 'text-emerald-500'
-            }`}>
-              {phase === 'prep' ? '📝 Preparation Time' : '🎤 Speaking Time'}
-              <TimerDisplay seconds={phase === 'prep' ? prepTimer.seconds : speakTimer.seconds} className="text-lg" />
+          <div className="flex items-center justify-between border-b border-slate-200 pb-4 dark:border-slate-700">
+            <div className="flex items-center gap-2">
+              <span className="font-serif text-sm font-bold tracking-tight text-slate-900 dark:text-white">
+                {phase === 'prep' ? 'Preparation Time' : 'Speaking Time'}
+              </span>
+              <TimerDisplay seconds={phase === 'prep' ? prepTimer.seconds : speakTimer.seconds} className="text-base" />
             </div>
             {phase === 'prep' && (
               <button
                 onClick={startSpeak}
-                className="inline-flex items-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-bold text-white shadow-lg shadow-emerald-500/20 transition-all hover:bg-emerald-600 active:scale-[0.97]"
+                className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-5 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
               >
-                <Volume2 className="h-4 w-4" />
+                <Volume2 className="h-3.5 w-3.5" />
                 Start Speaking
               </button>
             )}
             {phase === 'speak' && (
               <button
                 onClick={finishCard}
-                className="rounded-lg border border-border/60 px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
+                className="rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
               >
                 Finish Test
               </button>
@@ -1954,16 +2054,16 @@ function SpeakingModule() {
           </div>
 
           {/* Card content */}
-          <div className="rounded-lg border border-border/40 bg-background/80 p-5">
-            <h4 className="text-sm font-bold text-foreground mb-3">
+          <div className="mt-5 rounded-lg border border-slate-200 bg-slate-50/50 p-5 dark:border-slate-700 dark:bg-slate-800/30">
+            <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white mb-3">
               {currentCard?.part === 2 ? 'Cue Card' : 'Questions'}
             </h4>
-            <p className="text-sm leading-6 text-foreground/90 whitespace-pre-line">{currentCard?.question}</p>
+            <p className="text-sm leading-7 text-slate-700 whitespace-pre-line dark:text-slate-300">{currentCard?.question}</p>
             {currentCard?.followUp && currentCard.followUp.length > 0 && (
-              <div className="mt-4 border-t border-border/30 pt-3">
-                <p className="text-[11px] font-semibold text-muted-foreground/60 mb-2">Follow-up questions (Part 3):</p>
+              <div className="mt-4 border-t border-slate-200 pt-3 dark:border-slate-700">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 mb-2">Follow-up questions (Part 3):</p>
                 {currentCard.followUp.map((q, i) => (
-                  <p key={i} className="text-xs text-muted-foreground/80 mt-1">• {q}</p>
+                  <p key={i} className="text-xs text-slate-500 mt-1 dark:text-slate-400">• {q}</p>
                 ))}
               </div>
             )}
@@ -1971,23 +2071,23 @@ function SpeakingModule() {
 
           {/* Recording & Speech-to-Text pane */}
           {phase === 'speak' && (
-            <div className="border-t border-border/20 pt-6 space-y-4">
-              <h4 className="text-sm font-bold text-foreground flex items-center gap-2">
-                <Mic className="h-4 w-4 text-violet-500" /> Speech Recording & Transcription
+            <div className="mt-5 border-t border-slate-200 pt-5 space-y-4 dark:border-slate-700">
+              <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white flex items-center gap-2">
+                <Mic className="h-3.5 w-3.5" /> Speech Recording &amp; Transcription
               </h4>
               
               <div className="flex flex-wrap items-center gap-3">
                 {!isRecording ? (
                   <button
                     onClick={startRecording}
-                    className="inline-flex items-center gap-2 rounded-lg bg-violet-500 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-violet-500/10 hover:bg-violet-600 active:scale-[0.97]"
+                    className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
                   >
                     <Play className="h-3.5 w-3.5" /> Record Response
                   </button>
                 ) : (
                   <button
                     onClick={stopRecording}
-                    className="inline-flex items-center gap-2 rounded-lg bg-red-500 px-4 py-2 text-xs font-bold text-white shadow-sm shadow-red-500/10 hover:bg-red-600 active:scale-[0.97]"
+                    className="inline-flex items-center gap-2 rounded-lg bg-rose-500 px-4 py-2 text-xs font-semibold text-white shadow-sm hover:bg-rose-600 active:scale-[0.97]"
                   >
                     <div className="h-2 w-2 rounded-full bg-white animate-pulse" /> Stop Recording
                   </button>
@@ -2001,20 +2101,20 @@ function SpeakingModule() {
               </div>
 
               {evalError && (
-                <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-500">
+                <div className="rounded-xl border border-rose-200 bg-rose-50/50 p-3 text-xs text-rose-600 dark:border-rose-800/30 dark:bg-rose-950/10 dark:text-rose-400">
                   {evalError}
                 </div>
               )}
 
               <div className="space-y-1.5">
-                <label className="text-[11px] font-semibold text-muted-foreground">
+                <label className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500">
                   Speech Transcript (Editable):
                 </label>
                 <textarea
                   value={transcript}
                   onChange={(e) => setTranscript(e.target.value)}
                   placeholder="Your transcription will appear here in real-time as you speak. You can edit the text directly if there are any mistakes."
-                  className="h-28 w-full resize-none rounded-xl border border-border/60 bg-background/80 p-3.5 text-xs leading-5 text-foreground outline-none focus:border-violet-400 focus:ring-2 focus:ring-violet-500/15"
+                  className="h-28 w-full resize-none rounded-xl border border-slate-200 bg-white p-3.5 text-xs leading-5 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 />
               </div>
             </div>
@@ -2023,95 +2123,93 @@ function SpeakingModule() {
       )}
 
       {phase === 'done' && (
-        <div className="space-y-6">
+        <div className="space-y-5">
           {!evaluation ? (
-            <div className="rounded-xl border-2 border-violet-500/20 bg-gradient-to-br from-violet-50 to-violet-50/50 p-8 shadow-sm dark:from-violet-950/20 dark:to-violet-950/10">
-              <div className="text-center space-y-4">
-                <Mic className="mx-auto h-12 w-12 text-violet-500" />
-                <h3 className="text-lg font-bold text-foreground">Speaking Session Completed</h3>
-                <p className="text-sm text-muted-foreground max-w-md mx-auto">
-                  {transcript.trim() 
-                    ? "Your transcript is ready! Submit it for AI examiner feedback on vocabulary, grammar, and fluency."
-                    : "Session finished. You did not record or type a transcript. You can retry the card or evaluate if you type one below."}
-                </p>
+            <div className="rounded-xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
+              <Mic className="mx-auto h-10 w-10 text-slate-300 dark:text-slate-600" />
+              <h3 className="mt-4 font-serif text-lg font-bold tracking-tight text-slate-900 dark:text-white">Speaking Session Completed</h3>
+              <p className="mt-1.5 text-sm text-slate-400 dark:text-slate-500 max-w-md mx-auto">
+                {transcript.trim() 
+                  ? "Your transcript is ready! Submit it for AI examiner feedback on vocabulary, grammar, and fluency."
+                  : "Session finished. You did not record or type a transcript. You can retry the card or evaluate if you type one below."}
+              </p>
 
-                {audioUrl && (
-                  <div className="max-w-xs mx-auto pt-2">
-                    <p className="text-[10px] font-semibold text-muted-foreground mb-1.5">Recorded Response:</p>
-                    <audio src={audioUrl} controls className="w-full h-8" />
-                  </div>
-                )}
-
-                <div className="max-w-xl mx-auto space-y-2 text-left pt-4">
-                  <label className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">
-                    Speech Transcript:
-                  </label>
-                  <textarea
-                    value={transcript}
-                    onChange={(e) => setTranscript(e.target.value)}
-                    placeholder="Type your spoken response here to evaluate..."
-                    className="h-28 w-full resize-none rounded-xl border border-border/60 bg-background/80 p-3 text-xs leading-5 text-foreground outline-none focus:border-violet-400"
-                  />
+              {audioUrl && (
+                <div className="max-w-xs mx-auto mt-4">
+                  <p className="text-[10px] font-semibold text-slate-400 mb-1">Recorded Response:</p>
+                  <audio src={audioUrl} controls className="w-full h-8" />
                 </div>
+              )}
 
-                {evalError && (
-                  <div className="max-w-xl mx-auto rounded-xl border border-red-500/20 bg-red-500/5 p-3 text-xs text-red-500">
-                    {evalError}
-                  </div>
-                )}
+              <div className="max-w-xl mx-auto mt-5 space-y-2 text-left">
+                <label className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
+                  Speech Transcript:
+                </label>
+                <textarea
+                  value={transcript}
+                  onChange={(e) => setTranscript(e.target.value)}
+                  placeholder="Type your spoken response here to evaluate..."
+                  className="h-28 w-full resize-none rounded-xl border border-slate-200 bg-white p-3 text-xs leading-5 text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
+                />
+              </div>
 
-                <div className="flex justify-center gap-3 pt-4">
-                  <button
-                    onClick={() => { setPhase('select'); prepTimer.reset(currentCard?.prepTime || 30); speakTimer.reset(currentCard?.speakTime || 120) }}
-                    className="inline-flex items-center gap-2 rounded-lg border border-border/60 px-4 py-2 text-xs font-semibold text-muted-foreground hover:text-foreground"
-                  >
-                    <RefreshCw className="h-3 w-3" />
-                    Try Again
-                  </button>
-                  <button
-                    onClick={evaluateSpeaking}
-                    disabled={evaluating || !transcript.trim()}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-violet-500 px-5 py-2 text-xs font-bold text-white shadow-md shadow-violet-500/15 hover:bg-violet-600 disabled:opacity-40"
-                  >
-                    {evaluating ? (
-                      <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Evaluating...</>
-                    ) : (
-                      <><Sparkles className="h-3.5 w-3.5" /> Evaluate Speaking</>
-                    )}
-                  </button>
+              {evalError && (
+                <div className="max-w-xl mx-auto mt-3 rounded-xl border border-rose-200 bg-rose-50/50 p-3 text-xs text-rose-600 dark:border-rose-800/30 dark:bg-rose-950/10 dark:text-rose-400">
+                  {evalError}
                 </div>
+              )}
+
+              <div className="flex justify-center gap-3 mt-6">
+                <button
+                  onClick={() => { setPhase('select'); prepTimer.reset(currentCard?.prepTime || 30); speakTimer.reset(currentCard?.speakTime || 120) }}
+                  className="inline-flex items-center gap-2 rounded-lg border border-slate-200 px-4 py-2 text-xs font-semibold text-slate-500 hover:border-slate-300 hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
+                >
+                  <RefreshCw className="h-3 w-3" />
+                  Try Again
+                </button>
+                <button
+                  onClick={evaluateSpeaking}
+                  disabled={evaluating || !transcript.trim()}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-slate-900 px-5 py-2 text-xs font-semibold text-white shadow-sm hover:bg-slate-700 disabled:opacity-40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
+                >
+                  {evaluating ? (
+                    <><Loader2 className="h-3.5 w-3.5 animate-spin" /> Evaluating...</>
+                  ) : (
+                    <><Sparkles className="h-3.5 w-3.5" /> Evaluate Speaking</>
+                  )}
+                </button>
               </div>
             </div>
           ) : (
             /* AI Speaking evaluation dashboard */
-            <div className="rounded-xl border border-violet-500/20 bg-gradient-to-br from-violet-50/10 to-transparent p-6 shadow-md dark:from-violet-950/5 space-y-6">
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60 space-y-6">
               <div className="flex flex-col gap-6 md:flex-row md:items-start">
                 {/* Score card */}
-                <div className="flex flex-col items-center justify-center rounded-2xl border border-violet-500/10 bg-background/80 p-6 text-center shadow-sm w-full md:w-56 shrink-0">
-                  <span className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Overall Band</span>
-                  <div className="mt-4 flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-tr from-violet-500 to-fuchsia-500 text-3xl font-black text-white shadow-lg shadow-violet-500/20">
+                <div className="flex flex-col items-center justify-center rounded-2xl border border-slate-200 bg-white p-6 text-center shadow-sm w-full md:w-48 shrink-0 dark:border-slate-700 dark:bg-slate-800">
+                  <span className="text-[10px] font-semibold uppercase tracking-[0.12em] text-slate-400 dark:text-slate-500">Overall Band</span>
+                  <div className="mt-4 flex h-20 w-20 items-center justify-center rounded-full bg-slate-900 text-2xl font-black text-white shadow-sm dark:bg-white dark:text-slate-900">
                     {evaluation.overallBand.toFixed(1)}
                   </div>
-                  <span className="mt-3 text-xs font-semibold text-violet-600 dark:text-violet-400">Estimated Band Score</span>
+                  <span className="mt-2 text-[10px] font-semibold text-slate-400 dark:text-slate-500">Estimated Band Score</span>
                 </div>
 
                 {/* Criteria breakdown */}
-                <div className="flex-1 space-y-4">
-                  <h4 className="text-sm font-bold text-foreground">Criteria Breakdown</h4>
-                  <div className="grid gap-3 sm:grid-cols-3">
+                <div className="flex-1 space-y-3">
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Criteria Breakdown</h4>
+                  <div className="grid gap-2 sm:grid-cols-3">
                     {[
                       { key: 'fluencyCoherence', label: 'Fluency & Coherence', score: evaluation.scores.fluencyCoherence },
                       { key: 'lexicalResource', label: 'Lexical Resource', score: evaluation.scores.lexicalResource },
                       { key: 'grammarAccuracy', label: 'Grammar Range & Accuracy', score: evaluation.scores.grammarAccuracy },
                     ].map((item) => (
-                      <div key={item.key} className="rounded-xl border bg-background/50 p-3 shadow-sm">
+                      <div key={item.key} className="rounded-xl border border-slate-200 bg-white p-3 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
                         <div className="flex justify-between text-xs font-semibold">
-                          <span className="text-muted-foreground">{item.label}</span>
-                          <span className="text-foreground">Band {item.score.toFixed(1)}</span>
+                          <span className="text-slate-500 dark:text-slate-400">{item.label}</span>
+                          <span className="text-slate-900 dark:text-white">Band {item.score.toFixed(1)}</span>
                         </div>
-                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                        <div className="mt-2 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
                           <div
-                            className="h-full rounded-full bg-violet-500 transition-all"
+                            className="h-full rounded-full bg-slate-900 dark:bg-white transition-all"
                             style={{ width: `${(item.score / 9) * 100}%` }}
                           />
                         </div>
@@ -2123,16 +2221,16 @@ function SpeakingModule() {
 
               {/* Detailed criteria reviews */}
               <div className="space-y-3">
-                <h4 className="text-sm font-bold text-foreground">Detailed Examiner Comments</h4>
+                <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Detailed Examiner Comments</h4>
                 <div className="grid gap-3 sm:grid-cols-3">
                   {[
                     { label: 'Fluency & Coherence', content: evaluation.analysis.fluencyCoherence },
                     { label: 'Lexical Resource', content: evaluation.analysis.lexicalResource },
                     { label: 'Grammar Range & Accuracy', content: evaluation.analysis.grammarAccuracy },
                   ].map((item, idx) => (
-                    <div key={idx} className="rounded-xl border bg-background/50 p-4 shadow-sm">
-                      <h5 className="text-xs font-bold text-violet-600 dark:text-violet-400 mb-1.5">{item.label}</h5>
-                      <p className="text-xs text-foreground/80 leading-5">{item.content}</p>
+                    <div key={idx} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800/50">
+                      <h5 className="font-serif text-[11px] font-bold tracking-tight text-slate-700 dark:text-slate-300 mb-1">{item.label}</h5>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-5">{item.content}</p>
                     </div>
                   ))}
                 </div>
@@ -2141,11 +2239,11 @@ function SpeakingModule() {
               {/* Suggestions */}
               {evaluation.suggestions && evaluation.suggestions.length > 0 && (
                 <div className="space-y-3">
-                  <h4 className="text-sm font-bold text-foreground font-semibold">Vocabulary & Delivery Suggestions</h4>
-                  <div className="grid gap-3 sm:grid-cols-2">
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Vocabulary &amp; Delivery Suggestions</h4>
+                  <div className="grid gap-2 sm:grid-cols-2">
                     {evaluation.suggestions.map((sug: string, idx: number) => (
-                      <div key={idx} className="flex gap-2 rounded-xl border bg-background/50 p-3.5 shadow-sm text-xs text-foreground/85 leading-5 items-start">
-                        <Lightbulb className="h-4 w-4 text-violet-500 shrink-0 mt-0.5" />
+                      <div key={idx} className="flex gap-2 rounded-xl border border-slate-200 bg-white p-3.5 shadow-sm text-xs text-slate-600 leading-5 items-start dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
+                        <Lightbulb className="h-4 w-4 text-slate-400 shrink-0 mt-0.5 dark:text-slate-500" />
                         <span>{sug}</span>
                       </div>
                     ))}
@@ -2154,31 +2252,31 @@ function SpeakingModule() {
               )}
 
               {/* Response Comparison */}
-              <div className="grid gap-6 lg:grid-cols-2">
+              <div className="grid gap-5 lg:grid-cols-2">
                 <div className="space-y-2">
-                  <h4 className="text-sm font-bold text-foreground">Your Transcript</h4>
-                  <div className="rounded-xl border bg-background/50 p-4 shadow-sm text-xs leading-6 text-foreground/80 whitespace-pre-line max-h-80 overflow-y-auto">
+                  <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Your Transcript</h4>
+                  <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm text-xs leading-6 text-slate-600 whitespace-pre-line max-h-80 overflow-y-auto dark:border-slate-700 dark:bg-slate-800/50 dark:text-slate-400">
                     {transcript}
                   </div>
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
-                    <h4 className="text-sm font-bold text-foreground font-semibold">Recommended Band 8.5+ Response</h4>
-                    <span className="rounded bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold text-violet-600 dark:text-violet-400">Exemplar</span>
+                    <h4 className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Recommended Band 8.5+ Response</h4>
+                    <span className="rounded bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">Exemplar</span>
                   </div>
-                  <div className="rounded-xl border border-violet-500/10 bg-violet-50/5 dark:bg-violet-950/5 p-4 shadow-sm text-xs leading-6 text-foreground/90 whitespace-pre-line max-h-80 overflow-y-auto">
+                  <div className="rounded-xl border border-slate-200 bg-slate-50/50 p-4 shadow-sm text-xs leading-6 text-slate-700 whitespace-pre-line max-h-80 overflow-y-auto dark:border-slate-700 dark:bg-slate-800/30 dark:text-slate-300">
                     {evaluation.modelAnswer}
                   </div>
                 </div>
               </div>
 
               {/* Footer controls */}
-              <div className="flex justify-center gap-3 pt-4 border-t border-border/20">
+              <div className="flex justify-center gap-3 pt-4 border-t border-slate-200 dark:border-slate-700">
                 <button
                   onClick={() => { setPhase('select'); setEvaluation(null); setAudioUrl(null); setTranscript('') }}
-                  className="rounded-lg border border-border/60 px-5 py-2.5 text-xs font-semibold text-muted-foreground hover:text-foreground hover:bg-muted/30 transition-all"
+                  className="rounded-lg border border-slate-200 px-5 py-2.5 text-xs font-semibold text-slate-500 hover:border-slate-300 hover:text-slate-700 transition-all dark:border-slate-700 dark:text-slate-400 dark:hover:text-slate-300"
                 >
-                  Close & Choose Another
+                  Close &amp; Choose Another
                 </button>
                 <button
                   onClick={() => {
@@ -2187,7 +2285,7 @@ function SpeakingModule() {
                     setTranscript('')
                     startPrep()
                   }}
-                  className="rounded-lg bg-violet-500 px-5 py-2.5 text-xs font-bold text-white hover:bg-violet-600 active:scale-[0.97] transition-all"
+                  className="rounded-lg bg-slate-900 px-5 py-2.5 text-xs font-semibold text-white hover:bg-slate-700 active:scale-[0.97] transition-all dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
                 >
                   Retry This Card
                 </button>
@@ -2292,16 +2390,16 @@ function VocabModule() {
   const currentQuizWord = shuffled[quizIndex]
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-5">
       {/* AI Vocabulary Generator */}
-      <div className="rounded-xl border border-blue-500/20 bg-gradient-to-br from-blue-50/30 to-transparent p-4 shadow-sm dark:from-blue-950/10">
+      <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
         <div className="flex items-start gap-3">
-          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 shadow-md shadow-blue-500/25">
-            <Sparkles className="h-4 w-4 text-white" />
+          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-slate-900 shadow-sm dark:bg-white">
+            <Sparkles className="h-4 w-4 text-white dark:text-slate-900" />
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-xs font-bold text-foreground">Generate Custom Vocabulary List with AI</p>
-            <p className="text-[10px] text-muted-foreground/65 mt-0.5">Enter any topic — AI generates 8 high-level Band 7–9 IELTS academic words with definitions and example sentences</p>
+            <p className="font-serif text-xs font-bold tracking-tight text-slate-900 dark:text-white">Generate Custom Vocabulary List with AI</p>
+            <p className="mt-0.5 text-[10px] text-slate-400 dark:text-slate-500">Enter any topic — AI generates 8 high-level Band 7–9 IELTS academic words with definitions and example sentences</p>
             <div className="mt-3 flex gap-2">
               <input
                 type="text"
@@ -2309,13 +2407,13 @@ function VocabModule() {
                 onChange={(e) => setAiTopic(e.target.value)}
                 onKeyDown={(e) => { if (e.key === 'Enter' && !generatingVocab) generateVocabTopic() }}
                 placeholder="e.g. Climate Change, Legal Matters, Space Exploration, Art..."
-                className="h-10 flex-1 rounded-lg border border-border/60 bg-background/80 px-3 text-sm outline-none transition-all focus:border-blue-400 focus:ring-2 focus:ring-blue-500/15"
+                className="h-10 flex-1 rounded-lg border border-slate-200 bg-white px-3 text-sm text-slate-900 outline-none transition-all placeholder:text-slate-400 focus:border-teal-400 focus:ring-2 focus:ring-teal-500/15 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-500"
                 disabled={generatingVocab}
               />
               <button
                 onClick={generateVocabTopic}
                 disabled={generatingVocab || !aiTopic.trim()}
-                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-blue-500 px-4 text-xs font-bold text-white shadow-md shadow-blue-500/15 hover:bg-blue-600 disabled:opacity-40"
+                className="inline-flex h-10 items-center gap-1.5 rounded-lg bg-slate-900 px-4 text-xs font-semibold text-white shadow-sm hover:bg-slate-700 disabled:opacity-40 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
               >
                 {generatingVocab ? (
                   <>
@@ -2331,22 +2429,22 @@ function VocabModule() {
               </button>
             </div>
             {genErrorVocab && (
-              <p className="mt-2 text-xs font-semibold text-red-500">{genErrorVocab}</p>
+              <p className="mt-2 text-xs font-semibold text-rose-500">{genErrorVocab}</p>
             )}
           </div>
         </div>
       </div>
 
       {/* Topic tabs */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {allTopics.map((t) => (
           <button
             key={t.topic}
             onClick={() => { setSelectedTopic(t.topic); setShowQuiz(false) }}
-            className={`rounded-lg px-3 py-1.5 text-xs font-semibold transition-all ${
+            className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${
               t.topic === selectedTopic
-                ? 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400'
-                : 'border border-border/60 text-muted-foreground hover:bg-muted/50'
+                ? 'bg-slate-900 text-white dark:bg-white dark:text-slate-900'
+                : 'border border-slate-200 text-slate-500 hover:border-slate-300 hover:bg-white hover:text-slate-700 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50 dark:hover:text-slate-300'
             }`}
           >
             {t.icon} {t.topic}
@@ -2359,17 +2457,17 @@ function VocabModule() {
           {/* Word cards */}
           <div className="grid gap-2 sm:grid-cols-2">
             {topic.items.map((item) => (
-              <div key={item.word} className="group rounded-xl border border-border/40 bg-background/40 p-4 shadow-sm transition-all hover:border-blue-400/50 hover:bg-background/60">
+              <div key={item.word} className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition-all hover:border-slate-300 dark:border-slate-700/50 dark:bg-slate-900/40 dark:hover:border-slate-600">
                 <div className="flex items-start justify-between">
                   <div>
-                    <p className="text-sm font-bold text-foreground">{item.word}</p>
-                    <p className="mt-0.5 text-[11px] text-muted-foreground/70 italic">{item.definition}</p>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">{item.word}</p>
+                    <p className="mt-0.5 text-[11px] italic text-slate-400 dark:text-slate-500">{item.definition}</p>
                   </div>
-                  <span className="shrink-0 rounded-md bg-blue-100 px-2 py-0.5 text-[10px] font-semibold text-blue-700 opacity-0 transition-opacity group-hover:opacity-100 dark:bg-blue-900/30 dark:text-blue-400">
+                  <span className="shrink-0 rounded-md bg-slate-100 px-2 py-0.5 text-[10px] font-semibold text-slate-500 dark:bg-slate-800 dark:text-slate-400">
                     IELTS
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-muted-foreground/50 border-t border-border/20 pt-2 leading-5">
+                <p className="mt-2 text-xs text-slate-400 border-t border-slate-100 pt-2 leading-5 dark:border-slate-700 dark:text-slate-500">
                   &ldquo;{item.example}&rdquo;
                 </p>
               </div>
@@ -2379,7 +2477,7 @@ function VocabModule() {
           <div className="text-center">
             <button
               onClick={startQuiz}
-              className="inline-flex items-center gap-2 rounded-xl bg-blue-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-blue-500/25 transition-all hover:bg-blue-600 active:scale-[0.97]"
+              className="inline-flex items-center gap-2 rounded-lg bg-slate-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-slate-700 active:scale-[0.97] dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
             >
               <Brain className="h-4 w-4" />
               Test Yourself
@@ -2387,22 +2485,22 @@ function VocabModule() {
           </div>
         </>
       ) : (
-        <div className="rounded-xl border bg-background/60 p-6 shadow-sm">
+        <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm dark:border-slate-700/50 dark:bg-slate-900/60">
           <div className="mb-4 flex items-center justify-between">
-            <p className="text-xs font-semibold text-muted-foreground">
+            <p className="text-xs font-semibold text-slate-400 dark:text-slate-500">
               Question {quizIndex + 1} of {shuffled.length}
             </p>
             <button
               onClick={() => setShowQuiz(false)}
-              className="text-xs text-muted-foreground hover:text-foreground"
+              className="text-xs font-medium text-slate-400 hover:text-slate-600 dark:text-slate-500 dark:hover:text-slate-300"
             >
               Back to list
             </button>
           </div>
 
           <div className="mb-6 text-center">
-            <p className="text-sm text-muted-foreground mb-2">What does this word mean?</p>
-            <p className="text-2xl font-bold text-foreground">{currentQuizWord?.word}</p>
+            <p className="text-sm text-slate-400 mb-2">What does this word mean?</p>
+            <p className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">{currentQuizWord?.word}</p>
           </div>
 
           <div className="space-y-2">
@@ -2414,13 +2512,13 @@ function VocabModule() {
                 className={`w-full rounded-lg border p-3 text-left text-xs transition-all ${
                   quizRevealed
                     ? def === currentQuizWord?.definition
-                      ? 'border-emerald-500 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400'
+                      ? 'border-teal-500 bg-teal-50 text-teal-700 dark:border-teal-500 dark:bg-teal-950/20 dark:text-teal-400'
                       : def === quizAnswer
-                        ? 'border-red-500 bg-red-500/10 text-red-600'
-                        : 'border-border/30 opacity-50'
+                        ? 'border-rose-500 bg-rose-50 text-rose-600 dark:border-rose-500 dark:bg-rose-950/20 dark:text-rose-400'
+                        : 'border-slate-100 opacity-50 dark:border-slate-700/30'
                     : def === quizAnswer
-                      ? 'border-blue-500 bg-blue-500/10 text-foreground'
-                      : 'border-border/40 hover:border-blue-400/50 text-foreground/80'
+                      ? 'border-slate-900 bg-slate-50 text-slate-900 dark:border-white dark:bg-slate-800 dark:text-white'
+                      : 'border-slate-200 text-slate-600 hover:border-slate-300 hover:bg-slate-50 dark:border-slate-700 dark:text-slate-400 dark:hover:border-slate-600 dark:hover:bg-slate-800/50'
                 }`}
               >
                 {def}
@@ -2430,13 +2528,13 @@ function VocabModule() {
 
           {quizRevealed && (
             <div className="mt-4 text-center">
-              <p className={`text-sm font-bold ${quizAnswer === currentQuizWord?.definition ? 'text-emerald-500' : 'text-red-500'}`}>
-                {quizAnswer === currentQuizWord?.definition ? '✓ Correct!' : `✗ The correct answer was: ${currentQuizWord?.definition}`}
+              <p className={`text-sm font-bold ${quizAnswer === currentQuizWord?.definition ? 'text-teal-600' : 'text-rose-500'}`}>
+                {quizAnswer === currentQuizWord?.definition ? 'Correct!' : `The correct answer was: ${currentQuizWord?.definition}`}
               </p>
-              <p className="mt-1 text-xs text-muted-foreground italic">&ldquo;{currentQuizWord?.example}&rdquo;</p>
+              <p className="mt-1 text-xs italic text-slate-400 dark:text-slate-500">&ldquo;{currentQuizWord?.example}&rdquo;</p>
               <button
                 onClick={handleNextQuestion}
-                className="mt-4 rounded-lg bg-blue-500 px-5 py-2 text-xs font-bold text-white hover:bg-blue-600"
+                className="mt-4 rounded-lg bg-slate-900 px-5 py-2 text-xs font-semibold text-white hover:bg-slate-700 dark:bg-white dark:text-slate-900 dark:hover:bg-slate-200"
               >
                 {quizIndex < shuffled.length - 1 ? 'Next Question' : 'Done'}
               </button>
@@ -2444,9 +2542,9 @@ function VocabModule() {
           )}
 
           {/* Progress bar */}
-          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-muted">
+          <div className="mt-4 h-1.5 w-full overflow-hidden rounded-full bg-slate-100 dark:bg-slate-700">
             <div
-              className="h-full rounded-full bg-blue-500 transition-all"
+              className="h-full rounded-full bg-slate-900 dark:bg-white transition-all"
               style={{ width: `${((quizIndex + (quizRevealed ? 1 : 0)) / shuffled.length) * 100}%` }}
             />
           </div>
@@ -2474,6 +2572,13 @@ export default function IELTSPage() {
   const router = useRouter()
   const [activeTab, setActiveTab] = useState<TabId>('reading')
   const [mounted, setMounted] = useState(false)
+  const latestScoreRef = useRef<number | null>(null)
+  const [, forceUpdate] = useState(0)
+
+  const onScoreUpdate = useCallback((score: number) => {
+    latestScoreRef.current = score
+    forceUpdate((n) => n + 1)
+  }, [])
 
   useEffect(() => { setMounted(true) }, [])
 
@@ -2483,8 +2588,8 @@ export default function IELTSPage() {
 
   if (authLoading || !mounted) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+      <div className="flex h-screen items-center justify-center bg-slate-50 dark:bg-slate-950">
+        <Loader2 className="h-8 w-8 animate-spin text-teal-500" />
       </div>
     )
   }
@@ -2492,26 +2597,29 @@ export default function IELTSPage() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-950">
       {/* HEADER */}
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-emerald-500/10 bg-background/60 px-4 shadow-[0_1px_0_0_rgba(16,185,129,0.05)] backdrop-blur-xl">
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-slate-200 bg-white/80 px-4 backdrop-blur-xl dark:border-slate-800 dark:bg-slate-900/80">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-all hover:border-muted-foreground/20 hover:bg-muted/50 hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" />
+          <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-slate-200 text-slate-400 transition-all hover:border-slate-300 hover:text-slate-600 dark:border-slate-700 dark:hover:border-slate-600 dark:hover:text-slate-300">
+            <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-500/20">
-            <GraduationCap className="h-4 w-4 text-white" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-slate-900 shadow-sm dark:bg-white">
+            <GraduationCap className="h-3.5 w-3.5 text-white dark:text-slate-900" />
           </div>
-          <span className="text-sm font-bold text-foreground">IELTS Prep</span>
-          <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+          <span className="font-serif text-sm font-bold tracking-tight text-slate-900 dark:text-white">IELTS Prep</span>
+          <span className="rounded-md border border-teal-200 bg-teal-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-teal-600 dark:border-teal-800/50 dark:bg-teal-950/30 dark:text-teal-400">
             Free Practice
           </span>
         </div>
       </header>
 
-      <main className="mx-auto max-w-6xl px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-5xl px-4 py-5 sm:px-6 lg:px-8">
+        {/* BAND SCORE RULER — signature element */}
+        <BandScoreRuler score={latestScoreRef.current} target={7} />
+
         {/* TAB NAVIGATION */}
-        <div className="mb-6 flex gap-1 rounded-xl border bg-background/60 p-1 shadow-sm">
+        <div className="mt-4 mb-6 grid grid-cols-4 gap-1.5">
           {TABS.map((tab) => {
             const Icon = tab.icon
             const isActive = activeTab === tab.id
@@ -2519,24 +2627,26 @@ export default function IELTSPage() {
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`flex flex-1 items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs font-semibold transition-all ${
+                className={`flex items-center justify-center gap-2 rounded-xl px-2 py-3 text-xs font-semibold transition-all ${
                   isActive
-                    ? 'bg-emerald-100 text-emerald-700 shadow-sm dark:bg-emerald-900/30 dark:text-emerald-400'
-                    : 'text-muted-foreground hover:text-foreground'
+                    ? 'bg-white text-slate-900 shadow-sm ring-1 ring-slate-200 dark:bg-slate-800 dark:text-white dark:ring-slate-700'
+                    : 'text-slate-400 hover:bg-white/50 hover:text-slate-600 dark:text-slate-500 dark:hover:bg-slate-800/50 dark:hover:text-slate-300'
                 }`}
               >
-                <Icon className="h-3.5 w-3.5" />
-                <span className="hidden sm:inline">{tab.label}</span>
+                <Icon className="h-3.5 w-3.5 shrink-0" />
+                <span className="text-[11px]">{tab.label}</span>
               </button>
             )
           })}
         </div>
 
         {/* TAB CONTENT */}
-        {activeTab === 'reading' && <ReadingModule />}
-        {activeTab === 'writing' && <WritingModule />}
-        {activeTab === 'speaking' && <SpeakingModule />}
-        {activeTab === 'vocabulary' && <VocabModule />}
+        <div className="space-y-5">
+          {activeTab === 'reading' && <ReadingModule onScoreUpdate={onScoreUpdate} />}
+          {activeTab === 'writing' && <WritingModule />}
+          {activeTab === 'speaking' && <SpeakingModule />}
+          {activeTab === 'vocabulary' && <VocabModule />}
+        </div>
       </main>
     </div>
   )

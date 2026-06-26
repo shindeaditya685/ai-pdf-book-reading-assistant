@@ -72,10 +72,12 @@ function ToolButton({
       onClick={onClick}
       title={title}
       aria-label={title}
-      className={`inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground transition-all sm:h-8 sm:w-8 ${
-        disabled ? 'cursor-not-allowed opacity-30' : 'hover:text-foreground hover:bg-muted/40'
-      } ${
-        active ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400' : ''
+      className={`inline-flex h-7 w-7 items-center justify-center rounded-lg transition-all sm:h-8 sm:w-8 ${
+        disabled
+          ? 'cursor-not-allowed opacity-30 text-muted-foreground'
+          : active
+            ? 'text-emerald-600 bg-emerald-50/80 dark:text-emerald-400 dark:bg-emerald-950/15'
+            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
       } ${className ?? ''}`}
     >
       <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
@@ -1026,15 +1028,15 @@ export function PDFViewer() {
 
   if (!pdfDataUrl) {
     return (
-      <div className="flex h-full items-center justify-center bg-gradient-to-b from-background to-muted/20">
+      <div className="flex h-full items-center justify-center bg-card/30">
         <div className="text-center">
-          <div className="mx-auto mb-5 flex h-24 w-24 items-center justify-center rounded-3xl bg-gradient-to-br from-emerald-100 to-emerald-50 shadow-lg shadow-emerald-500/10 dark:from-emerald-900/30 dark:to-emerald-800/20">
-            <svg className="h-12 w-12 text-emerald-500/70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-full bg-muted/50 ring-1 ring-border/30">
+            <svg className="h-10 w-10 text-muted-foreground/40" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253" />
             </svg>
           </div>
-          <h3 className="text-lg font-bold text-foreground/60">No PDF Loaded</h3>
-          <p className="mt-1 text-sm text-muted-foreground/40">Upload a PDF to start reading</p>
+          <h3 className="text-base font-semibold text-foreground/50">No PDF loaded</h3>
+          <p className="mt-1 text-sm text-muted-foreground/50">Upload a PDF to start reading</p>
         </div>
       </div>
     )
@@ -1042,16 +1044,15 @@ export function PDFViewer() {
 
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-background to-muted/10">
-      {/* ── MODERN UNIFIED TOOLBAR ── */}
-      <div className={`flex items-center justify-between gap-1 border-b border-border/40 bg-background/70 px-2 py-1.5 backdrop-blur-xl shadow-sm transition-all duration-300 sm:px-4 sm:py-2 ${
+      {/* ── TOOLBAR ── */}
+      <div className={`flex items-center justify-between gap-1 border-b border-border/15 bg-background/50 px-2 py-1.5 backdrop-blur-xl transition-all duration-300 sm:px-4 sm:py-2 ${
         isMobile && !mobileToolbarVisible ? '-translate-y-full -mb-12 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
       }`}>
-        {/* Left: Page Navigation */}
         <div className="flex items-center gap-1 sm:gap-1.5">
           <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 sm:h-8 sm:w-8" onClick={goToPrevPage} disabled={currentPage <= 1} aria-label="Previous page">
             <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
-          <div className="flex items-center gap-1 rounded-lg border border-border/40 bg-background/60 px-1.5 py-0.5">
+          <div className="flex items-center gap-1 rounded-lg border border-border/30 bg-background/50 px-1.5 py-0.5">
             <input
               type="text"
               inputMode="numeric"
@@ -1068,29 +1069,24 @@ export function PDFViewer() {
               className="w-10 rounded-md bg-transparent px-1 py-0.5 text-center text-xs font-semibold tabular-nums outline-none sm:w-12"
               aria-label="Page number"
             />
-            <span className="text-[11px] text-muted-foreground/50">/ {totalPages}</span>
+            <span className="text-[11px] text-muted-foreground/45">/ {totalPages}</span>
           </div>
           <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 sm:h-8 sm:w-8" onClick={goToNextPage} disabled={currentPage >= totalPages} aria-label="Next page">
             <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
           </Button>
         </div>
 
-        {/* Center / Right: Tools */}
         <div className="flex items-center gap-0.5 sm:gap-1">
-          {/* Reading Tools Group */}
-          <div className="flex items-center gap-0.5 rounded-lg bg-muted/30 p-0.5 sm:gap-1 sm:px-1">
-            {showSearch && <SearchBar />}
-            <ToolButton icon={Search} active={showSearch} onClick={toggleSearch} title="Search in PDF (/)" />
-            <ToolButton icon={Bookmark} active={false} onClick={toggleBookmarks} title="Bookmarks (B)" className="hidden sm:inline-flex" />
-            <ToolButton icon={QuoteIcon} active={false} onClick={toggleQuotes} title="Saved Quotes" className="hidden sm:inline-flex" />
-            <ToolButton icon={Clock} active={false} onClick={toggleHistory} title="Word History (H)" className="hidden sm:inline-flex" />
-            <ToolButton icon={Brain} active={false} onClick={toggleFlashcards} title="Flashcards (G)" className="hidden sm:inline-flex" />
-          </div>
+          {showSearch && <SearchBar />}
+          <ToolButton icon={Search} active={showSearch} onClick={toggleSearch} title="Search in PDF (/)" />
+          <ToolButton icon={Bookmark} active={false} onClick={toggleBookmarks} title="Bookmarks (B)" className="hidden sm:inline-flex" />
+          <ToolButton icon={QuoteIcon} active={false} onClick={toggleQuotes} title="Saved Quotes" className="hidden sm:inline-flex" />
+          <ToolButton icon={Clock} active={false} onClick={toggleHistory} title="Word History (H)" className="hidden sm:inline-flex" />
+          <ToolButton icon={Brain} active={false} onClick={toggleFlashcards} title="Flashcards (G)" className="hidden sm:inline-flex" />
 
-          <div className="mx-1 hidden h-5 w-px bg-border/40 sm:block" />
+          <div className="mx-1 hidden h-4 w-px bg-border/25 sm:block" />
 
-          {/* AI Tools Group */}
-          <div className="hidden items-center gap-0.5 rounded-lg bg-muted/30 p-0.5 sm:flex sm:gap-1 sm:px-1">
+          <div className="hidden items-center gap-0.5 sm:flex sm:gap-1">
             <ToolButton
               icon={HelpCircle}
               active={showQuestionGenerator}
@@ -1108,10 +1104,9 @@ export function PDFViewer() {
             <AIQuotaBadge state={quota} onClick={() => setQuotaModalOpen(true)} />
           </div>
 
-          <div className="mx-1 hidden h-5 w-px bg-border/40 sm:block" />
+          <div className="mx-1 hidden h-4 w-px bg-border/25 sm:block" />
 
-          {/* View Controls Group */}
-          <div className="hidden items-center gap-0.5 rounded-lg bg-muted/30 p-0.5 sm:flex sm:gap-1 sm:px-1">
+          <div className="hidden items-center gap-0.5 sm:flex sm:gap-1">
             <ToolButton icon={Volume2} active={false} onClick={handleReadAloud} title="Read Aloud" />
             <ToolButton icon={Users} active={!!shareSession} onClick={toggleSharePanel} title={shareSession ? `Session: ${shareSession.name}` : 'Collaborate'} />
             <ToolButton
@@ -1133,8 +1128,9 @@ export function PDFViewer() {
             />
           </div>
 
-          {/* Zoom Controls */}
-          <div className="hidden items-center gap-0.5 rounded-lg bg-muted/30 p-0.5 sm:flex sm:px-1">
+          <div className="mx-1 hidden h-4 w-px bg-border/25 sm:block" />
+
+          <div className="hidden items-center gap-0.5 sm:flex">
             <ToolButton icon={ZoomOut} active={false} onClick={zoomOut} disabled={scale <= 0.5} title="Zoom out" />
             <div className="flex items-center">
               <input
@@ -1153,15 +1149,14 @@ export function PDFViewer() {
                 className="w-9 rounded-md bg-transparent px-1 py-0.5 text-center text-[11px] font-semibold tabular-nums outline-none"
                 title="Zoom percentage"
               />
-              <span className="text-[10px] font-medium text-muted-foreground/50">%</span>
+              <span className="text-[10px] font-medium text-muted-foreground/45">%</span>
             </div>
             <ToolButton icon={ZoomIn} active={false} onClick={zoomIn} disabled={scale >= 3} title="Zoom in" />
           </div>
 
-          {/* Mobile overflow */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <button className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground sm:hidden sm:h-8 sm:w-8" aria-label="More tools">
+              <button className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground sm:hidden" aria-label="More tools">
                 <MoreHorizontal className="h-3.5 w-3.5" />
               </button>
             </DropdownMenuTrigger>
@@ -1202,8 +1197,8 @@ export function PDFViewer() {
       </div>
 
       {(isOcrProcessing || (ocrProgress > 0 && ocrProgress < 100)) && (
-        <div className="flex items-center justify-center gap-2.5 border-b bg-gradient-to-r from-emerald-50/50 to-transparent px-4 py-1.5 dark:from-emerald-950/10">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100 dark:bg-emerald-900/30">
+        <div className="flex items-center justify-center gap-2.5 border-b bg-card/40 px-4 py-1.5">
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100/70 dark:bg-emerald-900/20">
             <svg className="h-3 w-3 animate-pulse text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v6h6M21 17a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
@@ -1219,7 +1214,7 @@ export function PDFViewer() {
 
         <div
           ref={containerRef}
-          className="pdf-scroll-container h-full overflow-auto bg-gradient-to-b from-muted/20 to-muted/5 dark:from-muted/5"
+          className="pdf-scroll-container h-full overflow-auto bg-card/30"
           onClick={handleContainerClick}
           onMouseMove={(e) => setMousePosition(e.clientX, e.clientY)}
           onContextMenu={(e) => e.preventDefault()}
@@ -1229,10 +1224,10 @@ export function PDFViewer() {
           {isLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm pointer-events-none">
               <div className="flex flex-col items-center gap-3">
-                <svg className="h-8 w-8 animate-spin text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-8 w-8 animate-spin text-emerald-500/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" strokeWidth="3" strokeDasharray="40 60" />
                 </svg>
-                <p className="text-xs text-muted-foreground/60">Loading PDF...</p>
+                <p className="text-xs text-muted-foreground/50">Loading PDF...</p>
               </div>
             </div>
           )}
