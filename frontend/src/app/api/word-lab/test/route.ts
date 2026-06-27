@@ -39,6 +39,50 @@ export async function POST(request: Request) {
       }
     )
 
+    // Auto-add missed words to review queue
+    const session = await conn.db.collection('word-lab').findOne({ username: user.username, date })
+    const sessionWords = session?.words || []
+    for (const r of results) {
+      if (r.correct) continue
+      const w = sessionWords.find((sw: any) => sw.id === r.wordId)
+      const existing = await conn.db.collection('word-lab-review').findOne({
+        username: user.username,
+        wordId: r.wordId,
+      })
+      if (!existing) {
+        await conn.db.collection('word-lab-review').insertOne({
+          username: user.username,
+          wordId: r.wordId,
+          word: r.word,
+          pronunciation: w?.pronunciation || r.pronunciation || '',
+          meaning: w?.meaning || r.meaning || '',
+          translation: w?.translation || r.translation || '',
+          example: w?.example || r.example || '',
+          interval: 1,
+          nextReview: date,
+          correctCount: 0,
+          wrongCount: 1,
+          lastWrong: now.toISOString(),
+          createdAt: now,
+          updatedAt: now,
+        })
+      } else {
+        // Already in queue — reset interval so it's due again
+        await conn.db.collection('word-lab-review').updateOne(
+          { _id: existing._id },
+          {
+            $set: {
+              interval: 1,
+              nextReview: date,
+              wrongCount: (existing.wrongCount || 0) + 1,
+              updatedAt: now,
+              lastWrong: now.toISOString(),
+            },
+          }
+        )
+      }
+    }
+
     // Build aggregated stats
     const allSessions = await conn.db.collection('word-lab')
       .find({ username: user.username, completedAt: { $ne: null } })

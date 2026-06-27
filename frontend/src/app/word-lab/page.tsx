@@ -11,6 +11,7 @@ import { StudyPhase } from '@/components/word-lab/study-phase'
 import { TestPhase } from '@/components/word-lab/test-phase'
 import { ResultsView } from '@/components/word-lab/results-view'
 import { HistoryView } from '@/components/word-lab/history-view'
+import { ReviewPhase } from '@/components/word-lab/review-phase'
 import { WordLabWord, LabPhase, TestResult, WordLabStats } from '@/components/word-lab/types'
 
 export default function WordLabPage() {
@@ -135,12 +136,21 @@ export default function WordLabPage() {
             </span>
           )}
         </div>
-          <button
-            onClick={() => setPhase(phase === 'history' ? 'study' : 'history')}
-            className="rounded-lg border border-stone-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-stone-500 transition-all hover:border-stone-300 hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:text-stone-200"
-          >
-            {phase === 'history' ? 'Today' : 'History'}
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPhase(phase === 'review' ? 'study' : 'review')}
+              className="rounded-lg border border-rose-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-rose-500 transition-all hover:border-rose-300 hover:text-rose-700 dark:border-rose-800/30 dark:text-rose-400 dark:hover:border-rose-700"
+            >
+              Review
+            </button>
+            <button
+              onClick={() => setPhase(phase === 'history' ? 'study' : 'history')}
+              className="rounded-lg border border-stone-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-stone-500 transition-all hover:border-stone-300 hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:text-stone-200"
+            >
+              {phase === 'history' ? 'Today' : 'History'}
+            </button>
+
+          </div>
           {phase === 'study' && (
             <div className="flex items-center gap-2">
               <DailyRing studied={studiedIds.length} total={words.length} size={32} strokeWidth={3} />
@@ -198,6 +208,13 @@ export default function WordLabPage() {
 
             {phase === 'history' && (
               <HistoryView onBack={() => setPhase(words.length > 0 ? 'study' : 'history')} />
+            )}
+
+            {phase === 'review' && (
+              <ReviewPhase
+                onBack={() => setPhase(words.length > 0 ? 'study' : 'history')}
+                onPhaseChange={setPhase}
+              />
             )}
 
             {saving && (
