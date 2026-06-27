@@ -1004,6 +1004,14 @@ export function PDFViewer() {
     if (dt > 300) return // Not a tap
 
     const vw = window.innerWidth
+    const vh = window.innerHeight
+
+    // Top zone tap (top 12% of screen) → always reveal toolbar, even on text
+    if (e.changedTouches[0].clientY < vh * 0.12) {
+      setMobileToolbarVisible(true)
+      showToolbarTemp()
+      return
+    }
 
     // Center tap → toggle toolbar (only on empty space)
     if (x > vw * 0.3 && x < vw * 0.7 && !isOnText) {
@@ -1188,6 +1196,19 @@ export function PDFViewer() {
                 <Volume2 className="h-3.5 w-3.5" /> Read Aloud
               </DropdownMenuItem>
               <DropdownMenuSeparator />
+              <DropdownMenuLabel className="text-xs text-muted-foreground">Zoom</DropdownMenuLabel>
+              <div className="flex items-center gap-1 px-2 py-1">
+                <DropdownMenuItem className="flex-1 justify-center" onSelect={() => zoomOut()}>
+                  <ZoomOut className="h-3.5 w-3.5" />
+                </DropdownMenuItem>
+                <span className="min-w-[40px] text-center text-[11px] font-semibold tabular-nums text-muted-foreground">
+                  {Math.round(scale * 100)}%
+                </span>
+                <DropdownMenuItem className="flex-1 justify-center" onSelect={() => zoomIn()}>
+                  <ZoomIn className="h-3.5 w-3.5" />
+                </DropdownMenuItem>
+              </div>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => setQuotaModalOpen(true)}>
                 <Sparkles className="h-3.5 w-3.5" /> AI Quota
               </DropdownMenuItem>
@@ -1195,6 +1216,15 @@ export function PDFViewer() {
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Floating pill to re-show toolbar on mobile */}
+      {isMobile && !mobileToolbarVisible && (
+        <button
+          onClick={() => { setMobileToolbarVisible(true); showToolbarTemp() }}
+          className="fixed left-1/2 top-1 z-50 h-1.5 w-14 -translate-x-1/2 rounded-full bg-white/60 backdrop-blur-sm transition-all hover:bg-white/80 active:scale-95 dark:bg-stone-500/40 dark:hover:bg-stone-500/60"
+          aria-label="Show toolbar"
+        />
+      )}
 
       {(isOcrProcessing || (ocrProgress > 0 && ocrProgress < 100)) && (
         <div className="flex items-center justify-center gap-2.5 border-b bg-card/40 px-4 py-1.5">

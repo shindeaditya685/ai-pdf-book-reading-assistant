@@ -556,6 +556,18 @@ export default function DashboardPage() {
               )}
             </div>
           </Link>
+          {pdfDataUrl && (
+            <button
+              onClick={() => setPdfDataUrl(null)}
+              className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/50 transition-all hover:bg-muted/50 hover:text-foreground sm:h-7 sm:w-7"
+              title="Close PDF"
+              aria-label="Close PDF"
+            >
+              <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+              </svg>
+            </button>
+          )}
         </div>
 
         {/* Right: Actions */}

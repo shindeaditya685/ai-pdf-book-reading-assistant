@@ -204,12 +204,20 @@ export function SelectionContextMenu() {
       openContextMenu(e.clientX, e.clientY)
     }
 
-    // Long-press for mobile: hold 500ms on text to open context menu
-    const LONG_PRESS_MS = 500
+    // Long-press for mobile: hold 1500ms on text to open context menu
+    // Deliberately long to avoid clashing with OS text selection (~300-500ms)
+    const LONG_PRESS_MS = 1500
     const MOVE_THRESHOLD = 10
     let longPressTimer: ReturnType<typeof setTimeout> | null = null
     let touchStartX = 0
     let touchStartY = 0
+
+    const cancelLongPress = () => {
+      if (longPressTimer) {
+        clearTimeout(longPressTimer)
+        longPressTimer = null
+      }
+    }
 
     const handleTouchStart = (e: TouchEvent) => {
       if (e.touches.length !== 1) return
@@ -221,6 +229,10 @@ export function SelectionContextMenu() {
       touchStartY = e.touches[0].clientY
       longPressTimer = setTimeout(() => {
         openContextMenu(touchStartX, touchStartY)
+
+        // Clear selection to dismiss the browser's native text selection popup
+        const sel = window.getSelection()
+        if (sel) sel.removeAllRanges()
 
         // Suppress the subsequent click so it doesn't also trigger word popup
         ;(window as any).__supressNextClick = true
@@ -234,15 +246,20 @@ export function SelectionContextMenu() {
       const dx = Math.abs(e.touches[0].clientX - touchStartX)
       const dy = Math.abs(e.touches[0].clientY - touchStartY)
       if (dx > MOVE_THRESHOLD || dy > MOVE_THRESHOLD) {
-        clearTimeout(longPressTimer)
-        longPressTimer = null
+        cancelLongPress()
       }
     }
 
     const handleTouchEnd = () => {
-      if (longPressTimer) {
-        clearTimeout(longPressTimer)
-        longPressTimer = null
+      cancelLongPress()
+    }
+
+    // Cancel long-press as soon as the OS establishes a selection (on mobile this fires
+    // when selection handles appear ~300ms into the hold, well before our 1500ms timer)
+    const handleSelectionChange = () => {
+      const sel = window.getSelection()
+      if (sel && !sel.isCollapsed && sel.toString().trim()) {
+        cancelLongPress()
       }
     }
 
@@ -264,6 +281,7 @@ export function SelectionContextMenu() {
     document.addEventListener('touchstart', handleTouchStart, { passive: true })
     document.addEventListener('touchmove', handleTouchMove, { passive: true })
     document.addEventListener('touchend', handleTouchEnd, { passive: true })
+    document.addEventListener('selectionchange', handleSelectionChange)
     window.addEventListener('scroll', handleScroll, true)
     window.addEventListener('resize', handleResize)
     document.addEventListener('keydown', handleKey)
@@ -274,6 +292,7 @@ export function SelectionContextMenu() {
       document.removeEventListener('touchstart', handleTouchStart)
       document.removeEventListener('touchmove', handleTouchMove)
       document.removeEventListener('touchend', handleTouchEnd)
+      document.removeEventListener('selectionchange', handleSelectionChange)
       window.removeEventListener('scroll', handleScroll, true)
       window.removeEventListener('resize', handleResize)
       document.removeEventListener('keydown', handleKey)
