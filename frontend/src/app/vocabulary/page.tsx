@@ -278,6 +278,12 @@ export default function VocabularyPage() {
                                 <p className="mt-0.5 text-sm text-foreground">{w.meaning}</p>
                               </div>
                             )}
+                            {w.translation && (
+                              <div>
+                                <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">Translation</p>
+                                <p className="mt-0.5 text-sm font-medium text-foreground">{w.translation}</p>
+                              </div>
+                            )}
                             {w.sentence && (
                               <div>
                                 <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Example Sentence</p>
@@ -318,7 +324,7 @@ export default function VocabularyPage() {
             <p className="text-[11px] text-muted-foreground/60">
               Page {page} of {totalPages}
             </p>
-            <div className="flex items-center gap-1">
+            <div className="flex flex-wrap items-center justify-end gap-1">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
@@ -326,19 +332,35 @@ export default function VocabularyPage() {
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <button
-                  key={p}
-                  onClick={() => setPage(p)}
-                  className={`flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-[11px] font-semibold transition-colors ${
-                    p === page
-                      ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
-                      : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-                  }`}
-                >
-                  {p}
-                </button>
-              ))}
+              {(() => {
+                const pages: (number | string)[] = []
+                if (totalPages <= 7) {
+                  for (let i = 1; i <= totalPages; i++) pages.push(i)
+                } else {
+                  pages.push(1)
+                  if (page > 3) pages.push('...')
+                  for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i)
+                  if (page < totalPages - 2) pages.push('...')
+                  pages.push(totalPages)
+                }
+                return pages.map((p, i) =>
+                  p === '...' ? (
+                    <span key={`ellipsis-${i}`} className="flex h-7 w-5 items-center justify-center text-[10px] text-muted-foreground/30">···</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p as number)}
+                      className={`flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-[11px] font-semibold transition-colors ${
+                        p === page
+                          ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
+                          : 'text-muted-foreground hover:bg-muted/50 hover:text-foreground'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )
+              })()}
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}

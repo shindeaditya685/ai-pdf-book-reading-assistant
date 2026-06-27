@@ -306,7 +306,7 @@ export function ReadingChallenge() {
       )}
 
       {/* Body */}
-      <div className="flex items-center gap-6 px-5 py-5">
+      <div className="flex flex-col items-center gap-4 px-5 py-5 sm:flex-row sm:gap-6">
         <div className="h-28 w-20 shrink-0">
           <TreeSVG ratio={avgProgress} animated />
         </div>

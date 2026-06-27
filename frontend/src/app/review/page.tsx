@@ -134,7 +134,7 @@ export default function ReviewPage() {
               <p className="mt-1 text-sm text-muted-foreground/60">{results.length} cards reviewed</p>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
               <div className="rounded-xl border bg-background/60 p-4 text-center shadow-sm">
                 <p className="text-2xl font-bold text-emerald-500 tabular-nums">{results.filter((r) => r.grade >= 3).length}</p>
                 <p className="text-[10px] font-semibold text-muted-foreground/60">Good / Easy</p>
@@ -253,29 +253,29 @@ export default function ReviewPage() {
                   </div>
 
                   <p className="pt-2 text-[11px] text-muted-foreground/40">How well did you remember?</p>
-                  <div className="grid grid-cols-3 gap-2 sm:flex sm:justify-center sm:gap-3">
+                  <div className="grid grid-cols-3 gap-1.5 sm:flex sm:justify-center sm:gap-3">
                     <button
                       onClick={() => handleGrade(1)}
                       disabled={submitting}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-red-200 bg-red-50 px-3 py-3 text-xs font-bold text-red-600 transition-all hover:bg-red-100 hover:shadow-md disabled:opacity-50 sm:px-4 sm:py-2 dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/30"
+                      className="flex items-center justify-center gap-1 rounded-xl border border-red-200 bg-red-50 px-2 py-2.5 text-[10px] font-bold text-red-600 transition-all hover:bg-red-100 hover:shadow-md disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs dark:border-red-900/30 dark:bg-red-950/20 dark:text-red-400 dark:hover:bg-red-950/30"
                     >
-                      <XCircle className="h-4 w-4" />
+                      <XCircle className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span>Again</span>
                     </button>
                     <button
                       onClick={() => handleGrade(3)}
                       disabled={submitting}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-amber-200 bg-amber-50 px-3 py-3 text-xs font-bold text-amber-600 transition-all hover:bg-amber-100 hover:shadow-md disabled:opacity-50 sm:px-4 sm:py-2 dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                      className="flex items-center justify-center gap-1 rounded-xl border border-amber-200 bg-amber-50 px-2 py-2.5 text-[10px] font-bold text-amber-600 transition-all hover:bg-amber-100 hover:shadow-md disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs dark:border-amber-900/30 dark:bg-amber-950/20 dark:text-amber-400 dark:hover:bg-amber-950/30"
                     >
-                      <ThumbsUp className="h-4 w-4" />
+                      <ThumbsUp className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span>Good</span>
                     </button>
                     <button
                       onClick={() => handleGrade(5)}
                       disabled={submitting}
-                      className="flex items-center justify-center gap-1.5 rounded-xl border border-emerald-200 bg-emerald-50 px-3 py-3 text-xs font-bold text-emerald-600 transition-all hover:bg-emerald-100 hover:shadow-md disabled:opacity-50 sm:px-4 sm:py-2 dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
+                      className="flex items-center justify-center gap-1 rounded-xl border border-emerald-200 bg-emerald-50 px-2 py-2.5 text-[10px] font-bold text-emerald-600 transition-all hover:bg-emerald-100 hover:shadow-md disabled:opacity-50 sm:px-4 sm:py-2 sm:text-xs dark:border-emerald-900/30 dark:bg-emerald-950/20 dark:text-emerald-400 dark:hover:bg-emerald-950/30"
                     >
-                      <CheckCircle2 className="h-4 w-4" />
+                      <CheckCircle2 className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
                       <span>Easy</span>
                     </button>
                   </div>

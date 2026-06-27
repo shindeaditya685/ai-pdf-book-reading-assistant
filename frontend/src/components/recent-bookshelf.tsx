@@ -343,8 +343,7 @@ export function RecentBookshelf({
                 <div key={rowIdx} className="relative">
                   {/* Book Row */}
                   <div
-                    className="grid items-end gap-3 sm:gap-4 pb-2"
-                    style={{ gridTemplateColumns: `repeat(4, 1fr)` }}
+                    className="grid grid-cols-2 items-end gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 pb-2"
                   >
                     {row.map((book) => {
                       const title = titleOf(book.fileName);
