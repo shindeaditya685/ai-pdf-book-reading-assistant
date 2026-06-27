@@ -152,11 +152,7 @@ export default function AboutPage() {
                 </p>
                 <p className="mt-3 text-sm leading-6 text-muted-foreground">
                   If you&apos;re from Free4Talk, you might know me as{" "}
-                  <span className="font-semibold text-foreground">
-                    only for Study
-                  </span>{" "}
-                  or <span className="font-semibold text-foreground">Zx</span>.
-                  Follow me there if you use the platform!
+                  <span className="font-semibold text-foreground">Aadi</span>.
                 </p>
                 <div className="mt-4 flex flex-wrap items-center justify-center gap-2 sm:justify-start">
                   <span className="inline-flex items-center gap-1 rounded-full border border-violet-200/50 bg-violet-50 px-3 py-1 text-xs font-medium text-violet-700 dark:border-violet-800/30 dark:bg-violet-950/20 dark:text-violet-400">
