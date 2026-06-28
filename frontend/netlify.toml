@@ -2,6 +2,9 @@
   command = "next build"
   publish = ".next"
 
+[[plugins]]
+  package = "@netlify/plugin-nextjs"
+
 # Ensure the PDF worker file has the correct MIME type
 [[headers]]
   for = "/pdf-worker/*"
