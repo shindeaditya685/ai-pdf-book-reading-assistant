@@ -34,6 +34,7 @@ const LANGUAGE_NAMES: Record<string, string> = {
   ur: 'Urdu (Nastaliq script)',
   gu: 'Gujarati (Gujarati script)',
   ne: 'Nepali (Devanagari script)',
+  id: 'Indonesian (Latin script)',
   es: 'Spanish',
   fr: 'French',
   de: 'German',

@@ -39,6 +39,7 @@ export type TranslationLanguage =
   | "ur"
   | "gu"
   | "ne"
+  | "id"
   | "es"
   | "fr"
   | "de"
@@ -74,6 +75,7 @@ export function detectBrowserLanguage(): TranslationLanguage {
       "ur",
       "gu",
       "ne",
+      "id",
       "es",
       "fr",
       "de",
@@ -122,6 +124,7 @@ function loadInitialLanguage(): TranslationLanguage {
         "ur",
         "gu",
         "ne",
+        "id",
         "es",
         "fr",
         "de",
@@ -161,6 +164,7 @@ export const LANGUAGE_LABELS: Record<TranslationLanguage, string> = {
   ur: "Urdu",
   gu: "Gujarati",
   ne: "Nepali",
+  id: "Indonesian",
   es: "Spanish",
   fr: "French",
   de: "German",
@@ -194,6 +198,7 @@ export const LANGUAGE_SCRIPT: Record<string, string> = {
   ur: "Urdu (Nastaliq script)",
   gu: "Gujarati (Gujarati script)",
   ne: "Nepali (Devanagari script)",
+  id: "Indonesian (Latin script)",
   es: "Spanish",
   fr: "French",
   de: "German",
