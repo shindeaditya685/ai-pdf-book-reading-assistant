@@ -42,7 +42,7 @@ export async function GET(request: Request) {
     // Compute streak from the full 365-day record set
     let streak = 0
     const checkDate = new Date()
-    while (true) {
+    for (let i = 0; i < 365; i++) {
       const ds = `${checkDate.getFullYear()}-${String(checkDate.getMonth() + 1).padStart(2, '0')}-${String(checkDate.getDate()).padStart(2, '0')}`
       const found = streakRecords.some((r) => r.date === ds)
       if (!found && streak === 0) {
