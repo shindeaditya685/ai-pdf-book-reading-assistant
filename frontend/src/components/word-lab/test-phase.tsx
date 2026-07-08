@@ -1,82 +1,26 @@
 'use client'
 
-import { useState, useMemo, useRef, useEffect } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { CheckCircle2, XCircle, Lightbulb, ArrowLeft, ArrowRight } from 'lucide-react'
-import { WordLabWord, TestResult, QuestionType } from './types'
+import { TestResult } from './types'
 
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
-function buildQuestions(words: WordLabWord[]): Array<{
+export interface TestQuestion {
   wordId: string
   word: string
-  type: QuestionType
+  type: 'fill-blank' | 'multiple-choice' | 'reverse-recall'
   prompt: string
   correctAnswer: string
   options?: string[]
   sentence?: string
-}> {
-  const types: QuestionType[] = ['fill-blank', 'multiple-choice', 'reverse-recall']
-  return words.map((w, i) => {
-    const type = types[i % types.length]
-    switch (type) {
-      case 'fill-blank': {
-        const sentence = w.example.replace(
-          new RegExp(w.word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i'),
-          '__________',
-        )
-        return {
-          wordId: w.id,
-          word: w.word,
-          type,
-          prompt: sentence,
-          correctAnswer: w.word,
-          sentence: w.example,
-        }
-      }
-      case 'multiple-choice': {
-        const distractors = words
-          .filter((x) => x.id !== w.id)
-          .sort(() => Math.random() - 0.5)
-          .slice(0, 3)
-          .map((x) => x.meaning)
-        const options = shuffleArray([w.meaning, ...distractors])
-        return {
-          wordId: w.id,
-          word: w.word,
-          type,
-          prompt: `What does "${w.word}" mean?`,
-          correctAnswer: w.meaning,
-          options,
-        }
-      }
-      case 'reverse-recall': {
-        return {
-          wordId: w.id,
-          word: w.word,
-          type,
-          prompt: w.meaning,
-          correctAnswer: w.word,
-        }
-      }
-    }
-  })
 }
 
 export function TestPhase({
-  words,
+  questions,
   onComplete,
 }: {
-  words: WordLabWord[]
+  questions: TestQuestion[]
   onComplete: (results: TestResult[]) => void
 }) {
-  const questions = useMemo(() => buildQuestions(words), [words])
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
   const [showResult, setShowResult] = useState<Record<number, boolean>>({})

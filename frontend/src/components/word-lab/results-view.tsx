@@ -139,11 +139,11 @@ export function ResultsView({
         <div>
           <p className="mb-2 text-xs font-semibold text-stone-500 dark:text-stone-400">Words to review</p>
           <div className="space-y-1.5">
-            {missed.map((r) => {
+            {missed.map((r, i) => {
               const wordData = words.find((w) => w.id === r.wordId)
               return (
                 <div
-                  key={r.wordId}
+                  key={`${r.wordId}-${r.questionType}-${i}`}
                   className="flex items-start gap-2 rounded-lg border border-stone-200 bg-white p-3 dark:border-stone-700/50 dark:bg-stone-900/60"
                 >
                   <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500" />

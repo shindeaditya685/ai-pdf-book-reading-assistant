@@ -25,6 +25,8 @@ export default function WordLabPage() {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
   const [saving, setSaving] = useState(false)
+  const [questions, setQuestions] = useState<any[] | null>(null)
+  const [generatingQuestions, setGeneratingQuestions] = useState(false)
   const [, forceUpdate] = useState(0)
 
   const loadToday = useCallback(async () => {
@@ -83,6 +85,34 @@ export default function WordLabPage() {
       })
     } catch {
       // non-critical
+    }
+  }
+
+  const handleStartTest = async () => {
+    setGeneratingQuestions(true)
+    setQuestions(null)
+    try {
+      const res = await authFetch('/api/word-lab/generate-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ words }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const shuffled = [...data.questions]
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1))
+          ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        }
+        setQuestions(shuffled)
+        setPhase('test')
+      } else {
+        setError('Failed to generate questions. Please try again.')
+      }
+    } catch {
+      setError('Failed to generate questions. Please try again.')
+    } finally {
+      setGeneratingQuestions(false)
     }
   }
 
@@ -186,13 +216,20 @@ export default function WordLabPage() {
                 words={words}
                 studiedIds={studiedIds}
                 onMarkStudied={handleMarkStudied}
-                onStartTest={() => setPhase('test')}
+                onStartTest={handleStartTest}
               />
             )}
 
-            {phase === 'test' && (
+            {generatingQuestions && (
+              <div className="flex flex-col items-center justify-center py-16">
+                <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+                <p className="mt-4 text-sm text-stone-500">Generating questions with AI...</p>
+              </div>
+            )}
+
+            {phase === 'test' && questions && (
               <TestPhase
-                words={words}
+                questions={questions}
                 onComplete={handleTestComplete}
               />
             )}
