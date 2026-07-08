@@ -38,6 +38,7 @@ export async function GET(request: Request) {
           pageCount: pdf.pageCount || 0,
           lastPage: pdf.lastPage || 1,
           coverImage: pdf.coverImage || null,
+          category: pdf.category || '',
           wordCount,
           bookmarkCount,
           quoteCount,

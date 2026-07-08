@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState, useRef } from "react";
-import { Loader2, Camera, Search, BookOpen, Library, Sparkles } from "lucide-react";
+import { Loader2, Camera, Search, BookOpen, Library, Sparkles, ChevronDown, ChevronRight, Settings2 } from "lucide-react";
+import Link from "next/link";
 import { authFetch } from "@/lib/api";
 
 interface RecentBook {
@@ -9,6 +10,7 @@ interface RecentBook {
   pageCount: number;
   lastPage: number;
   coverImage: string | null;
+  category: string;
 }
 
 /* ── rich colour palettes for book spines ── */
@@ -165,6 +167,7 @@ export function RecentBookshelf({
   const [uploadingCover, setUploadingCover] = useState<string | null>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const coverTargetRef = useRef<string | null>(null);
+  const [expandedSections, setExpandedSections] = useState<Record<string, boolean>>({});
 
   useEffect(() => {
     let cancelled = false;
@@ -248,7 +251,114 @@ export function RecentBookshelf({
       )
     : books;
 
-  const rows = chunk(filtered, 4);
+  // Group by category
+  const grouped = new Map<string, RecentBook[]>()
+  for (const b of filtered) {
+    const cat = b.category?.trim() || '__uncategorized__'
+    if (!grouped.has(cat)) grouped.set(cat, [])
+    grouped.get(cat)!.push(b)
+  }
+  const sectionOrder = Array.from(grouped.keys()).sort((a, b) => {
+    if (a === '__uncategorized__') return 1
+    if (b === '__uncategorized__') return -1
+    return a.localeCompare(b)
+  })
+
+  function renderBookGrid(booksInSection: RecentBook[]) {
+    const rows = chunk(booksInSection, 4)
+    return (
+      <div className="space-y-2">
+        {rows.map((row, rowIdx) => (
+          <div key={rowIdx} className="relative">
+            <div className="grid grid-cols-2 items-end gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 pb-2">
+              {row.map((book) => {
+                const title = titleOf(book.fileName)
+                const progress = book.pageCount > 0 ? Math.min(100, Math.round((book.lastPage / book.pageCount) * 100)) : 0
+                const colorIdx = hashColorIndex(book.fileName)
+                const spineColor = SPINE_COLORS[colorIdx]
+                const accentColor = SPINE_ACCENTS[colorIdx]
+                const highlightColor = SPINE_HIGHLIGHTS[colorIdx]
+                return (
+                  <div
+                    key={book.fileName}
+                    className="bookshelf-card cursor-pointer"
+                    style={{ ["--book-glow" as string]: `${highlightColor}30` }}
+                    onClick={() => onOpen(book.fileName)}
+                  >
+                    <div
+                      className="book-inner relative aspect-[3/4.2] overflow-hidden rounded-lg"
+                      style={{ backgroundColor: spineColor, boxShadow: `0 8px 25px -10px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05)` }}
+                    >
+                      {book.coverImage ? (
+                        <>
+                          <img src={book.coverImage} alt={`Cover of ${title}`} loading="lazy" className="absolute inset-0 h-full w-full object-cover" />
+                          <div className="absolute inset-0 pointer-events-none" style={{ background: "linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.5) 100%)" }} />
+                          <button onClick={(e) => { e.stopPropagation(); handleCoverClick(book.fileName) }} className="cover-btn absolute right-2 top-2 z-20 flex size-7 items-center justify-center rounded-full text-white/80 backdrop-blur-sm transition-all hover:scale-110" style={{ background: "rgba(0,0,0,0.4)" }}><Camera className="h-3 w-3" /></button>
+                        </>
+                      ) : (
+                        <>
+                          <div className="absolute inset-0" style={{ background: `linear-gradient(135deg, ${spineColor} 0%, ${accentColor} 60%, ${spineColor} 100%)` }} />
+                          <div className="absolute inset-0 opacity-[0.04]" style={{ backgroundImage: `repeating-linear-gradient(0deg, transparent, transparent 8px, rgba(255,255,255,0.5) 8px, rgba(255,255,255,0.5) 9px)` }} />
+                          <div className="absolute top-0 left-0 right-0 h-1" style={{ background: highlightColor, opacity: 0.6 }} />
+                          <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center">
+                            <div className="mb-2 w-8 h-[1px]" style={{ background: `${highlightColor}50` }} />
+                            <div className="text-[11px] font-bold leading-tight text-white/90 line-clamp-3 mb-1">{title}</div>
+                            <div className="mt-1 w-8 h-[1px]" style={{ background: `${highlightColor}50` }} />
+                            <div className="text-[9px] text-white/40 mt-2 tracking-wider uppercase">{book.pageCount} pages</div>
+                          </div>
+                          <button onClick={(e) => { e.stopPropagation(); handleCoverClick(book.fileName) }} className="cover-btn absolute inset-0 z-20 flex items-center justify-center transition-all" style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(2px)" }}>
+                            <div className="flex flex-col items-center gap-1.5">
+                              {uploadingCover === book.fileName ? <Loader2 className="h-5 w-5 animate-spin text-white" /> : (
+                                <><div className="flex items-center justify-center h-8 w-8 rounded-full" style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}><Camera className="h-3.5 w-3.5 text-white/80" /></div><span className="text-[9px] uppercase tracking-widest text-white/60 font-medium">Add Cover</span></>
+                              )}
+                            </div>
+                          </button>
+                        </>
+                      )}
+                      <div className="pointer-events-none absolute inset-y-0 left-0 w-[3px]" style={{ background: `linear-gradient(180deg, ${highlightColor}30 0%, rgba(255,255,255,0.08) 50%, transparent 100%)` }} />
+                      <div className="pointer-events-none absolute inset-y-0 right-0 w-[1px] bg-black/30" />
+                      {progress > 0 && (
+                        <div className="absolute top-1.5 left-1.5 z-10 pointer-events-none">
+                          <div className="relative flex items-center justify-center" style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.5))" }}>
+                            <ProgressRing progress={progress} size={28} stroke={2} color={progress >= 100 ? "#34d399" : highlightColor} />
+                            <span className="absolute text-[7px] font-bold text-white/90">{progress >= 100 ? "✓" : `${progress}`}</span>
+                          </div>
+                        </div>
+                      )}
+                      {progress > 0 && (
+                        <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/30">
+                          <div className="h-full transition-all duration-700" style={{ width: `${progress}%`, background: progress >= 100 ? "linear-gradient(90deg, #34d399, #6ee7b7)" : `linear-gradient(90deg, ${highlightColor}, ${highlightColor}80)` }} />
+                        </div>
+                      )}
+                      {loadingFileName === book.fileName && (
+                        <div className="absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm" style={{ backgroundColor: "rgba(10,10,10,0.85)" }}>
+                          <div className="flex flex-col items-center gap-2"><Loader2 className="h-5 w-5 animate-spin text-teal-400" /><span className="text-[9px] text-white/50 uppercase tracking-wider">Opening…</span></div>
+                        </div>
+                      )}
+                      <div className="book-overlay absolute inset-0 z-30 flex flex-col p-3 text-center" style={{ background: "linear-gradient(180deg, rgba(10,10,10,0.85) 0%, rgba(10,10,10,0.95) 100%)", backdropFilter: "blur(4px)" }}>
+                        <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden gap-1.5">
+                          <div className="text-[11px] leading-tight text-white/90 font-medium line-clamp-3">{title}</div>
+                          <div className="text-[9px] text-white/40 leading-tight">{book.lastPage > 0 ? `Page ${book.lastPage} of ${book.pageCount}` : `${book.pageCount} pages`}{progress > 0 && ` · ${progress}%`}</div>
+                        </div>
+                        <button onClick={(e) => { e.stopPropagation(); onOpen(book.fileName) }} className="mt-auto px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all hover:scale-105" style={{ background: `linear-gradient(135deg, ${highlightColor} 0%, ${accentColor} 100%)`, color: "white", boxShadow: `0 4px 12px -4px ${highlightColor}40` }}>{book.lastPage > 0 ? "Continue" : "Start Reading"}</button>
+                      </div>
+                    </div>
+                  </div>
+                )
+              })}
+            </div>
+            <div className="shelf-plank -mt-1 relative">
+              <div className="h-[3px] w-full rounded-t-sm" style={{ background: "linear-gradient(180deg, #d4a96a 0%, #c49a5c 100%)", boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)" }} />
+              <div className="relative h-[16px] w-full" style={{ background: `repeating-linear-gradient(90deg, rgba(180,130,70,0.1) 0px, transparent 2px, transparent 5px), linear-gradient(180deg, #9a7040 0%, #7a5830 60%, #6a4828 100%)`, boxShadow: "inset 0 1px 2px rgba(255,255,255,0.05), inset 0 -2px 4px rgba(0,0,0,0.4)" }}>
+                <div className="pointer-events-none absolute top-1/2 h-[6px] w-[14px] -translate-y-1/2 rounded-full opacity-30" style={{ left: `${20 + ((rowIdx * 31) % 55)}%`, background: "radial-gradient(ellipse, #3a2010 0%, transparent 70%)" }} />
+              </div>
+              <div className="h-[6px] w-full" style={{ background: "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 100%)" }} />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
+  }
 
   return (
     <>
@@ -283,6 +393,14 @@ export function RecentBookshelf({
               </div>
             </div>
             <div className="flex items-center gap-1.5">
+              <Link
+                href="/manage-books"
+                className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-wider font-medium text-white/50 transition-all hover:text-white/80 hover:bg-white/5"
+                style={{ border: "1px solid rgba(255,255,255,0.08)" }}
+              >
+                <Settings2 className="h-3 w-3" />
+                Manage
+              </Link>
               <div
                 className="flex items-center gap-1 px-2.5 py-1 rounded-lg text-[10px] uppercase tracking-wider font-medium"
                 style={{
@@ -328,7 +446,7 @@ export function RecentBookshelf({
           </div>
         </div>
 
-        {/* ── Books Grid ── */}
+        {/* ── Sections ── */}
         <div className="px-6 pb-6 sm:px-8 sm:pb-8">
           {filtered.length === 0 ? (
             <div className="text-center py-12">
@@ -338,288 +456,43 @@ export function RecentBookshelf({
               </p>
             </div>
           ) : (
-            <div className="space-y-2">
-              {rows.map((row, rowIdx) => (
-                <div key={rowIdx} className="relative">
-                  {/* Book Row */}
-                  <div
-                    className="grid grid-cols-2 items-end gap-3 sm:grid-cols-3 sm:gap-4 lg:grid-cols-4 pb-2"
-                  >
-                    {row.map((book) => {
-                      const title = titleOf(book.fileName);
-                      const progress =
-                        book.pageCount > 0
-                          ? Math.min(
-                              100,
-                              Math.round((book.lastPage / book.pageCount) * 100),
-                            )
-                          : 0;
-                      const colorIdx = hashColorIndex(book.fileName);
-                      const spineColor = SPINE_COLORS[colorIdx];
-                      const accentColor = SPINE_ACCENTS[colorIdx];
-                      const highlightColor = SPINE_HIGHLIGHTS[colorIdx];
-
-                      return (
-                        <div
-                          key={book.fileName}
-                          className="bookshelf-card cursor-pointer"
-                          style={{ ["--book-glow" as string]: `${highlightColor}30` }}
-                          onClick={() => onOpen(book.fileName)}
-                        >
-                          <div
-                            className="book-inner relative aspect-[3/4.2] overflow-hidden rounded-lg"
-                            style={{
-                              backgroundColor: spineColor,
-                              boxShadow: `0 8px 25px -10px rgba(0,0,0,0.5), inset 0 0 0 1px rgba(255,255,255,0.05)`,
-                            }}
-                          >
-                            {/* ── Book Cover ── */}
-                            {book.coverImage ? (
-                              <>
-                                <img
-                                  src={book.coverImage}
-                                  alt={`Cover of ${title}`}
-                                  loading="lazy"
-                                  className="absolute inset-0 h-full w-full object-cover"
-                                />
-                                {/* subtle vignette on cover images */}
-                                <div
-                                  className="absolute inset-0 pointer-events-none"
-                                  style={{
-                                    background: "linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.5) 100%)",
-                                  }}
-                                />
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCoverClick(book.fileName);
-                                  }}
-                                  className="cover-btn absolute right-2 top-2 z-20 flex size-7 items-center justify-center rounded-full text-white/80 backdrop-blur-sm transition-all hover:scale-110"
-                                  style={{ background: "rgba(0,0,0,0.4)" }}
-                                >
-                                  <Camera className="h-3 w-3" />
-                                </button>
-                              </>
-                            ) : (
-                              <>
-                                {/* ── Generated Cover Pattern ── */}
-                                <div
-                                  className="absolute inset-0"
-                                  style={{
-                                    background: `
-                                      linear-gradient(135deg, ${spineColor} 0%, ${accentColor} 60%, ${spineColor} 100%)
-                                    `,
-                                  }}
-                                />
-                                {/* Decorative line pattern */}
-                                <div
-                                  className="absolute inset-0 opacity-[0.04]"
-                                  style={{
-                                    backgroundImage: `repeating-linear-gradient(
-                                      0deg,
-                                      transparent,
-                                      transparent 8px,
-                                      rgba(255,255,255,0.5) 8px,
-                                      rgba(255,255,255,0.5) 9px
-                                    )`,
-                                  }}
-                                />
-                                {/* Top accent bar */}
-                                <div
-                                  className="absolute top-0 left-0 right-0 h-1"
-                                  style={{ background: highlightColor, opacity: 0.6 }}
-                                />
-                                {/* Centered title block */}
-                                <div className="absolute inset-0 flex flex-col items-center justify-center p-3 text-center">
-                                  <div
-                                    className="mb-2 w-8 h-[1px]"
-                                    style={{ background: `${highlightColor}50` }}
-                                  />
-                                  <div className="text-[11px] font-bold leading-tight text-white/90 line-clamp-3 mb-1">
-                                    {title}
-                                  </div>
-                                  <div
-                                    className="mt-1 w-8 h-[1px]"
-                                    style={{ background: `${highlightColor}50` }}
-                                  />
-                                  <div className="text-[9px] text-white/40 mt-2 tracking-wider uppercase">
-                                    {book.pageCount} pages
-                                  </div>
-                                </div>
-                                {/* Add cover overlay button */}
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    handleCoverClick(book.fileName);
-                                  }}
-                                  className="cover-btn absolute inset-0 z-20 flex items-center justify-center transition-all"
-                                  style={{ background: "rgba(0,0,0,0.5)", backdropFilter: "blur(2px)" }}
-                                >
-                                  <div className="flex flex-col items-center gap-1.5">
-                                    {uploadingCover === book.fileName ? (
-                                      <Loader2 className="h-5 w-5 animate-spin text-white" />
-                                    ) : (
-                                      <>
-                                        <div
-                                          className="flex items-center justify-center h-8 w-8 rounded-full"
-                                          style={{ background: "rgba(255,255,255,0.1)", border: "1px solid rgba(255,255,255,0.15)" }}
-                                        >
-                                          <Camera className="h-3.5 w-3.5 text-white/80" />
-                                        </div>
-                                        <span className="text-[9px] uppercase tracking-widest text-white/60 font-medium">
-                                          Add Cover
-                                        </span>
-                                      </>
-                                    )}
-                                  </div>
-                                </button>
-                              </>
-                            )}
-
-                            {/* ── Spine edge effects ── */}
-                            <div
-                              className="pointer-events-none absolute inset-y-0 left-0 w-[3px]"
-                              style={{
-                                background: `linear-gradient(180deg, ${highlightColor}30 0%, rgba(255,255,255,0.08) 50%, transparent 100%)`,
-                              }}
-                            />
-                            <div className="pointer-events-none absolute inset-y-0 right-0 w-[1px] bg-black/30" />
-
-                            {/* ── Progress Ring (top-left) ── */}
-                            {progress > 0 && (
-                              <div className="absolute top-1.5 left-1.5 z-10 pointer-events-none">
-                                <div className="relative flex items-center justify-center" style={{ filter: "drop-shadow(0 1px 3px rgba(0,0,0,0.5))" }}>
-                                  <ProgressRing progress={progress} size={28} stroke={2} color={progress >= 100 ? "#34d399" : highlightColor} />
-                                  <span className="absolute text-[7px] font-bold text-white/90">
-                                    {progress >= 100 ? "✓" : `${progress}`}
-                                  </span>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* ── Bottom progress bar (subtle) ── */}
-                            {progress > 0 && (
-                              <div className="absolute bottom-0 left-0 right-0 h-[2px] bg-black/30">
-                                <div
-                                  className="h-full transition-all duration-700"
-                                  style={{
-                                    width: `${progress}%`,
-                                    background: progress >= 100
-                                      ? "linear-gradient(90deg, #34d399, #6ee7b7)"
-                                      : `linear-gradient(90deg, ${highlightColor}, ${highlightColor}80)`,
-                                  }}
-                                />
-                              </div>
-                            )}
-
-                            {/* ── Loading overlay ── */}
-                            {loadingFileName === book.fileName && (
-                              <div
-                                className="absolute inset-0 z-30 flex items-center justify-center backdrop-blur-sm"
-                                style={{ backgroundColor: "rgba(10,10,10,0.85)" }}
-                              >
-                                <div className="flex flex-col items-center gap-2">
-                                  <Loader2 className="h-5 w-5 animate-spin text-teal-400" />
-                                  <span className="text-[9px] text-white/50 uppercase tracking-wider">Opening…</span>
-                                </div>
-                              </div>
-                            )}
-
-                            {/* ── Hover detail overlay ── */}
-                            <div
-                              className="book-overlay absolute inset-0 flex flex-col p-3 text-center"
-                              style={{
-                                background: "linear-gradient(180deg, rgba(10,10,10,0.85) 0%, rgba(10,10,10,0.95) 100%)",
-                                backdropFilter: "blur(4px)",
-                              }}
-                            >
-                              <div className="flex min-h-0 flex-1 flex-col items-center justify-center overflow-hidden gap-1.5">
-                                <div className="text-[11px] leading-tight text-white/90 font-medium line-clamp-3">
-                                  {title}
-                                </div>
-                                <div className="text-[9px] text-white/40 leading-tight">
-                                  {book.lastPage > 0
-                                    ? `Page ${book.lastPage} of ${book.pageCount}`
-                                    : `${book.pageCount} pages`}
-                                  {progress > 0 && ` · ${progress}%`}
-                                </div>
-                              </div>
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onOpen(book.fileName);
-                                }}
-                                className="mt-auto px-3 py-1.5 rounded-lg text-[10px] font-semibold uppercase tracking-widest transition-all hover:scale-105"
-                                style={{
-                                  background: `linear-gradient(135deg, ${highlightColor} 0%, ${accentColor} 100%)`,
-                                  color: "white",
-                                  boxShadow: `0 4px 12px -4px ${highlightColor}40`,
-                                }}
-                              >
-                                {book.lastPage > 0 ? "Continue" : "Start Reading"}
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-
-                  {/* ── Wooden Shelf ── */}
-                  <div className="shelf-plank -mt-1 relative">
-                    {/* Top edge highlight */}
-                    <div
-                      className="h-[3px] w-full rounded-t-sm"
-                      style={{
-                        background: "linear-gradient(180deg, #d4a96a 0%, #c49a5c 100%)",
-                        boxShadow: "inset 0 1px 0 rgba(255,255,255,0.2)",
-                      }}
-                    />
-                    {/* Main plank */}
-                    <div
-                      className="relative h-[16px] w-full"
-                      style={{
-                        background: `
-                          repeating-linear-gradient(90deg, 
-                            rgba(180,130,70,0.1) 0px, 
-                            transparent 2px, 
-                            transparent 5px
-                          ),
-                          linear-gradient(180deg, #9a7040 0%, #7a5830 60%, #6a4828 100%)
-                        `,
-                        boxShadow: "inset 0 1px 2px rgba(255,255,255,0.05), inset 0 -2px 4px rgba(0,0,0,0.4)",
-                      }}
+            <div className="space-y-8">
+              {sectionOrder.map((catKey) => {
+                const sectionBooks = grouped.get(catKey)!
+                const isExpanded = expandedSections[catKey] !== false
+                const isUncategorized = catKey === '__uncategorized__'
+                const sectionLabel = isUncategorized ? 'Uncategorized' : catKey
+                return (
+                  <div key={catKey}>
+                    <button
+                      onClick={() => setExpandedSections((prev) => ({ ...prev, [catKey]: !isExpanded }))}
+                      className="flex w-full items-center gap-2 mb-3 group"
                     >
-                      {/* Random wood knot */}
-                      <div
-                        className="pointer-events-none absolute top-1/2 h-[6px] w-[14px] -translate-y-1/2 rounded-full opacity-30"
-                        style={{
-                          left: `${20 + ((rowIdx * 31) % 55)}%`,
-                          background: "radial-gradient(ellipse, #3a2010 0%, transparent 70%)",
-                        }}
-                      />
-                    </div>
-                    {/* Bottom shadow */}
-                    <div
-                      className="h-[6px] w-full"
-                      style={{
-                        background: "linear-gradient(180deg, rgba(0,0,0,0.35) 0%, transparent 100%)",
-                      }}
-                    />
+                      {isExpanded ? (
+                        <ChevronDown className="h-3.5 w-3.5 text-white/30 group-hover:text-white/60 transition-colors" />
+                      ) : (
+                        <ChevronRight className="h-3.5 w-3.5 text-white/30 group-hover:text-white/60 transition-colors" />
+                      )}
+                      <span className="text-[11px] font-semibold uppercase tracking-widest text-white/50 group-hover:text-white/70 transition-colors">
+                        {sectionLabel}
+                      </span>
+                      <span className="text-[10px] text-white/25">({sectionBooks.length})</span>
+                    </button>
+                    {isExpanded && renderBookGrid(sectionBooks)}
                   </div>
-                </div>
-              ))}
-
-              <input
-                ref={coverInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/webp"
-                onChange={handleCoverFile}
-                className="hidden"
-              />
+                )
+              })}
             </div>
           )}
         </div>
+
+        <input
+          ref={coverInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp"
+          onChange={handleCoverFile}
+          className="hidden"
+        />
       </div>
     </>
   );

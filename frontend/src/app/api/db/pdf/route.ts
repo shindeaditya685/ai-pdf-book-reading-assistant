@@ -209,6 +209,7 @@ export async function PATCH(request: Request) {
     if ('pageCount' in body) updates.pageCount = toPositiveInt(pageCount, 0)
     if ('lastPage' in body) updates.lastPage = Math.max(1, toPositiveInt(lastPage, 1))
     if ('lastAccessedAt' in body) updates.lastAccessedAt = new Date(body.lastAccessedAt)
+    if ('category' in body) updates.category = body.category || ''
 
     await conn.db.collection('pdfs').updateOne(
       { _id: existing._id },
