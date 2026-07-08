@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
 import { getUserFromRequest } from '@/lib/auth'
-import { ObjectId } from 'mongodb'
+import { requireSessionMember } from '@/lib/share-auth'
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = getUserFromRequest(request)
@@ -10,6 +10,12 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   const { searchParams } = new URL(request.url)
   const sessionId = searchParams.get('sessionId')
   if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 })
+
+  // IDOR fix
+  const membership = await requireSessionMember(sessionId, user)
+  if (!membership.ok) {
+    return NextResponse.json({ error: membership.error }, { status: membership.status })
+  }
 
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json([])
@@ -21,7 +27,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
     return NextResponse.json(ann.comments || [])
   } catch (error) {
     console.error('[API Shared Comments Get] Error:', error)
-    return NextResponse.json([])
+    return NextResponse.json({ error: 'Failed to fetch comments' }, { status: 500 })
   }
 }
 
@@ -37,6 +43,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     const { sessionId, text } = await request.json()
     if (!sessionId || !text?.trim()) {
       return NextResponse.json({ error: 'sessionId and text required' }, { status: 400 })
+    }
+
+    // IDOR fix
+    const membership = await requireSessionMember(sessionId, user)
+    if (!membership.ok) {
+      return NextResponse.json({ error: membership.error }, { status: membership.status })
     }
 
     const mentions = text.match(/@(\w+)/g)?.map((m: string) => m.slice(1)) || []

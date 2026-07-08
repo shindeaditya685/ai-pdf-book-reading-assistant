@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Search, X, ChevronUp, ChevronDown, Loader2 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
@@ -21,12 +21,22 @@ export function SearchBar() {
   const inputRef = useRef<HTMLInputElement>(null)
   const [localQuery, setLocalQuery] = useState(searchQuery)
 
+  // Performance fix (P5): debounce the store update so we don't re-render
+  // every visible PdfPage on every keystroke. The local input stays
+  // responsive (controlled by localQuery); the store (and the expensive
+  // text-layer rebuild across pages) only updates 250ms after typing stops.
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (searchQuery !== localQuery) setSearchQuery(localQuery.trim())
+    }, 250)
+    return () => clearTimeout(t)
+  }, [localQuery, searchQuery, setSearchQuery])
+
   const handleSearch = useCallback(
     (query: string) => {
       setLocalQuery(query)
-      setSearchQuery(query)
     },
-    [setSearchQuery]
+    []
   )
 
   const handleClear = useCallback(() => {

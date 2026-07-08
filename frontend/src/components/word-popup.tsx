@@ -479,6 +479,47 @@ export function WordPopup() {
     }
   }, [isDragging])
 
+  // UX fix (U7): focus management for the popup. When it opens, focus moves
+  // into the dialog; Tab is trapped within; Escape closes; focus restores to
+  // the trigger on close. Previously keyboard users had to Tab through all
+  // underlying content to reach the popup.
+  const popupRef = useRef<HTMLDivElement>(null)
+  const previousFocusRef = useRef<HTMLElement | null>(null)
+  useEffect(() => {
+    if (!selectedWord) return
+    previousFocusRef.current = document.activeElement as HTMLElement
+    const popup = document.querySelector('[data-popup][role="dialog"]') as HTMLElement | null
+    popup?.focus()
+
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        clearSelection()
+        return
+      }
+      if (e.key !== 'Tab') return
+      const root = document.querySelector('[data-popup][role="dialog"]') as HTMLElement | null
+      if (!root) return
+      const focusable = root.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      )
+      if (focusable.length === 0) return
+      const first = focusable[0]
+      const last = focusable[focusable.length - 1]
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault()
+        last.focus()
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault()
+        first.focus()
+      }
+    }
+    document.addEventListener('keydown', handleKey)
+    return () => {
+      document.removeEventListener('keydown', handleKey)
+      previousFocusRef.current?.focus?.()
+    }
+  }, [selectedWord, clearSelection])
+
   if (!selectedWord || !popupPosition) return null
 
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1000
@@ -755,7 +796,11 @@ export function WordPopup() {
         <motion.div
           key="popup-sheet"
           data-popup
-          className="fixed bottom-0 left-0 right-0 z-50"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Meaning of ${selectedWord}`}
+          tabIndex={-1}
+          className="fixed bottom-0 left-0 right-0 z-50 focus:outline-none"
           initial={{ y: '100%' }}
           animate={{ y: 0 }}
           exit={{ y: '100%' }}
@@ -770,7 +815,11 @@ export function WordPopup() {
         <motion.div
           key="popup"
           data-popup
-          className="fixed z-50"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Meaning of ${selectedWord}`}
+          tabIndex={-1}
+          className="fixed z-50 focus:outline-none"
           style={{
             left: clampedLeft,
             top: clampedTop,

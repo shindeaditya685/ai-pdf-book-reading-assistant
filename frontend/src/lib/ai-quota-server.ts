@@ -32,6 +32,7 @@ interface UserRecord {
   username: string
   isAdmin?: boolean
   plan?: AIPlan
+  planExpiresAt?: Date | string | null
   aiUsage?: AIUsage
 }
 
@@ -42,13 +43,80 @@ async function getUserForQuota(userId: string): Promise<UserRecord | null> {
   try { objectId = new ObjectId(userId) } catch { return null }
   const doc = await conn.db.collection('users').findOne(
     { _id: objectId },
-    { projection: { username: 1, isAdmin: 1, plan: 1, aiUsage: 1 } }
+    { projection: { username: 1, isAdmin: 1, plan: 1, planExpiresAt: 1, aiUsage: 1 } }
   )
   return doc as UserRecord | null
 }
 
 function resolvePlan(user: UserRecord | null): AIPlan {
   return normalizeAIPlan(user?.plan)
+}
+
+/**
+ * Security fix (S4): resolve the user's *effective* plan, accounting for
+ * planExpiresAt and active grants. Previously consumeQuota read user.plan
+ * directly, so an expired Pro grant kept granting unlimited quota until the
+ * user happened to call /api/ai/quota (which lazily resets). This helper is
+ * now the single source of truth — used by both consumeQuota and the quota
+ * status route.
+ *
+ * Returns the effective plan and (as a side effect when needed) lazily
+ * persists the downgrade/refresh so /me and /quota agree.
+ */
+export async function resolveActivePlan(
+  userId: string,
+  username: string,
+  storedPlan: AIPlan | undefined,
+  planExpiresAt: Date | string | null | undefined,
+): Promise<AIPlan> {
+  const plan = normalizeAIPlan(storedPlan)
+
+  // Lifetime plans (admin/founder) — never expire.
+  if (plan === 'admin' || plan === 'founder') return plan
+
+  // Unlimited grant still within its validity window?
+  if (isUnlimitedPlan(plan)) {
+    if (!planExpiresAt) return plan // no expiry → treat as lifetime
+    if (new Date(planExpiresAt) > new Date()) return plan // still valid
+    // else: expired, fall through to grant lookup
+  }
+
+  // Look for an active grant (covers both expired-grant refresh and
+  // admin-granted upgrades that haven't been written to the user doc yet).
+  const conn = await connectToDatabase()
+  if (!conn) return 'free'
+
+  let objectId: ObjectId
+  try { objectId = new ObjectId(userId) } catch { return 'free' }
+
+  const activeGrant = await conn.db.collection('grants').findOne({
+    username,
+    active: true,
+    $or: [
+      { expiresAt: { $gt: new Date() } },
+      { expiresAt: null },
+      { expiresAt: { $exists: false } },
+    ],
+  })
+
+  if (activeGrant) {
+    const grantedPlan = normalizeAIPlan(activeGrant.plan)
+    // Persist so /me and /quota agree without re-querying grants each time.
+    await conn.db.collection('users').updateOne(
+      { _id: objectId },
+      { $set: { plan: grantedPlan, planExpiresAt: activeGrant.expiresAt ?? null } },
+    ).catch(() => {})
+    return grantedPlan
+  }
+
+  // Expired and no active grant — downgrade to free.
+  if (plan !== 'free') {
+    await conn.db.collection('users').updateOne(
+      { _id: objectId },
+      { $set: { plan: 'free', planExpiresAt: null } },
+    ).catch(() => {})
+  }
+  return 'free'
 }
 
 function freshUsageIfStale(usage: AIUsage | undefined): AIUsage {
@@ -122,13 +190,17 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
   // Fast-path: admins always allowed, no DB write needed
   const user = await db.collection('users').findOne(
     { _id: objectId },
-    { projection: { isAdmin: 1, plan: 1, aiUsage: 1 } }
+    { projection: { username: 1, isAdmin: 1, plan: 1, planExpiresAt: 1, aiUsage: 1 } }
   )
   if (!user) {
     return { ...fallback, reason: 'User not found' }
   }
 
-  const plan = resolvePlan(user as UserRecord)
+  // Security fix (S4): resolve the effective plan, accounting for expiry
+  // and active grants. Previously this read user.plan directly, so expired
+  // unlimited grants kept granting unlimited quota.
+  const username = (user as any).username as string
+  const plan = await resolveActivePlan(userId, username, (user as any).plan, (user as any).planExpiresAt)
   const isUnlimited = isUnlimitedPlan(plan)
   const limit = isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, feature)
   const perMinuteLimit = isUnlimited ? Number.POSITIVE_INFINITY : getPerMinuteLimit(plan)

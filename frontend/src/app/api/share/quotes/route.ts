@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
 import { getUserFromRequest } from '@/lib/auth'
+import { requireSessionMember } from '@/lib/share-auth'
 
 export async function GET(request: Request) {
   const user = getUserFromRequest(request)
@@ -10,6 +11,12 @@ export async function GET(request: Request) {
   const sessionId = searchParams.get('sessionId')
 
   if (!sessionId) return NextResponse.json({ error: 'sessionId required' }, { status: 400 })
+
+  // IDOR fix
+  const membership = await requireSessionMember(sessionId, user)
+  if (!membership.ok) {
+    return NextResponse.json({ error: membership.error }, { status: membership.status })
+  }
 
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json([])
@@ -40,6 +47,12 @@ export async function POST(request: Request) {
 
     if (!sessionId || !text) {
       return NextResponse.json({ error: 'sessionId and text required' }, { status: 400 })
+    }
+
+    // IDOR fix
+    const membership = await requireSessionMember(sessionId, user)
+    if (!membership.ok) {
+      return NextResponse.json({ error: membership.error }, { status: membership.status })
     }
 
     const now = new Date().toISOString()
@@ -84,6 +97,12 @@ export async function DELETE(request: Request) {
     const sessionId = searchParams.get('sessionId')
     if (!id || !sessionId) {
       return NextResponse.json({ error: 'id and sessionId required' }, { status: 400 })
+    }
+
+    // IDOR fix
+    const membership = await requireSessionMember(sessionId, user)
+    if (!membership.ok) {
+      return NextResponse.json({ error: membership.error }, { status: membership.status })
     }
 
     const qt = await conn.db.collection('sharedQuotes').findOne({ quoteId: id, sessionId })

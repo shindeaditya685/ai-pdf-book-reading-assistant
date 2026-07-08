@@ -245,15 +245,6 @@ export default function ManageBooksPage() {
           <p className="mt-1 text-sm text-stone-500 dark:text-stone-400">
             {books.length} books · {categories.length} categories
           </p>
-          {/* UX fix (U14): the `search` state existed but was never wired to
-              an input, so the search-results block below was dead code. */}
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search books by title..."
-            className="mt-4 h-9 w-full max-w-sm rounded-md border border-stone-300 bg-white px-3 text-sm outline-none focus:border-amber-400 dark:border-stone-600 dark:bg-stone-800 dark:text-stone-200"
-          />
         </div>
 
         {/* ── Categories Section ── */}

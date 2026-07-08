@@ -155,13 +155,9 @@ export default function ProfilePage() {
         }
 
         // Fetch avatar
-        const avatarRes = await authFetch('/api/avatar')
-        if (avatarRes.ok) {
-          const avatarData = await avatarRes.json()
-          if (avatarData.avatarImage) setAvatarImage(avatarData.avatarImage)
-        }
-
-        // Fetch avatar
+        // UX fix (U17): previously fetched twice (once without try/catch,
+        // which could abort loadAll on network error, then again inside
+        // try/catch). Consolidated to a single safe fetch.
         try {
           const avatarRes = await authFetch('/api/avatar')
           if (avatarRes.ok) {

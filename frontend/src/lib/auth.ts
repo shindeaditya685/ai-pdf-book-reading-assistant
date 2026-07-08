@@ -4,8 +4,26 @@ import bcrypt from 'bcryptjs'
 import jwt from 'jsonwebtoken'
 import { normalizeAIPlan, type AIPlan, type AIUsage } from './ai-plan'
 
-const JWT_SECRET =
-  process.env.JWT_SECRET || crypto.randomBytes(64).toString('hex')
+/**
+ * JWT secret.
+ *
+ * In production we fail fast if JWT_SECRET is missing — otherwise every
+ * serverless instance would mint its own random secret, silently
+ * invalidating all tokens on cold starts and making behavior
+ * non-deterministic. In dev we fall back to an ephemeral secret with a
+ * loud warning so local development still works without env setup.
+ */
+function resolveJwtSecret(): string {
+  const env = process.env.JWT_SECRET
+  if (env) return env
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('JWT_SECRET must be set in production')
+  }
+  console.warn('[auth] JWT_SECRET not set — using ephemeral dev secret. Set JWT_SECRET in production.')
+  return crypto.randomBytes(64).toString('hex')
+}
+
+const JWT_SECRET = resolveJwtSecret()
 
 export interface User {
   _id?: string

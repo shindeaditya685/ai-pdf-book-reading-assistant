@@ -9,6 +9,7 @@ import { useAuth } from '@/context/auth-context'
 import { clearActiveBook, setActiveBook, setStoredBookPage, getStoredBookPage } from '@/lib/reading-progress'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
+import { toast } from '@/hooks/use-toast'
 
 type UploadZoneProps = {
   variant?: 'header' | 'panel'
@@ -58,7 +59,8 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
   const handleFile = useCallback(
     async (file: File) => {
       if (file.type !== 'application/pdf') {
-        alert('Please upload a PDF file')
+        // UX fix (U8): replace blocking alert() with a toast.
+        toast({ title: 'Please upload a PDF file', variant: 'destructive' })
         return
       }
       setIsLoading(true)
@@ -161,7 +163,7 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
         }
       } catch (err) {
         console.error('Error reading PDF:', err)
-        alert('Failed to read PDF file')
+        toast({ title: 'Failed to read PDF file', description: 'The file may be corrupted or unsupported.', variant: 'destructive' })
       } finally {
         if (progressIntervalRef.current) {
           clearInterval(progressIntervalRef.current)

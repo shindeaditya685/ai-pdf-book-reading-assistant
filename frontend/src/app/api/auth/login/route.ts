@@ -5,7 +5,7 @@ import { checkRateLimit } from '@/lib/rate-limit'
 export async function POST(request: Request) {
   try {
     const ip = request.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || 'unknown'
-    const rateCheck = checkRateLimit(`login:${ip}`, 5, 60000)
+    const rateCheck = await checkRateLimit(`login:${ip}`, 5, 60000)
     if (!rateCheck.allowed) {
       return NextResponse.json(
         { error: `Too many attempts. Try again in ${Math.ceil(rateCheck.resetIn / 1000)}s` },

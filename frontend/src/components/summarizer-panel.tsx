@@ -7,11 +7,22 @@ import { Button } from '@/components/ui/button'
 import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
-import * as pdfjsLib from 'pdfjs-dist'
 
-// Set worker source
-if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-  pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.min.mjs'
+// Performance fix (P13): previously `import * as pdfjsLib from 'pdfjs-dist'`
+// was at module top level, pulling the entire pdfjs library into the
+// dashboard bundle even when the summarizer panel was never opened. Now we
+// lazy-load it inside extractText and set the worker source only once.
+let pdfjsLibPromise: Promise<typeof import('pdfjs-dist')> | null = null
+async function getPdfjs() {
+  if (!pdfjsLibPromise) {
+    pdfjsLibPromise = import('pdfjs-dist').then((lib) => {
+      if (typeof window !== 'undefined' && !lib.GlobalWorkerOptions.workerSrc) {
+        lib.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.min.mjs'
+      }
+      return lib
+    })
+  }
+  return pdfjsLibPromise
 }
 
 export function SummarizerPanel() {
@@ -73,6 +84,7 @@ export function SummarizerPanel() {
     if (!pdfDataUrl) return ''
     
     setLoadingStep('Initializing PDF engine...')
+    const pdfjsLib = await getPdfjs()
     const loadingTask = pdfjsLib.getDocument(pdfDataUrl)
     const pdf = await loadingTask.promise
     

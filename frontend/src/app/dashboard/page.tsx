@@ -39,6 +39,12 @@ import { authFetch } from '@/lib/api'
 import { getActiveBook, getStoredBookPage, setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
 import { PLAN_LABELS, type AIPlan } from '@/lib/ai-plan'
 import { useIsMobile } from '@/hooks/use-mobile'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog'
 
 // Dynamically import PDFViewer to avoid loading pdfjs-dist in the initial bundle
 const PDFViewer = dynamic(
@@ -143,6 +149,8 @@ export default function DashboardPage() {
     timestamp: number
   } | null>(null)
   const [dismissedResume, setDismissedResume] = useState(true)
+  // UX fix (U11): keyboard shortcuts cheatsheet dialog state.
+  const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [dismissedAnnouncements, setDismissedAnnouncements] = useState<Set<string>>(() => {
     if (typeof window === 'undefined') return new Set()
     try {
@@ -468,6 +476,11 @@ export default function DashboardPage() {
           e.preventDefault()
           goToPrevSearchResult()
           break
+        case '?':
+          // UX fix (U11): surface keyboard shortcuts via a cheatsheet dialog.
+          e.preventDefault()
+          setShortcutsOpen(true)
+          break
       }
     },
     [
@@ -719,7 +732,7 @@ export default function DashboardPage() {
       </header>
 
       {pdfDataUrl ? (
-        <main className={`relative flex-1 overflow-hidden ${focusMode ? 'fixed inset-0 z-40' : ''}`}>
+        <main id="main-content" className={`relative flex-1 overflow-hidden ${focusMode ? 'fixed inset-0 z-40' : ''}`}>
           <ErrorBoundary>
             <PDFViewer />
             <WordPopup />
@@ -904,6 +917,35 @@ export default function DashboardPage() {
         </main>
       )}
       <ShareSessionPanel />
+
+      {/* UX fix (U11): keyboard shortcuts cheatsheet. Triggered by `?`. */}
+      <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Keyboard shortcuts</DialogTitle>
+          </DialogHeader>
+          <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+            <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">F</kbd>
+            <span className="text-muted-foreground">Toggle focus mode</span>
+            <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">/</kbd>
+            <span className="text-muted-foreground">Search in PDF</span>
+            <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">H</kbd>
+            <span className="text-muted-foreground">History</span>
+            <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">B</kbd>
+            <span className="text-muted-foreground">Bookmarks</span>
+            <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">G</kbd>
+            <span className="text-muted-foreground">Flashcards</span>
+            <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">N</kbd>
+            <span className="text-muted-foreground">Next search result</span>
+            <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">P</kbd>
+            <span className="text-muted-foreground">Previous search result</span>
+            <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">Esc</kbd>
+            <span className="text-muted-foreground">Close panel / exit focus</span>
+            <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">?</kbd>
+            <span className="text-muted-foreground">This help</span>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,4 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { getUserFromRequest } from '@/lib/auth'
+import { checkRateLimit } from '@/lib/rate-limit'
 
 interface Pron {
   type: string
@@ -33,6 +35,16 @@ const ACCENT_TAG_MAP: Record<string, string> = {
 }
 
 export async function GET(req: NextRequest) {
+  // Security fix (S13): require auth + rate limit. Previously this was an
+  // unauthenticated open proxy to freedictionaryapi.com.
+  const user = getUserFromRequest(req)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const rateCheck = await checkRateLimit(`dict:${user.id}`, 60, 60000)
+  if (!rateCheck.allowed) {
+    return NextResponse.json({ error: 'Too many requests. Slow down.' }, { status: 429 })
+  }
+
   const word = req.nextUrl.searchParams.get('word')
   const lang = req.nextUrl.searchParams.get('lang') || 'en'
   const accent = req.nextUrl.searchParams.get('accent') || 'en-US'

@@ -231,9 +231,20 @@ export default function VocabularyPage() {
                         key={w.word}
                         className="rounded-lg border border-border/40 bg-background/40 shadow-sm transition-all hover:border-border/70"
                       >
-                        <button
+                        {/* UI fix (U3): convert outer <button> to div[role=button]
+                            and inner <span onClick> to a real <button> — fixes
+                            invalid HTML and keyboard inaccessibility. */}
+                        <div
+                          role="button"
+                          tabIndex={0}
                           onClick={() => setExpanded(isExpanded ? null : w.word)}
-                          className="flex w-full items-center gap-3 px-3 py-2.5 text-left"
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                              e.preventDefault()
+                              setExpanded(isExpanded ? null : w.word)
+                            }
+                          }}
+                          className="flex w-full items-center gap-3 px-3 py-2.5 text-left cursor-pointer"
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center gap-2">
@@ -261,14 +272,15 @@ export default function VocabularyPage() {
                             <span className="hidden shrink-0 text-xs font-medium text-emerald-600 dark:text-emerald-400 sm:block">{w.translation}</span>
                           )}
                           <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted-foreground/30 transition-transform ${isExpanded ? 'rotate-180' : ''}`} />
-                          <span
+                          <button
                             onClick={(e) => { e.stopPropagation(); setDeleteConfirm(w.word) }}
-                            className="shrink-0 cursor-pointer rounded p-0.5 text-muted-foreground/20 transition-colors hover:text-red-500"
+                            className="shrink-0 rounded p-0.5 text-muted-foreground/20 transition-colors hover:text-red-500"
                             title="Delete this word"
+                            aria-label={`Delete ${w.word}`}
                           >
                             <Trash2 className="h-3 w-3" />
-                          </span>
-                        </button>
+                          </button>
+                        </div>
 
                         {isExpanded && (
                           <div className="border-t border-border/30 px-3 py-2.5 space-y-2">

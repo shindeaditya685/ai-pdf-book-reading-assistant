@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import * as pdfjsLib from 'pdfjs-dist'
 import { usePDFStore } from '@/store/use-pdf-store'
+import { useShallow } from 'zustand/react/shallow'
 import { useAuth } from '@/context/auth-context'
 import { StickyNoteItem } from '@/components/sticky-note-item'
 import { Loader2 } from 'lucide-react'
@@ -66,24 +67,46 @@ export function PdfPage({
   pageTextCacheRef,
   lazy = false,
 }: PdfPageProps) {
-  const {
-    scale,
-    ocrText,
-    searchQuery,
-    searchResults,
-    currentSearchIndex,
-    annotations,
-    addAnnotation,
-    updateAnnotation,
-    removeAnnotation,
-    annotationMode,
-    highlightColor,
-    penColor,
-    penWidth,
-    shareSession,
-    sharedAnnotations,
-  } = usePDFStore()
+  // Performance fix (P1): previously this component subscribed to the whole
+  // store via `usePDFStore()`, so ANY state change (a single annotation add,
+  // a search keystroke, a mouse move in share mode) re-rendered EVERY mounted
+  // PdfPage. Now we subscribe to only the slices this page actually needs.
+  // Actions are stable references and don't need shallow comparison.
+  const scale = usePDFStore((s) => s.scale)
+  const searchQuery = usePDFStore((s) => s.searchQuery)
+  const annotationMode = usePDFStore((s) => s.annotationMode)
+  const highlightColor = usePDFStore((s) => s.highlightColor)
+  const penColor = usePDFStore((s) => s.penColor)
+  const penWidth = usePDFStore((s) => s.penWidth)
+  const shareSessionId = usePDFStore((s) => s.shareSession?._id ?? null)
+
+  // Multi-field slices that need shallow equality.
+  const { searchResults, currentSearchIndex } = usePDFStore(
+    useShallow((s) => ({ searchResults: s.searchResults, currentSearchIndex: s.currentSearchIndex })),
+  )
+  // Only this page's OCR text — not the whole ocrText map.
+  const pageOcr = usePDFStore((s) => (s.ocrText[pageNumber] ?? null))
+  // Only this page's local annotations.
+  const pageAnnotations = usePDFStore(
+    useShallow((s) => s.annotations.filter((a) => a.pageNumber === pageNumber)),
+  )
+  // Shared annotations for this page (only when in a session).
+  const sharedAnnotations = usePDFStore(
+    useShallow((s) => {
+      if (!s.shareSession) return []
+      return s.sharedAnnotations.filter((a) => a.pageNumber === pageNumber)
+    }),
+  )
+  const shareSession = usePDFStore((s) => s.shareSession)
+  // Actions (stable refs — no re-render on store change).
+  const addAnnotation = usePDFStore((s) => s.addAnnotation)
+  const updateAnnotation = usePDFStore((s) => s.updateAnnotation)
+  const removeAnnotation = usePDFStore((s) => s.removeAnnotation)
   const { user } = useAuth()
+
+  function annId(ann: any): string {
+    return ann.annotationId || ann.id
+  }
 
   const wrapperRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -128,7 +151,9 @@ export function PdfPage({
     async (pageNum: number): Promise<string> => {
       const cached = pageTextCacheRef.current.get(pageNum)
       if (cached) return cached
-      const pageOcrData = ocrText[pageNum]
+      // Read OCR from the store imperatively so we don't subscribe to the
+      // whole ocrText map (which would re-render this page on every OCR'd page).
+      const pageOcrData = usePDFStore.getState().ocrText[pageNum]
       if (pageOcrData) {
         pageTextCacheRef.current.set(pageNum, pageOcrData.text)
         return pageOcrData.text
@@ -146,7 +171,7 @@ export function PdfPage({
         return ''
       }
     },
-    [ocrText, pdfDocRef, pageTextCacheRef]
+    [pdfDocRef, pageTextCacheRef]
   )
 
   // Render the page
@@ -211,7 +236,7 @@ export function PdfPage({
 
         // Build text layer
         const textLayer = textLayerRef.current
-        const pageOcrData = ocrText[pageNumber]
+        const pageOcrData = pageOcr ?? usePDFStore.getState().ocrText[pageNumber]
         const textContent = await page.getTextContent()
         const textItems = (textContent.items as any[]).filter((item) => 'str' in item)
         const pageText = pageOcrData
@@ -320,7 +345,7 @@ export function PdfPage({
     })()
 
     renderChainRef.current = promise
-  }, [pageNumber, scale, searchQuery, searchResults, currentSearchIndex, ocrText, pdfDocRef, pageTextCacheRef])
+  }, [pageNumber, scale, searchQuery, searchResults, currentSearchIndex, pageOcr, pdfDocRef, pageTextCacheRef])
 
   useEffect(() => {
     if (pdfDocRef.current && pdfReady && isVisible) renderPageCanvas()
@@ -346,7 +371,7 @@ export function PdfPage({
   // Eraser helper: erase drawing stroke near (px, py)
   const eraseDrawingAtPoint = useCallback(
     (px: number, py: number) => {
-      const drawings = annotations.filter(
+      const drawings = pageAnnotations.filter(
         (a) => a.pageNumber === pageNumber && a.type === 'drawing'
       )
 
@@ -382,15 +407,15 @@ export function PdfPage({
           const p1 = ann.points[i]
           const p2 = ann.points[i + 1]
           if (isPointNearLine(px, py, p1.x, p1.y, p2.x, p2.y, 10 / scale)) {
-            removeAnnotation(ann.id)
-            deleteAnnotationFromDb(ann.id)
+            removeAnnotation(annId(ann))
+            deleteAnnotationFromDb(annId(ann))
             return
           }
         }
       }
 
       // Also check highlights
-      const highlights = annotations.filter(
+      const highlights = pageAnnotations.filter(
         (a) => a.pageNumber === pageNumber && a.type === 'highlight'
       )
       for (const ann of highlights) {
@@ -403,14 +428,14 @@ export function PdfPage({
             py >= rect.top - padding &&
             py <= rect.top + rect.height + padding
           ) {
-            removeAnnotation(ann.id)
-            deleteAnnotationFromDb(ann.id)
+            removeAnnotation(annId(ann))
+            deleteAnnotationFromDb(annId(ann))
             return
           }
         }
       }
     },
-    [annotations, pageNumber, removeAnnotation, deleteAnnotationFromDb, scale]
+    [pageAnnotations, pageNumber, removeAnnotation, deleteAnnotationFromDb, scale]
   )
 
   // Drawing event handlers
@@ -670,12 +695,12 @@ export function PdfPage({
 
         {/* Highlights overlay (own) */}
         <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-          {annotations
-            .filter((ann) => ann.pageNumber === pageNumber && ann.type === 'highlight' && ann.rects)
+          {pageAnnotations
+            .filter((ann) => ann.type === 'highlight' && ann.rects)
             .map((ann) =>
               ann.rects!.map((rect, idx) => (
                 <div
-                  key={`${ann.id}-${idx}`}
+                  key={`${annId(ann)}-${idx}`}
                   style={{
                     position: 'absolute',
                     left: `${rect.left * scale}px`,
@@ -726,8 +751,8 @@ export function PdfPage({
           className="absolute inset-0 pointer-events-none z-10"
           style={{ width: '100%', height: '100%' }}
         >
-          {annotations
-            .filter((ann) => ann.pageNumber === pageNumber && ann.type === 'drawing' && ann.points)
+          {pageAnnotations
+            .filter((ann) => ann.type === 'drawing' && ann.points)
             .map((ann) => {
               const pathData = ann
                 .points!.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x * scale} ${p.y * scale}`)
@@ -774,8 +799,8 @@ export function PdfPage({
 
         {/* Sticky notes */}
         <div className="absolute inset-0 pointer-events-none z-30">
-          {annotations
-            .filter((ann) => ann.pageNumber === pageNumber && ann.type === 'note')
+          {pageAnnotations
+            .filter((ann) => ann.type === 'note')
             .map((ann) => (
               <StickyNoteItem
                 key={ann.id}

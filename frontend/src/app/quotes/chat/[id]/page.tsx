@@ -10,6 +10,7 @@ import { QUOTE_LIMITS, truncate } from '@/lib/quotes'
 import type { Quote, QuoteConversation, QuoteMessage, QuoteRefSnapshot } from '@/lib/quotes'
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
+import { SafeMarkdown } from '@/components/safe-markdown'
 
 interface HydratedQuote {
   id: string
@@ -683,7 +684,7 @@ function MessageBubble({ message }: { message: QuoteMessage }) {
         >
           {message.content ? (
             <div className="markdown-content break-words text-sm leading-relaxed">
-              <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
+              <SafeMarkdown>{message.content}</SafeMarkdown>
             </div>
           ) : (
             <span className="italic text-muted-foreground/60">(empty)</span>

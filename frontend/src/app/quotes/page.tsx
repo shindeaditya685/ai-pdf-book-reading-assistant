@@ -266,9 +266,20 @@ export default function QuotesPage() {
                   key={q.id}
                   className="group rounded-xl border border-border/40 bg-background/60 shadow-sm transition-all hover:border-border/70 hover:shadow-md"
                 >
-                  <button
+                  {/* UI fix (U3): previously a <button> wrapping a <button> (the
+                      trash icon) — invalid HTML that breaks screen readers and
+                      can produce weird click behavior. Now a div[role=button]. */}
+                  <div
+                    role="button"
+                    tabIndex={0}
                     onClick={() => setExpanded(isExpanded ? null : q.id)}
-                    className="flex w-full items-start gap-3 px-4 py-3.5 text-left"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' || e.key === ' ') {
+                        e.preventDefault()
+                        setExpanded(isExpanded ? null : q.id)
+                      }
+                    }}
+                    className="flex w-full items-start gap-3 px-4 py-3.5 text-left cursor-pointer"
                   >
                     <div
                       className="mt-1 h-8 w-1 shrink-0 rounded-full"
@@ -312,7 +323,7 @@ export default function QuotesPage() {
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
-                  </button>
+                  </div>
 
                   {isExpanded && (
                     <div className="space-y-3 border-t border-border/30 px-4 py-3">

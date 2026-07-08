@@ -5,6 +5,9 @@ import { connectToDatabase } from '@/lib/db'
 import { verifyToken } from '@/lib/auth'
 
 const MAX_INLINE_BYTES = 10 * 1024 * 1024 // ≤10MB → stored as base64
+const HARD_MAX_BYTES = 50 * 1024 * 1024 // 50MB absolute upload cap
+const MAX_PDFS_PER_USER = 50
+const MAX_TOTAL_BYTES_PER_USER = 500 * 1024 * 1024 // 500MB
 
 const toPositiveInt = (value: unknown, fallback = 0) => {
   const parsed = Number(value)
@@ -45,6 +48,49 @@ export async function uploadPdfAction(formData: FormData): Promise<{
     const arrayBuffer = await file.arrayBuffer()
     const buffer = Buffer.from(arrayBuffer)
 
+    // Security fix (S6): hard size cap + per-user quota. Previously a user
+    // could upload arbitrarily large / many PDFs and exhaust storage.
+    if (buffer.length > HARD_MAX_BYTES) {
+      return { success: false, error: 'PDF must be under 50 MB.' }
+    }
+
+    const pdfCount = await conn.db.collection('pdfs').countDocuments({ username: user.username })
+    if (pdfCount >= MAX_PDFS_PER_USER) {
+      return {
+        success: false,
+        error: `Library limit reached (${MAX_PDFS_PER_USER} PDFs). Delete some to upload more.`,
+      }
+    }
+
+    // Estimate total bytes already used by this user (inline + GridFS sizes).
+    const agg = await conn.db.collection('pdfs').aggregate([
+      { $match: { username: user.username } },
+      {
+        $project: {
+          bytes: {
+            $ifNull: [
+              '$size',
+              {
+                $cond: [
+                  { $ifNull: ['$content', false] },
+                  { $multiply: [{ $strLenCP: { $ifNull: ['$content', ''] } }, 0.75] },
+                  0,
+                ],
+              },
+            ],
+          },
+        },
+      },
+      { $group: { _id: null, total: { $sum: '$bytes' } } },
+    ]).toArray()
+    const usedBytes = agg[0]?.total ?? 0
+    if (usedBytes + buffer.length > MAX_TOTAL_BYTES_PER_USER) {
+      return {
+        success: false,
+        error: 'Storage limit reached (500 MB). Delete some PDFs to free space.',
+      }
+    }
+
     let contentBase64ForDb: string | undefined = undefined
     if (buffer.length <= MAX_INLINE_BYTES) {
       contentBase64ForDb = `data:application/pdf;base64,${buffer.toString('base64')}`
@@ -78,6 +124,7 @@ export async function uploadPdfAction(formData: FormData): Promise<{
           {
             $set: {
               content: contentBase64ForDb,
+              size: buffer.length,
               pageCount: Math.max(existingPageCount, safePageCount),
               lastPage: Math.max(existingLastPage, safeLastPage),
               updatedAt: new Date(),
@@ -91,6 +138,7 @@ export async function uploadPdfAction(formData: FormData): Promise<{
       const result = await conn.db.collection('pdfs').insertOne({
         fileName,
         content: contentBase64ForDb,
+        size: buffer.length,
         pageCount: safePageCount,
         lastPage: safeLastPage,
         username: user.username,
@@ -122,6 +170,7 @@ export async function uploadPdfAction(formData: FormData): Promise<{
         {
           $set: {
             gridFsId,
+            size: buffer.length,
             pageCount: Math.max(existingPageCount, safePageCount),
             lastPage: Math.max(existingLastPage, safeLastPage),
             updatedAt: new Date(),
@@ -135,6 +184,7 @@ export async function uploadPdfAction(formData: FormData): Promise<{
     const result = await conn.db.collection('pdfs').insertOne({
       fileName,
       gridFsId,
+      size: buffer.length,
       pageCount: safePageCount,
       lastPage: safeLastPage,
       username: user.username,

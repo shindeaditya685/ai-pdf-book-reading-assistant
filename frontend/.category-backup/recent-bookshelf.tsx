@@ -281,18 +281,9 @@ export function RecentBookshelf({
                 return (
                   <div
                     key={book.fileName}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`Open ${title}`}
                     className="bookshelf-card cursor-pointer"
                     style={{ ["--book-glow" as string]: `${highlightColor}30` }}
                     onClick={() => onOpen(book.fileName)}
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter' || e.key === ' ') {
-                        e.preventDefault()
-                        onOpen(book.fileName)
-                      }
-                    }}
                   >
                     <div
                       className="book-inner relative aspect-[3/4.2] overflow-hidden rounded-lg"

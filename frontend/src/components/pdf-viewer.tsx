@@ -10,6 +10,16 @@ import { lookupWord } from '@/lib/dictionary'
 import { PdfPage } from '@/components/pdf-page'
 import { AIQuotaBadge } from '@/components/ai-quota-badge'
 import { AIQuotaModal } from '@/components/ai-quota-modal'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 import { useAIQuota, remainingFor } from '@/hooks/use-ai-quota'
 import {
   ChevronLeft,
@@ -88,6 +98,13 @@ function ToolButton({
 export function PDFViewer() {
   const containerRef = useRef<HTMLDivElement>(null)
   const pageTextCacheRef = useRef<Map<number, string>>(new Map())
+  // Performance/race fix (P8): previously a single boolean `ocrCancelledRef`
+  // was shared across OCR runs. Toggling OCR off→on quickly caused the old
+  // run's finally-block to see `false` and prematurely clear the new run's
+  // `isOcrProcessing` flag. A generation counter invalidates stale runs
+  // cleanly: each run captures its generation; if the counter has moved by
+  // the time the run finishes, the run is stale and must not touch state.
+  const ocrGenerationRef = useRef(0)
   const ocrCancelledRef = useRef(false)
   const saveProgressTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const readingLogTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -150,6 +167,7 @@ export function PDFViewer() {
 
   const [isLoading, setIsLoading] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null)
 
   const {
@@ -234,14 +252,23 @@ export function PDFViewer() {
   // Load PDF document
   useEffect(() => {
     if (!pdfDataUrl) {
-      pdfDocRef.current = null
+      // Performance fix (P4): destroy the previous PDF document to release
+      // worker ports, page caches, and font caches. Previously only the ref
+      // was nulled, leaking pdfjs resources across PDF switches.
+      if (pdfDocRef.current) {
+        pdfDocRef.current.destroy().catch(() => {})
+        pdfDocRef.current = null
+      }
       resumeScrollPageRef.current = null
       setTotalPages(0)
-       
+
       setPdfReady(false)
       pageTextCacheRef.current.clear()
       return
     }
+
+    let cancelled = false
+    const prevPdf = pdfDocRef.current
 
     const loadPDF = async () => {
       setIsLoading(true)
@@ -249,6 +276,14 @@ export function PDFViewer() {
       try {
         const loadingTask = pdfjsLib.getDocument(pdfDataUrl)
         const pdf = await loadingTask.promise
+        if (cancelled) {
+          pdf.destroy().catch(() => {})
+          return
+        }
+        // Destroy the previous document now that the new one is loaded.
+        if (prevPdf && prevPdf !== pdf) {
+          prevPdf.destroy().catch(() => {})
+        }
         pdfDocRef.current = pdf
         setTotalPages(pdf.numPages)
 
@@ -283,14 +318,28 @@ export function PDFViewer() {
         }
         pageTextCacheRef.current.clear()
         setPdfReady(true)
-      } catch (err) {
+        setLoadError(null)
+      } catch (err: any) {
         console.error('Error loading PDF:', err)
+        // UX fix (P6/U6): surface the failure to the user instead of a silent
+        // "No PDF loaded" empty state.
+        const msg = err?.message || ''
+        setLoadError(
+          /password/i.test(msg)
+            ? 'This PDF is password-protected. Remove the password and re-upload.'
+            : /invalid|corrupt/i.test(msg)
+              ? 'This PDF appears to be corrupted or invalid. Try re-downloading the original.'
+              : 'Could not open this PDF. The file may be corrupted or unsupported.'
+        )
       } finally {
-        setIsLoading(false)
+        if (!cancelled) setIsLoading(false)
       }
     }
 
     loadPDF()
+    return () => {
+      cancelled = true
+    }
   }, [pdfDataUrl, pdfFileName, setCurrentPage, setTotalPages])
 
   // Persist active book + page progress
@@ -434,6 +483,8 @@ export function PDFViewer() {
     const pdf = pdfDocRef.current
     if (!ocrEnabled || !pdf || totalPages === 0) return
 
+    // Increment generation so any in-flight OCR run is invalidated.
+    const myGen = ++ocrGenerationRef.current
     ocrCancelledRef.current = false
     setIsOcrProcessing(true)
     setOcrProgress(0)
@@ -446,7 +497,8 @@ export function PDFViewer() {
         worker = await createWorker('eng')
 
         for (let pageNum = 1; pageNum <= totalPages; pageNum++) {
-          if (ocrCancelledRef.current) break
+          // Stale if generation moved OR the legacy cancel flag was set.
+          if (ocrGenerationRef.current !== myGen || ocrCancelledRef.current) break
 
           try {
             const page = await pdf.getPage(pageNum)
@@ -461,6 +513,11 @@ export function PDFViewer() {
             const blob = await new Promise<Blob | null>((resolve) =>
               ocrCanvas.toBlob(resolve, 'image/png')
             )
+            // Performance fix (P7): free the canvas backing store between
+            // pages. A scale=2 letter page is ~15MB of pixels; holding it
+            // across the (slow) Tesseract call balloons memory for big PDFs.
+            ocrCanvas.width = 0
+            ocrCanvas.height = 0
             if (!blob) continue
 
             const ocrResult: any = await worker.recognize(blob)
@@ -485,10 +542,12 @@ export function PDFViewer() {
             // skip failed page
           }
 
-          setOcrProgress(Math.round((pageNum / totalPages) * 100))
+          if (ocrGenerationRef.current === myGen) {
+            setOcrProgress(Math.round((pageNum / totalPages) * 100))
+          }
         }
 
-        if (!ocrCancelledRef.current) {
+        if (ocrGenerationRef.current === myGen && !ocrCancelledRef.current) {
           const state = usePDFStore.getState()
           const fileName = state.pdfFileName
           if (fileName) {
@@ -507,7 +566,8 @@ export function PDFViewer() {
         // OCR failed
       } finally {
         if (worker) await worker.terminate()
-        if (!ocrCancelledRef.current) {
+        // Only clear processing state if THIS run is still current.
+        if (ocrGenerationRef.current === myGen) {
           setIsOcrProcessing(false)
           setOcrProgress(100)
         }
@@ -517,7 +577,9 @@ export function PDFViewer() {
     runOcr()
 
     return () => {
+      // Invalidate this run on cleanup (PDF switch, OCR toggle off, unmount).
       ocrCancelledRef.current = true
+      ocrGenerationRef.current++ // ensures any in-flight iteration exits
     }
   }, [ocrEnabled, totalPages, setOcrText, setIsOcrProcessing, setOcrProgress])
 
@@ -648,15 +710,21 @@ export function PDFViewer() {
   }, [])
 
   // Clear annotations on the current (in-view) page
+  // UX fix (U8): replace native confirm() with a state-driven dialog.
+  const [showClearConfirm, setShowClearConfirm] = useState(false)
   const handleClearAllPageAnnotations = useCallback(async () => {
     const pageAnns = annotations.filter((a) => a.pageNumber === currentPage)
     if (pageAnns.length === 0) return
-    if (confirm('Are you sure you want to clear all highlights, drawings, and notes on this page?')) {
-      for (const ann of pageAnns) {
-        removeAnnotation(ann.id)
-        deleteAnnotationFromDb(ann.id)
-      }
+    setShowClearConfirm(true)
+  }, [annotations, currentPage])
+
+  const confirmClearPageAnnotations = useCallback(() => {
+    const pageAnns = annotations.filter((a) => a.pageNumber === currentPage)
+    for (const ann of pageAnns) {
+      removeAnnotation(ann.id)
+      deleteAnnotationFromDb(ann.id)
     }
+    setShowClearConfirm(false)
   }, [annotations, currentPage, removeAnnotation, deleteAnnotationFromDb])
 
   // Word-picked callback from PdfPage
@@ -1050,6 +1118,31 @@ export function PDFViewer() {
     )
   }
 
+  // Performance fix (P2): the previous handler called setMousePosition on
+  // every mousemove (60-120 Hz), writing to the store and re-rendering the
+  // viewer (and, before the P1 fix, every PdfPage). We now RAF-throttle and
+  // skip entirely when not in a share session (cursor sharing is the only
+  // consumer of mousePosition).
+  const mouseRafRef = useRef<number | null>(null)
+  const mousePosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 })
+  const handleThrottledMouseMove = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      if (!shareSession) return // no-op when not collaborating
+      mousePosRef.current = { x: e.clientX, y: e.clientY }
+      if (mouseRafRef.current !== null) return
+      mouseRafRef.current = requestAnimationFrame(() => {
+        mouseRafRef.current = null
+        setMousePosition(mousePosRef.current.x, mousePosRef.current.y)
+      })
+    },
+    [shareSession, setMousePosition],
+  )
+  useEffect(() => {
+    return () => {
+      if (mouseRafRef.current !== null) cancelAnimationFrame(mouseRafRef.current)
+    }
+  }, [])
+
   return (
     <div className="flex h-full flex-col bg-gradient-to-b from-background to-muted/10">
       {/* ── TOOLBAR ── */}
@@ -1219,11 +1312,16 @@ export function PDFViewer() {
 
       {/* Floating pill to re-show toolbar on mobile */}
       {isMobile && !mobileToolbarVisible && (
+        /* UI fix (U5): the visible pill is 6px tall (h-1.5) — below the
+           44px tap-target minimum. We wrap it in a 44px-tall transparent
+           button so the hit area is accessible without changing the visual. */
         <button
           onClick={() => { setMobileToolbarVisible(true); showToolbarTemp() }}
-          className="fixed left-1/2 top-1 z-50 h-1.5 w-14 -translate-x-1/2 rounded-full bg-white/60 backdrop-blur-sm transition-all hover:bg-white/80 active:scale-95 dark:bg-stone-500/40 dark:hover:bg-stone-500/60"
+          className="fixed left-1/2 top-1 z-50 flex h-11 w-20 -translate-x-1/2 items-start justify-center pt-2"
           aria-label="Show toolbar"
-        />
+        >
+          <span className="h-1.5 w-14 rounded-full bg-white/60 backdrop-blur-sm transition-all hover:bg-white/80 active:scale-95 dark:bg-stone-500/40 dark:hover:bg-stone-500/60" />
+        </button>
       )}
 
       {(isOcrProcessing || (ocrProgress > 0 && ocrProgress < 100)) && (
@@ -1246,11 +1344,30 @@ export function PDFViewer() {
           ref={containerRef}
           className="pdf-scroll-container h-full overflow-auto bg-card/30"
           onClick={handleContainerClick}
-          onMouseMove={(e) => setMousePosition(e.clientX, e.clientY)}
+          onMouseMove={handleThrottledMouseMove}
           onContextMenu={(e) => e.preventDefault()}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
         >
+          {loadError && (
+            <div className="absolute inset-0 z-20 flex items-center justify-center p-6">
+              <div className="flex max-w-md flex-col items-center gap-3 rounded-xl border border-destructive/30 bg-card p-6 text-center shadow-lg">
+                <svg className="h-10 w-10 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
+                </svg>
+                <p className="text-sm text-muted-foreground">{loadError}</p>
+                <button
+                  onClick={() => {
+                    setLoadError(null)
+                    clearSelection()
+                  }}
+                  className="rounded-md border border-border bg-background px-4 py-1.5 text-sm font-medium hover:bg-muted"
+                >
+                  Close
+                </button>
+              </div>
+            </div>
+          )}
           {isLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm pointer-events-none">
               <div className="flex flex-col items-center gap-3">
@@ -1264,20 +1381,46 @@ export function PDFViewer() {
 
           {scrollMode ? (
             <div className="flex flex-col items-center py-4">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
-                <PdfPage
-                  key={p}
-                  pageNumber={p}
-                  pdfDocRef={pdfDocRef}
-                  pdfReady={pdfReady}
-                  pdfFileName={pdfFileName}
-                  saveAnnotationToDb={saveAnnotationToDb}
-                  deleteAnnotationFromDb={deleteAnnotationFromDb}
-                  onWordPicked={handleWordPicked}
-                  pageTextCacheRef={pageTextCacheRef}
-                  lazy={true}
-                />
-              ))}
+              {/* Performance fix (P3): previously all `totalPages` PdfPage
+                  components were mounted at once — 1000 pages = 1000 components
+                  + 1000 IntersectionObservers + 1000 store subscriptions, even
+                  though only ~3 are visible. We now render only a window of
+                  pages around the current page, with lightweight spacer divs
+                  for off-window pages so the scroll height stays stable. The
+                  IntersectionObserver inside PdfPage still handles canvas
+                  lazy-load; this just caps the React tree size. */}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
+                const VISIBLE_BUFFER = 3
+                const inWindow =
+                  p >= currentPage - VISIBLE_BUFFER && p <= currentPage + VISIBLE_BUFFER + 1
+                if (inWindow) {
+                  return (
+                    <PdfPage
+                      key={p}
+                      pageNumber={p}
+                      pdfDocRef={pdfDocRef}
+                      pdfReady={pdfReady}
+                      pdfFileName={pdfFileName}
+                      saveAnnotationToDb={saveAnnotationToDb}
+                      deleteAnnotationFromDb={deleteAnnotationFromDb}
+                      onWordPicked={handleWordPicked}
+                      pageTextCacheRef={pageTextCacheRef}
+                      lazy={true}
+                    />
+                  )
+                }
+                // Spacer: keeps scroll height stable so the scrollbar doesn't
+                // jump as the user scrolls. Uses the same default aspect ratio
+                // PdfPage uses for its lazy placeholder.
+                return (
+                  <div
+                    key={p}
+                    data-page-spacer={p}
+                    style={{ height: `${800 * 1.414 * scale}px`, width: `${800 * scale}px` }}
+                    className="my-1 shrink-0"
+                  />
+                )
+              })}
             </div>
           ) : (
             <div className="flex justify-center py-6">
@@ -1314,6 +1457,24 @@ export function PDFViewer() {
       />
 
       <SelectionContextMenu />
+
+      {/* UX fix (U8): replaces native confirm() for clearing page annotations. */}
+      <AlertDialog open={showClearConfirm} onOpenChange={setShowClearConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Clear all annotations on this page?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete all highlights, drawings, and sticky notes on the current page. This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmClearPageAnnotations} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+              Clear all
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }

@@ -9,6 +9,15 @@
   --font-sans: var(--font-geist-sans);
   --font-serif: var(--font-geist-serif);
   --font-mono: var(--font-geist-mono);
+  /* UI fix (U2): semantic brand tokens. Previously the accent system
+     overrode --color-emerald-* / --color-violet-* directly under .accent-*
+     classes, which broke gradients and made visuals unpredictable. The
+     new --brand / --brand-fg / --brand-soft tokens are the clean path:
+     pages should prefer bg-brand / text-brand over bg-emerald-500. The
+     legacy override system is retained for backwards compatibility. */
+  --color-brand: var(--brand);
+  --color-brand-fg: var(--brand-fg);
+  --color-brand-soft: var(--brand-soft);
   --color-canvas: var(--canvas);
   --color-ink: var(--ink);
   --color-paper-border: var(--paper-border);
@@ -52,6 +61,10 @@
   --radius: 0.625rem;
   --background: oklch(1 0 0);
   --foreground: oklch(0.145 0 0);
+  /* UI fix (U2): default brand = emerald. Override per-accent below. */
+  --brand: #10b981;
+  --brand-fg: #ffffff;
+  --brand-soft: rgba(16, 185, 129, 0.12);
   --canvas: #fbf9f6;
   --ink: #1c1917;
   --paper-border: #e5e1da;
@@ -150,6 +163,25 @@
   body {
     @apply bg-background text-foreground;
   }
+  /* UI fix (U12): visible focus-visible ring for keyboard users. Many
+     components use focus:outline-none without a replacement; this gives
+     a consistent, accessible focus indicator site-wide. */
+  :focus-visible {
+    outline: 2px solid var(--brand, #10b981);
+    outline-offset: 2px;
+    border-radius: 2px;
+  }
+  /* Skip-to-content link (rendered in layout.tsx). */
+  .skip-link {
+    position: absolute;
+    left: 0.5rem;
+    top: -3rem;
+    z-index: 200;
+    transition: top 0.2s;
+  }
+  .skip-link:focus {
+    top: 0.5rem;
+  }
 }
 
 /* Search Highlight */
@@ -228,6 +260,19 @@ html {
   --accent-search: rgba(16, 185, 129, 0.5);
   --accent-selection: rgba(16, 185, 129, 0.3);
 }
+
+/* UI fix (U2): semantic brand color per accent. New code should use
+   bg-brand / text-brand / bg-brand-soft instead of bg-emerald-500 etc.
+   These are short, predictable, and don't depend on the legacy override
+   hack above. */
+.accent-violet  { --brand: #8b5cf6; --brand-fg: #ffffff; --brand-soft: rgba(139, 92, 246, 0.12); --accent-search: rgba(139, 92, 246, 0.5); --accent-selection: rgba(139, 92, 246, 0.3); }
+.accent-amber   { --brand: #f59e0b; --brand-fg: #1c1917; --brand-soft: rgba(245, 158, 11, 0.12); --accent-search: rgba(245, 158, 11, 0.5); --accent-selection: rgba(245, 158, 11, 0.3); }
+.accent-rose    { --brand: #f43f5e; --brand-fg: #ffffff; --brand-soft: rgba(244, 63, 94, 0.12); --accent-search: rgba(244, 63, 94, 0.5); --accent-selection: rgba(244, 63, 94, 0.3); }
+.accent-sky     { --brand: #0ea5e9; --brand-fg: #ffffff; --brand-soft: rgba(14, 165, 233, 0.12); --accent-search: rgba(14, 165, 233, 0.5); --accent-selection: rgba(14, 165, 233, 0.3); }
+.accent-orange  { --brand: #f97316; --brand-fg: #ffffff; --brand-soft: rgba(249, 115, 22, 0.12); --accent-search: rgba(249, 115, 22, 0.5); --accent-selection: rgba(249, 115, 22, 0.3); }
+.accent-teal    { --brand: #14b8a6; --brand-fg: #ffffff; --brand-soft: rgba(20, 184, 166, 0.12); --accent-search: rgba(20, 184, 166, 0.5); --accent-selection: rgba(20, 184, 166, 0.3); }
+.accent-pink    { --brand: #ec4899; --brand-fg: #ffffff; --brand-soft: rgba(236, 72, 153, 0.12); --accent-search: rgba(236, 72, 153, 0.5); --accent-selection: rgba(236, 72, 153, 0.3); }
+.accent-cyan    { --brand: #06b6d4; --brand-fg: #ffffff; --brand-soft: rgba(6, 182, 212, 0.12); --accent-search: rgba(6, 182, 212, 0.5); --accent-selection: rgba(6, 182, 212, 0.3); }
 
 .accent-violet {
   --color-emerald-50: #f5f3ff;

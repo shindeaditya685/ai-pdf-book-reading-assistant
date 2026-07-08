@@ -699,7 +699,7 @@ export default function LandingPage() {
                   {[
                     { label: 'About', href: '/about' },
                     { label: 'Profile', href: '/profile' },
-                    { label: 'Library', href: '/library' },
+                    { label: 'Dashboard', href: '/dashboard' },
                     { label: 'Quotes', href: '/quotes' },
                   ].map(({ label, href }) => (
                     <li key={label}>
