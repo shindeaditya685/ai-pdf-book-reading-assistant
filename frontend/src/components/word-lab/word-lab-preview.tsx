@@ -13,6 +13,8 @@ export function WordLabPreview() {
     total: number
     streak: number
     isComplete: boolean
+    score: number | null
+    testTotal: number
     words: string[]
   } | null>(null)
   const [loading, setLoading] = useState(true)
@@ -38,6 +40,8 @@ export function WordLabPreview() {
           total: words.length,
           streak: stats?.currentStreak || 0,
           isComplete,
+          score: json.score ?? null,
+          testTotal: (json.testResults || []).length,
           words: words.map((w: any) => w.word),
         })
       } catch {
@@ -68,7 +72,11 @@ export function WordLabPreview() {
     >
       <div className="flex items-start gap-3">
         {data && data.total > 0 ? (
-          <DailyRing studied={data.studied} total={data.total} size={48} strokeWidth={3} glow={data.isComplete} />
+          data.isComplete && data.score !== null ? (
+            <DailyRing studied={data.score} total={data.testTotal} size={48} strokeWidth={3} glow={data.score === data.testTotal} />
+          ) : (
+            <DailyRing studied={data.studied} total={data.total} size={48} strokeWidth={3} glow={data.isComplete} />
+          )
         ) : (
           <div className="flex h-12 w-12 items-center justify-center rounded-full bg-stone-100 dark:bg-stone-800">
             <span className="text-lg">📖</span>
@@ -85,8 +93,10 @@ export function WordLabPreview() {
             )}
           </div>
           {data && data.total > 0 ? (
-            data.isComplete ? (
-              <p className="text-xs text-emerald-600 dark:text-emerald-400">Today&rsquo;s words complete!</p>
+            data.isComplete && data.score !== null ? (
+              <p className="text-xs text-stone-400 dark:text-stone-500">
+                <span className="font-semibold text-stone-600 dark:text-stone-300">{data.score}</span>/{data.testTotal} correct
+              </p>
             ) : (
               <p className="text-xs text-stone-400 dark:text-stone-500">
                 {data.studied === 0 ? 'Your daily words are ready' : `${data.studied}/${data.total} studied`}
