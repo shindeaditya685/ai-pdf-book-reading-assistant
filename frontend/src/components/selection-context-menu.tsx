@@ -473,6 +473,20 @@ export function SelectionContextMenu() {
     }))
   }, [state])
 
+  const handleTranslate = useCallback(() => {
+    if (!state) return
+    setState(null)
+    const fullText = (state.hasSelection && state.selectedText) || state.word
+    window.dispatchEvent(new CustomEvent('pdf-translate-text', {
+      detail: {
+        text: fullText,
+        pageNumber: state.pageNumber,
+        x: state.x,
+        y: state.y,
+      },
+    }))
+  }, [state])
+
   const handleReadAloud = useCallback(() => {
     if (!state) return
     const text = state.selectedText || state.sentence
@@ -626,6 +640,17 @@ export function SelectionContextMenu() {
               >
                 <Languages className="h-3.5 w-3.5 text-amber-500" />
                 <span>Simplify sentence</span>
+              </button>
+
+              <button
+                role="menuitem"
+                onClick={handleTranslate}
+                disabled={!state.word || !!loadingAction}
+                className="w-full flex items-center gap-2 px-3 py-2 hover:bg-muted focus:bg-muted focus:outline-none transition-colors text-left disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Languages className="h-3.5 w-3.5 text-blue-500" />
+                <span>Translate</span>
+                <span className="ml-auto text-[10px] text-muted-foreground/60">AI</span>
               </button>
 
               <button

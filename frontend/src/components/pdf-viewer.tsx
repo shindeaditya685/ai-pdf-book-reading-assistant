@@ -766,6 +766,54 @@ export function PDFViewer() {
     return () => window.removeEventListener('pdf-get-meaning', handler)
   }, [setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, fetchExplanation])
 
+  // Listen for "Translate" requests from the right-click selection context
+  // menu. Translates the full selected text using the /api/simplify endpoint
+  // (which handles full sentences and returns translations).
+  useEffect(() => {
+    const handler = async (e: Event) => {
+      const detail = (e as CustomEvent<{ text: string; pageNumber: number; x: number; y: number }>).detail
+      if (!detail || !detail.text) return
+      setSelectedWord(detail.text)
+      setSelectedSentence(detail.text)
+      setSelectedPageNumber(detail.pageNumber)
+      setPopupPosition({ x: detail.x, y: detail.y })
+      setPendingWord(null)
+
+      setIsExplaining(true)
+      setExplanation(null)
+      try {
+        const lang = translationLanguage !== 'none' ? translationLanguage : 'hi'
+        const res = await authFetch('/api/simplify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sentence: detail.text,
+            translationLanguage: lang,
+          }),
+        })
+        const data = await res.json()
+        if (data.translation) {
+          setExplanation({
+            word: detail.text,
+            meaning: data.simplified || detail.text,
+            pronunciation: '',
+            translation: data.translation,
+          })
+          setIsOfflineResult(false)
+        } else if (data.error) {
+          setExplanation({ word: detail.text, meaning: data.error, pronunciation: '', translation: '' })
+        } else {
+          setExplanation({ word: detail.text, meaning: 'No translation available', pronunciation: '', translation: '' })
+        }
+      } catch {
+        setExplanation({ word: detail.text, meaning: 'Translation failed. Please try again.', pronunciation: '', translation: '' })
+      }
+      setIsExplaining(false)
+    }
+    window.addEventListener('pdf-translate-text', handler)
+    return () => window.removeEventListener('pdf-translate-text', handler)
+  }, [setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, setIsExplaining, setExplanation, setIsOfflineResult, translationLanguage])
+
   // The right-click selection context menu dispatches this when it opens so
   // the "Get meaning?" tooltip from the prior left-mouse mouseup is dismissed.
   useEffect(() => {
