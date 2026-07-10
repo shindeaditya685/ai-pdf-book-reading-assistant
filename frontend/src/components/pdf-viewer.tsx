@@ -814,6 +814,51 @@ export function PDFViewer() {
     return () => window.removeEventListener('pdf-translate-text', handler)
   }, [setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, setIsExplaining, setExplanation, setIsOfflineResult, translationLanguage])
 
+  // Listen for "Simplify sentence" requests from the right-click selection
+  // context menu. Simplifies the full selected sentence using /api/simplify.
+  useEffect(() => {
+    const handler = async (e: Event) => {
+      const detail = (e as CustomEvent<{ sentence: string; x: number; y: number }>).detail
+      if (!detail || !detail.sentence) return
+      setSelectedWord(detail.sentence)
+      setSelectedSentence(detail.sentence)
+      setPopupPosition({ x: detail.x, y: detail.y })
+      setPendingWord(null)
+
+      setIsExplaining(true)
+      setExplanation(null)
+      try {
+        const res = await authFetch('/api/simplify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sentence: detail.sentence,
+            translationLanguage: 'none',
+          }),
+        })
+        const data = await res.json()
+        if (data.simplified) {
+          setExplanation({
+            word: detail.sentence,
+            meaning: data.simplified,
+            pronunciation: '',
+            translation: data.translation || '',
+          })
+          setIsOfflineResult(false)
+        } else if (data.error) {
+          setExplanation({ word: detail.sentence, meaning: data.error, pronunciation: '', translation: '' })
+        } else {
+          setExplanation({ word: detail.sentence, meaning: 'Could not simplify', pronunciation: '', translation: '' })
+        }
+      } catch {
+        setExplanation({ word: detail.sentence, meaning: 'Failed to simplify. Please try again.', pronunciation: '', translation: '' })
+      }
+      setIsExplaining(false)
+    }
+    window.addEventListener('pdf-simplify-sentence', handler)
+    return () => window.removeEventListener('pdf-simplify-sentence', handler)
+  }, [setSelectedWord, setSelectedSentence, setPopupPosition, setIsExplaining, setExplanation, setIsOfflineResult])
+
   // The right-click selection context menu dispatches this when it opens so
   // the "Get meaning?" tooltip from the prior left-mouse mouseup is dismissed.
   useEffect(() => {
