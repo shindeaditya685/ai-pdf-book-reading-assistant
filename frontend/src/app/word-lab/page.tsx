@@ -255,7 +255,7 @@ export default function WordLabPage() {
           </div>
         )}
 
-        {words.length === 0 && !error ? (
+        {words.length === 0 && !error && !['custom-setup', 'custom-test', 'custom-results', 'history', 'review'].includes(phase) ? (
           <div className="rounded-xl border border-stone-200 bg-white p-10 text-center shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
             <GraduationCap className="mx-auto h-10 w-10 text-stone-300 dark:text-stone-600" />
             <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-stone-900 dark:text-white">No Words Yet</h3>

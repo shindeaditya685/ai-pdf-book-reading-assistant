@@ -91,68 +91,89 @@ function buildPrompt(words: any[], questionType: string): string {
   return lines.join('\n')
 }
 
+function chunkArray<T>(arr: T[], size: number): T[][] {
+  const chunks: T[][] = []
+  for (let i = 0; i < arr.length; i += size) {
+    chunks.push(arr.slice(i, i + size))
+  }
+  return chunks
+}
+
+async function callAi(prompt: string): Promise<string> {
+  let content = ''
+  let lastError = ''
+
+  const clients = getGroqClients()
+  if (clients.length > 0) {
+    for (const client of clients) {
+      try {
+        const completion = await client.chat.completions.create({
+          messages: [{ role: 'user', content: prompt }],
+          model: 'llama-3.3-70b-versatile',
+          temperature: 0.4,
+        })
+        content = completion.choices?.[0]?.message?.content || ''
+        if (content) break
+      } catch (e) {
+        lastError = e instanceof Error ? e.message : 'Groq failed'
+      }
+    }
+  }
+
+  if (!content) {
+    if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_gemini_api_key_here') {
+      throw new Error('No AI service available')
+    }
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    const result = await model.generateContent(prompt)
+    content = result.response.text()
+  }
+
+  if (!content) throw new Error('Question generation failed: ' + lastError)
+  return content
+}
+
+async function generateBatch(words: any[], questionType: string, globalIndexOffset: number): Promise<any[]> {
+  console.log(`[custom-test/start] generating batch offset=${globalIndexOffset} count=${words.length}`)
+  const prompt = buildPrompt(words, questionType)
+  const content = await callAi(prompt)
+  const parsed = parseJSON(content)
+  if (!parsed || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
+    console.error('[custom-test/start] invalid AI response:', content.slice(0, 200))
+    throw new Error('AI returned invalid question format')
+  }
+  console.log(`[custom-test/start] batch offset=${globalIndexOffset} got ${parsed.questions.length} questions`)
+  return parsed.questions.map((q: any, i: number) => ({
+    ...q,
+    wordId: String(globalIndexOffset + i),
+  }))
+}
+
+const BATCH_SIZE = 30
+
 export async function POST(request: Request) {
   const user = getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
   try {
     const body = await request.json()
-    const { words, questionType } = body
+    const { words, questionType, offset = 0 } = body
     if (!words || !Array.isArray(words) || words.length === 0) {
       return NextResponse.json({ error: 'Words array is required' }, { status: 400 })
     }
 
-    const prompt = buildPrompt(words, questionType)
+    const batches = chunkArray(words, BATCH_SIZE)
+    const allQuestions: any[] = []
 
-    let content = ''
-    let lastError = ''
-
-    const clients = getGroqClients()
-    if (clients.length > 0) {
-      for (const client of clients) {
-        try {
-          const completion = await client.chat.completions.create({
-            messages: [{ role: 'user', content: prompt }],
-            model: 'llama-3.3-70b-versatile',
-            temperature: 0.4,
-          })
-          content = completion.choices?.[0]?.message?.content || ''
-          if (content) break
-        } catch (e) {
-          lastError = e instanceof Error ? e.message : 'Groq failed'
-        }
-      }
+    for (let b = 0; b < batches.length; b++) {
+      const batchQuestions = await generateBatch(batches[b], questionType, offset + allQuestions.length)
+      allQuestions.push(...batchQuestions)
     }
 
-    if (!content) {
-      try {
-        if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_gemini_api_key_here') {
-          return NextResponse.json({ error: 'No AI service available' }, { status: 500 })
-        }
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
-        const result = await model.generateContent(prompt)
-        content = result.response.text()
-      } catch (e) {
-        lastError = e instanceof Error ? e.message : 'Gemini failed'
-      }
-    }
-
-    if (!content) {
-      return NextResponse.json({ error: 'Question generation failed: ' + lastError }, { status: 500 })
-    }
-
-    const parsed = parseJSON(content)
-    if (!parsed || !Array.isArray(parsed.questions) || parsed.questions.length === 0) {
-      return NextResponse.json({ error: 'AI returned invalid question format' }, { status: 500 })
-    }
-
-    const questions = parsed.questions.map((q: any, i: number) => ({
-      ...q,
-      wordId: String(i),
-    }))
-
-    return NextResponse.json({ questions })
-  } catch {
-    return NextResponse.json({ error: 'Failed to generate questions' }, { status: 500 })
+    return NextResponse.json({ questions: allQuestions })
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    console.error('[custom-test/start] error:', msg)
+    return NextResponse.json({ error: msg || 'Failed to generate questions' }, { status: 500 })
   }
 }

@@ -16,13 +16,20 @@ export async function POST(request: Request) {
     const conn = await connectToDatabase()
     if (!conn) return NextResponse.json({ words: [], sessionCount: 0, wordCount: 0 })
 
+    const start = new Date(dateFrom)
+    const end = new Date(dateTo)
+    end.setHours(23, 59, 59, 999)
+
     const sessions = await conn.db.collection('word-lab')
       .find({
         username: user.username,
-        date: { $gte: dateFrom, $lte: dateTo },
-        completedAt: { $ne: null },
+        $or: [
+          { date: { $gte: dateFrom, $lte: dateTo } },
+          { date: { $gte: start, $lte: end } },
+          { date: { $gte: start.toISOString(), $lte: end.toISOString() } },
+        ],
       })
-      .project({ words: 1, date: 1 })
+      .project({ words: 1, date: 1, testResults: 1, completedAt: 1 })
       .sort({ date: 1 })
       .toArray()
 
