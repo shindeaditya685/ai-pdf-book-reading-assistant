@@ -104,6 +104,14 @@ export default function WordLabPage() {
           const j = Math.floor(Math.random() * (i + 1))
           ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
         }
+        for (const q of shuffled) {
+          if (q.options && Array.isArray(q.options)) {
+            for (let i = q.options.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1))
+              ;[q.options[i], q.options[j]] = [q.options[j], q.options[i]]
+            }
+          }
+        }
         setQuestions(shuffled)
         setPhase('test')
       } else {
@@ -211,7 +219,7 @@ export default function WordLabPage() {
           </div>
         ) : (
           <>
-            {phase === 'study' && (
+            {phase === 'study' && !generatingQuestions && (
               <StudyPhase
                 words={words}
                 studiedIds={studiedIds}
@@ -221,9 +229,10 @@ export default function WordLabPage() {
             )}
 
             {generatingQuestions && (
-              <div className="flex flex-col items-center justify-center py-16">
-                <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
-                <p className="mt-4 text-sm text-stone-500">Generating questions with AI...</p>
+              <div className="flex flex-col items-center justify-center py-24">
+                <Loader2 className="h-10 w-10 animate-spin text-amber-500" />
+                <p className="mt-4 text-sm font-medium text-stone-500">Generating questions with AI...</p>
+                <p className="mt-1 text-xs text-stone-400">Creating fill-in-the-blank, multiple choice, and reverse recall questions</p>
               </div>
             )}
 
