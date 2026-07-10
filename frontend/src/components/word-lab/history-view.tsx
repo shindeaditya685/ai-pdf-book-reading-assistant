@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { authFetch } from '@/lib/api'
 import { WordLabWord, TestResult } from './types'
-import { ArrowLeft, CheckCircle2, XCircle, CalendarDays, Loader2, ChevronDown, ChevronRight, Volume2 } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, XCircle, CalendarDays, Loader2, ChevronDown, ChevronRight, Volume2, RotateCcw } from 'lucide-react'
 
 interface PastSession {
   date: string
@@ -16,6 +16,7 @@ interface PastSession {
 
 interface HistoryViewProps {
   onBack: () => void
+  onRetest?: (words: WordLabWord[]) => void
 }
 
 function formatDate(dateStr: string) {
@@ -23,7 +24,7 @@ function formatDate(dateStr: string) {
   return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric', year: 'numeric' })
 }
 
-function SessionCard({ session }: { session: PastSession }) {
+function SessionCard({ session, onRetest }: { session: PastSession; onRetest?: (words: WordLabWord[]) => void }) {
   const [expanded, setExpanded] = useState(false)
   const completed = !!session.completedAt
   const totalQuestions = session.testResults?.length || 0
@@ -83,13 +84,25 @@ function SessionCard({ session }: { session: PastSession }) {
                 {missed.map((r) => {
                   const w = session.words?.find((w) => w.id === r.wordId)
                   return (
-                    <span key={r.wordId} className="inline-flex items-center gap-1 rounded-md bg-rose-100/50 px-1.5 py-0.5 text-[10px] font-medium text-rose-700 dark:bg-rose-900/20 dark:text-rose-400">
+                    <span key={`${r.wordId}-${r.questionType}`} className="inline-flex items-center gap-1 rounded-md bg-rose-100/50 px-1.5 py-0.5 text-[10px] font-medium text-rose-700 dark:bg-rose-900/20 dark:text-rose-400">
                       <XCircle className="h-2.5 w-2.5" />
                       {w?.word || r.word}
                     </span>
                   )
                 })}
               </div>
+            </div>
+          )}
+
+          {completed && onRetest && session.words && session.words.length > 0 && (
+            <div className="mb-3 text-center">
+              <button
+                onClick={() => onRetest(session.words)}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-amber-500 px-4 py-2 text-[11px] font-bold text-white shadow-sm transition-all hover:bg-amber-400 active:scale-[0.97]"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Retest ({session.words.length} words)
+              </button>
             </div>
           )}
 
@@ -158,7 +171,7 @@ function SessionCard({ session }: { session: PastSession }) {
   )
 }
 
-export function HistoryView({ onBack }: HistoryViewProps) {
+export function HistoryView({ onBack, onRetest }: HistoryViewProps) {
   const [sessions, setSessions] = useState<PastSession[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -213,7 +226,7 @@ export function HistoryView({ onBack }: HistoryViewProps) {
       </div>
       <div className="space-y-2">
         {sessions.toReversed().map((session) => (
-          <SessionCard key={session.date} session={session} />
+          <SessionCard key={session.date} session={session} onRetest={onRetest} />
         ))}
       </div>
     </div>

@@ -1,7 +1,7 @@
 'use client'
 
 import { useMemo } from 'react'
-import { CheckCircle2, XCircle, Flame, BookText, Award, TrendingUp } from 'lucide-react'
+import { CheckCircle2, XCircle, Flame, BookText, Award, TrendingUp, RotateCcw } from 'lucide-react'
 import { DailyRing } from './daily-ring'
 import { TestResult, WordLabStats, WordLabWord } from './types'
 
@@ -75,11 +75,13 @@ export function ResultsView({
   words,
   stats,
   onDone,
+  onRetest,
 }: {
   results: TestResult[]
   words: WordLabWord[]
   stats: WordLabStats | null
   onDone: () => void
+  onRetest?: (words: WordLabWord[]) => void
 }) {
   const correct = results.filter((r) => r.correct).length
   const total = results.length
@@ -88,6 +90,9 @@ export function ResultsView({
 
   const level = stats?.level || 'bronze'
   const levelInfo = LEVEL_CONFIG[level]
+
+  const missedWordIds = useMemo(() => new Set(missed.map((r) => r.wordId)), [missed])
+  const missedWords = useMemo(() => words.filter((w) => missedWordIds.has(w.id)), [words, missedWordIds])
 
   const calendarData = useMemo(() => {
     return (stats?.dailyLogs || []).map((log) => ({
@@ -163,6 +168,17 @@ export function ResultsView({
               )
             })}
           </div>
+          {onRetest && missedWords.length > 0 && (
+            <div className="mt-4 text-center">
+              <button
+                onClick={() => onRetest(missedWords)}
+                className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-400 active:scale-[0.97]"
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Retest Missed ({missedWords.length})
+              </button>
+            </div>
+          )}
         </div>
       )}
 

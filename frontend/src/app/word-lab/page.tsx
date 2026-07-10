@@ -36,6 +36,7 @@ export default function WordLabPage() {
   const [customTestResults, setCustomTestResults] = useState<TestResult[]>([])
   const [customDateFrom, setCustomDateFrom] = useState('')
   const [customDateTo, setCustomDateTo] = useState('')
+  const [isRetesting, setIsRetesting] = useState(false)
 
   const loadToday = useCallback(async () => {
     if (!user) return
@@ -133,6 +134,11 @@ export default function WordLabPage() {
   }
 
   const handleTestComplete = async (results: TestResult[]) => {
+    if (isRetesting) {
+      setIsRetesting(false)
+      router.push('/dashboard')
+      return
+    }
     setTestResults(results)
     setPhase('results')
     setSaving(true)
@@ -190,6 +196,40 @@ export default function WordLabPage() {
     setPhase('custom-setup')
     setCustomQuestions(null)
     setCustomTestResults([])
+  }
+
+  const handleRetest = async (missedWords: WordLabWord[]) => {
+    setIsRetesting(true)
+    setGeneratingQuestions(true)
+    try {
+      const res = await authFetch('/api/word-lab/generate-questions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ words: missedWords }),
+      })
+      if (res.ok) {
+        const data = await res.json()
+        const shuffled = [...data.questions]
+        for (let i = shuffled.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1))
+          ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
+        }
+        for (const q of shuffled) {
+          if (q.options && Array.isArray(q.options)) {
+            for (let i = q.options.length - 1; i > 0; i--) {
+              const j = Math.floor(Math.random() * (i + 1))
+              ;[q.options[i], q.options[j]] = [q.options[j], q.options[i]]
+            }
+          }
+        }
+        setQuestions(shuffled)
+        setPhase('test')
+      }
+    } catch {
+      setError('Failed to generate retest questions')
+    } finally {
+      setGeneratingQuestions(false)
+    }
   }
 
   if (authLoading || loading) {
@@ -301,11 +341,12 @@ export default function WordLabPage() {
                 words={words}
                 stats={stats}
                 onDone={() => router.push('/dashboard')}
+                onRetest={handleRetest}
               />
             )}
 
             {phase === 'history' && (
-              <HistoryView onBack={() => setPhase(words.length > 0 ? 'study' : 'history')} />
+              <HistoryView onBack={() => setPhase(words.length > 0 ? 'study' : 'history')} onRetest={handleRetest} />
             )}
 
             {phase === 'review' && (
