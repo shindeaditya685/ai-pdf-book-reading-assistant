@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, GraduationCap, Flame, Loader2 } from 'lucide-react'
+import { ArrowLeft, GraduationCap, Flame, Loader2, BookOpen } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 import { DailyRing } from '@/components/word-lab/daily-ring'
@@ -12,7 +12,8 @@ import { TestPhase } from '@/components/word-lab/test-phase'
 import { ResultsView } from '@/components/word-lab/results-view'
 import { HistoryView } from '@/components/word-lab/history-view'
 import { ReviewPhase } from '@/components/word-lab/review-phase'
-import { WordLabWord, LabPhase, TestResult, WordLabStats } from '@/components/word-lab/types'
+import { CustomTestSetup } from '@/components/word-lab/custom-test-setup'
+import { WordLabWord, LabPhase, TestResult, WordLabStats, CustomTestWord } from '@/components/word-lab/types'
 
 export default function WordLabPage() {
   const { user, isLoading: authLoading } = useAuth()
@@ -28,6 +29,13 @@ export default function WordLabPage() {
   const [questions, setQuestions] = useState<any[] | null>(null)
   const [generatingQuestions, setGeneratingQuestions] = useState(false)
   const [, forceUpdate] = useState(0)
+
+  const [customWords, setCustomWords] = useState<CustomTestWord[]>([])
+  const [customQuestionType, setCustomQuestionType] = useState<string>('multiple-choice')
+  const [customQuestions, setCustomQuestions] = useState<any[] | null>(null)
+  const [customTestResults, setCustomTestResults] = useState<TestResult[]>([])
+  const [customDateFrom, setCustomDateFrom] = useState('')
+  const [customDateTo, setCustomDateTo] = useState('')
 
   const loadToday = useCallback(async () => {
     if (!user) return
@@ -146,6 +154,44 @@ export default function WordLabPage() {
     loadStats()
   }
 
+  const handleCustomStartTest = (words: CustomTestWord[], questionType: string, questions: any[], dateFrom: string, dateTo: string) => {
+    setCustomWords(words)
+    setCustomQuestionType(questionType)
+    setCustomQuestions(questions)
+    setCustomDateFrom(dateFrom)
+    setCustomDateTo(dateTo)
+    setPhase('custom-test')
+  }
+
+  const handleCustomTestComplete = async (results: TestResult[]) => {
+    setCustomTestResults(results)
+    setPhase('custom-results')
+    setSaving(true)
+    try {
+      await authFetch('/api/word-lab/custom-test/submit', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          dateFrom: customDateFrom,
+          dateTo: customDateTo,
+          questionType: customQuestionType,
+          words: customWords,
+          results,
+        }),
+      })
+    } catch {
+      // saved locally
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const handleCustomBack = () => {
+    setPhase('custom-setup')
+    setCustomQuestions(null)
+    setCustomTestResults([])
+  }
+
   if (authLoading || loading) {
     return (
       <div className="flex h-screen items-center justify-center bg-stone-50 dark:bg-stone-950">
@@ -175,6 +221,12 @@ export default function WordLabPage() {
           )}
         </div>
           <div className="flex items-center gap-2">
+            <button
+              onClick={() => setPhase(phase === 'custom-setup' ? (words.length > 0 ? 'study' : 'history') : 'custom-setup')}
+              className="rounded-lg border border-violet-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-violet-500 transition-all hover:border-violet-300 hover:text-violet-700 dark:border-violet-800/30 dark:text-violet-400 dark:hover:border-violet-700"
+            >
+              {phase === 'custom-setup' || phase === 'custom-test' || phase === 'custom-results' ? 'Daily' : 'Custom Test'}
+            </button>
             <button
               onClick={() => setPhase(phase === 'review' ? 'study' : 'review')}
               className="rounded-lg border border-rose-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-rose-500 transition-all hover:border-rose-300 hover:text-rose-700 dark:border-rose-800/30 dark:text-rose-400 dark:hover:border-rose-700"
@@ -261,6 +313,88 @@ export default function WordLabPage() {
                 onBack={() => setPhase(words.length > 0 ? 'study' : 'history')}
                 onPhaseChange={setPhase}
               />
+            )}
+
+            {phase === 'custom-setup' && (
+              <CustomTestSetup
+                onStartTest={handleCustomStartTest}
+                onBack={() => setPhase(words.length > 0 ? 'study' : 'history')}
+              />
+            )}
+
+            {phase === 'custom-test' && customQuestions && (
+              <TestPhase
+                questions={customQuestions}
+                onComplete={handleCustomTestComplete}
+              />
+            )}
+
+            {phase === 'custom-results' && (
+              <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
+                <div className="text-center">
+                  <BookOpen className="mx-auto h-8 w-8 text-violet-400" />
+                  <h3 className="mt-3 font-serif text-lg font-bold text-stone-900 dark:text-white">Custom Test Complete</h3>
+                  <p className="mt-1 text-sm text-stone-400 dark:text-stone-500">
+                    You got {customTestResults.filter((r) => r.correct).length} / {customTestResults.length} correct
+                  </p>
+                  <div className="mt-4 flex items-center justify-center gap-1.5">
+                    <div className="h-2 flex-1 max-w-xs rounded-full bg-stone-200 dark:bg-stone-700">
+                      <div
+                        className="h-2 rounded-full bg-violet-500 transition-all"
+                        style={{ width: `${(customTestResults.filter((r) => r.correct).length / customTestResults.length) * 100}%` }}
+                      />
+                    </div>
+                    <span className="text-xs font-bold text-stone-500 dark:text-stone-400">
+                      {Math.round((customTestResults.filter((r) => r.correct).length / customTestResults.length) * 100)}%
+                    </span>
+                  </div>
+                </div>
+
+                <div className="mt-5 space-y-2">
+                  {customTestResults.map((r, i) => (
+                    <div
+                      key={i}
+                      className={`rounded-lg border p-3 text-sm ${
+                        r.correct
+                          ? 'border-emerald-200 bg-emerald-50 dark:border-emerald-800/30 dark:bg-emerald-950/10'
+                          : 'border-rose-200 bg-rose-50 dark:border-rose-800/30 dark:bg-rose-950/10'
+                      }`}
+                    >
+                      <div className="flex items-start justify-between gap-2">
+                        <div>
+                          <span className="font-bold text-stone-900 dark:text-white">{r.word}</span>
+                          <span className="ml-2 text-xs text-stone-400 dark:text-stone-500">
+                            {r.questionType.replace('-', ' ')}
+                          </span>
+                        </div>
+                        <span className={`text-xs font-bold ${r.correct ? 'text-emerald-600' : 'text-rose-600'}`}>
+                          {r.correct ? 'Correct' : 'Wrong'}
+                        </span>
+                      </div>
+                      {!r.correct && (
+                        <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                          Your answer: {r.userAnswer || '(empty)'} &middot; Correct: {r.correctAnswer}
+                        </p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                <div className="mt-5 flex justify-center gap-3">
+                  <button
+                    onClick={handleCustomBack}
+                    className="rounded-lg border border-stone-200 px-4 py-2 text-xs font-bold text-stone-600 transition-all hover:border-stone-300 dark:border-stone-700 dark:text-stone-400"
+                  >
+                    Back to Setup
+                  </button>
+                  <button
+                    onClick={() => router.push('/dashboard')}
+                    className="rounded-lg bg-stone-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-stone-700 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
+                  >
+                    Done
+                  </button>
+                </div>
+              </div>
             )}
 
             {saving && (

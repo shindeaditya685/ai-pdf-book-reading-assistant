@@ -39,6 +39,29 @@ export interface WordLabStats {
   level: 'bronze' | 'silver' | 'gold' | 'diamond'
 }
 
-export type LabPhase = 'study' | 'test' | 'results' | 'history' | 'review'
+export interface CustomTestWord {
+  id: string
+  word: string
+  meaning: string
+  pronunciation: string
+  translation: string
+  example: string
+  sessionDate: string
+}
+
+export interface CustomTestSession {
+  _id?: string
+  dateFrom: string
+  dateTo: string
+  questionType: QuestionType | 'mixed'
+  words: CustomTestWord[]
+  testResults: TestResult[]
+  score: number | null
+  total: number
+  completedAt: string | null
+  createdAt: string
+}
+
+export type LabPhase = 'study' | 'test' | 'results' | 'history' | 'review' | 'custom-setup' | 'custom-test' | 'custom-results'
 
 export type QuestionType = 'fill-blank' | 'multiple-choice' | 'reverse-recall'
