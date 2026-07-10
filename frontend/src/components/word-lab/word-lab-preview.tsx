@@ -93,15 +93,9 @@ export function WordLabPreview() {
             )}
           </div>
           {data && data.total > 0 ? (
-            data.isComplete && data.score !== null ? (
-              <p className="text-xs text-stone-400 dark:text-stone-500">
-                <span className="font-semibold text-stone-600 dark:text-stone-300">{data.score}</span>/{data.testTotal} correct
-              </p>
-            ) : (
-              <p className="text-xs text-stone-400 dark:text-stone-500">
-                {data.studied === 0 ? 'Your daily words are ready' : `${data.studied}/${data.total} studied`}
-              </p>
-            )
+            <p className="text-xs text-stone-400 dark:text-stone-500">
+              {data.studied === 0 ? 'Your daily words are ready' : `${data.studied}/${data.total} studied`}
+            </p>
           ) : (
             <p className="text-xs text-stone-400 dark:text-stone-500">Learn 10 new words daily</p>
           )}
