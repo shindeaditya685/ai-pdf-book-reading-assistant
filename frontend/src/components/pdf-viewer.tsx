@@ -1504,47 +1504,21 @@ export function PDFViewer() {
 
           {scrollMode ? (
             <div className="flex flex-col items-center py-4">
-              {/* Performance fix (P3): previously all `totalPages` PdfPage
-                  components were mounted at once — 1000 pages = 1000 components
-                  + 1000 IntersectionObservers + 1000 store subscriptions, even
-                  though only ~3 are visible. We now render only a window of
-                  pages around the current page, with lightweight spacer divs
-                  for off-window pages so the scroll height stays stable. The
-                  IntersectionObserver inside PdfPage still handles canvas
-                  lazy-load; this just caps the React tree size. */}
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => {
-                const VISIBLE_BUFFER = 3
-                const inWindow =
-                  p >= currentPage - VISIBLE_BUFFER && p <= currentPage + VISIBLE_BUFFER + 1
-                if (inWindow) {
-                  return (
-                    <PdfPage
-                      key={p}
-                      pageNumber={p}
-                      pdfDocRef={pdfDocRef}
-                      pdfReady={pdfReady}
-                      pdfFileName={pdfFileName}
-                      saveAnnotationToDb={saveAnnotationToDb}
-                      deleteAnnotationFromDb={deleteAnnotationFromDb}
-                      onWordPicked={handleWordPicked}
-                      pageTextCacheRef={pageTextCacheRef}
-                      lazy={true}
-                      onRenderError={handleRenderError}
-                    />
-                  )
-                }
-                // Spacer: keeps scroll height stable so the scrollbar doesn't
-                // jump as the user scrolls. Uses the same default aspect ratio
-                // PdfPage uses for its lazy placeholder.
-                return (
-                  <div
-                    key={p}
-                    data-page-spacer={p}
-                    style={{ height: `${800 * 1.414 * scale}px`, width: `${800 * scale}px` }}
-                    className="my-1 shrink-0"
-                  />
-                )
-              })}
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map((p) => (
+                <PdfPage
+                  key={p}
+                  pageNumber={p}
+                  pdfDocRef={pdfDocRef}
+                  pdfReady={pdfReady}
+                  pdfFileName={pdfFileName}
+                  saveAnnotationToDb={saveAnnotationToDb}
+                  deleteAnnotationFromDb={deleteAnnotationFromDb}
+                  onWordPicked={handleWordPicked}
+                  pageTextCacheRef={pageTextCacheRef}
+                  lazy={true}
+                  onRenderError={handleRenderError}
+                />
+              ))}
             </div>
           ) : (
             <div className="flex justify-center py-6">
