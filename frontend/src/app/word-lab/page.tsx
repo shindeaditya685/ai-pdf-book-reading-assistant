@@ -13,6 +13,7 @@ import { ResultsView } from '@/components/word-lab/results-view'
 import { HistoryView } from '@/components/word-lab/history-view'
 import { ReviewPhase } from '@/components/word-lab/review-phase'
 import { CustomTestSetup } from '@/components/word-lab/custom-test-setup'
+import { FlashcardPhase } from '@/components/word-lab/flashcard-phase'
 import { WordLabWord, LabPhase, TestResult, WordLabStats, CustomTestWord } from '@/components/word-lab/types'
 
 export default function WordLabPage() {
@@ -268,6 +269,12 @@ export default function WordLabPage() {
               {phase === 'custom-setup' || phase === 'custom-test' || phase === 'custom-results' ? 'Daily' : 'Custom Test'}
             </button>
             <button
+              onClick={() => setPhase(phase === 'flashcard' ? 'study' : 'flashcard')}
+              className="rounded-lg border border-sky-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-sky-500 transition-all hover:border-sky-300 hover:text-sky-700 dark:border-sky-800/30 dark:text-sky-400 dark:hover:border-sky-700"
+            >
+              Flashcards
+            </button>
+            <button
               onClick={() => setPhase(phase === 'review' ? 'study' : 'review')}
               className="rounded-lg border border-rose-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-rose-500 transition-all hover:border-rose-300 hover:text-rose-700 dark:border-rose-800/30 dark:text-rose-400 dark:hover:border-rose-700"
             >
@@ -295,7 +302,7 @@ export default function WordLabPage() {
           </div>
         )}
 
-        {words.length === 0 && !error && !['custom-setup', 'custom-test', 'custom-results', 'history', 'review'].includes(phase) ? (
+        {words.length === 0 && !error && !['custom-setup', 'custom-test', 'custom-results', 'history', 'review', 'flashcard'].includes(phase) ? (
           <div className="rounded-xl border border-stone-200 bg-white p-10 text-center shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
             <GraduationCap className="mx-auto h-10 w-10 text-stone-300 dark:text-stone-600" />
             <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-stone-900 dark:text-white">No Words Yet</h3>
@@ -354,6 +361,10 @@ export default function WordLabPage() {
                 onBack={() => setPhase(words.length > 0 ? 'study' : 'history')}
                 onPhaseChange={setPhase}
               />
+            )}
+
+            {phase === 'flashcard' && (
+              <FlashcardPhase />
             )}
 
             {phase === 'custom-setup' && (
