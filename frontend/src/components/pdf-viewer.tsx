@@ -168,6 +168,7 @@ export function PDFViewer() {
   const [isLoading, setIsLoading] = useState(false)
   const [pdfReady, setPdfReady] = useState(false)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const [renderErrorCount, setRenderErrorCount] = useState(0)
   const pdfDocRef = useRef<pdfjsLib.PDFDocumentProxy | null>(null)
 
   const {
@@ -319,6 +320,7 @@ export function PDFViewer() {
         pageTextCacheRef.current.clear()
         setPdfReady(true)
         setLoadError(null)
+        setRenderErrorCount(0)
       } catch (err: any) {
         console.error('Error loading PDF:', err)
         // UX fix (P6/U6): surface the failure to the user instead of a silent
@@ -341,6 +343,19 @@ export function PDFViewer() {
       cancelled = true
     }
   }, [pdfDataUrl, pdfFileName, setCurrentPage, setTotalPages])
+
+  // Periodic cleanup: release cached page objects so pdfjs worker doesn't
+  // OOM on memory-constrained environments (Render, mobile, etc.).
+  // The virtual scroll window (P3) creates and destroys PdfPage components
+  // as the user scrolls; each mount calls pdf.getPage(), accumulating page
+  // objects in the worker. Periodic cleanup prevents unbounded growth.
+  useEffect(() => {
+    if (!pdfReady) return
+    const interval = setInterval(() => {
+      pdfDocRef.current?.cleanup().catch(() => {})
+    }, 30_000)
+    return () => clearInterval(interval)
+  }, [pdfReady])
 
   // Persist active book + page progress
   useEffect(() => {
@@ -734,6 +749,21 @@ export function PDFViewer() {
     },
     []
   )
+
+  // Render-error callback from PdfPage — auto-reload on too many failures
+  const handleRenderError = useCallback(() => {
+    setRenderErrorCount((prev) => {
+      const next = prev + 1
+      if (next >= 3 && pdfDocRef.current && pdfDataUrl) {
+        console.log('[pdf-viewer] auto-reloading after', next, 'page render failures')
+        pdfDocRef.current.destroy().catch(() => {})
+        pdfDocRef.current = null
+        setPdfReady(false)
+        setRenderErrorCount(0)
+      }
+      return next
+    })
+  }, [pdfDataUrl])
 
   const handleConfirmMeaning = useCallback(() => {
     if (!pendingWord) return
@@ -1499,6 +1529,7 @@ export function PDFViewer() {
                       onWordPicked={handleWordPicked}
                       pageTextCacheRef={pageTextCacheRef}
                       lazy={true}
+                      onRenderError={handleRenderError}
                     />
                   )
                 }
@@ -1526,6 +1557,7 @@ export function PDFViewer() {
                 deleteAnnotationFromDb={deleteAnnotationFromDb}
                 onWordPicked={handleWordPicked}
                 pageTextCacheRef={pageTextCacheRef}
+                onRenderError={handleRenderError}
               />
             </div>
           )}

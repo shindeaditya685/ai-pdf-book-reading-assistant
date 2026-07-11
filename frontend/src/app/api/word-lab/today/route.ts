@@ -24,8 +24,16 @@ export async function GET(request: Request) {
     })
 
     if (existing) {
+      // Deduplicate by word text in case duplicates were stored before the fix
+      const seen = new Set<string>()
+      const deduped = (existing.words || []).filter((w: any) => {
+        const key = w.word?.toLowerCase()
+        if (!key || seen.has(key)) return false
+        seen.add(key)
+        return true
+      })
       return NextResponse.json({
-        words: existing.words || [],
+        words: deduped,
         studiedIds: existing.studiedIds || [],
         testResults: existing.testResults || [],
         completed: !!existing.completedAt,
@@ -56,6 +64,7 @@ export async function GET(request: Request) {
       if (candidates.length >= 10) break
       const wid = `bookmark-${b._id.toString()}`
       if (usedWordIds.has(wid)) continue
+      if (candidates.some((c) => c.word.toLowerCase() === b.word?.toLowerCase())) continue
       candidates.push({
         id: wid,
         word: b.word,

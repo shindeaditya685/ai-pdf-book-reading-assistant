@@ -23,6 +23,7 @@ interface PdfPageProps {
   ) => void
   pageTextCacheRef: React.RefObject<Map<number, string>>
   lazy?: boolean
+  onRenderError?: () => void
 }
 
 function extractSentence(text: string, word: string): string {
@@ -66,6 +67,7 @@ export function PdfPage({
   onWordPicked,
   pageTextCacheRef,
   lazy = false,
+  onRenderError,
 }: PdfPageProps) {
   // Performance fix (P1): previously this component subscribed to the whole
   // store via `usePDFStore()`, so ANY state change (a single annotation add,
@@ -121,6 +123,7 @@ export function PdfPage({
   const [isLoading, setIsLoading] = useState(false)
   const [isDrawing, setIsDrawing] = useState(false)
   const [pageSize, setPageSize] = useState<{ width: number; height: number } | null>(null)
+  const [renderError, setRenderError] = useState(false)
 
   // Lazy render: only render canvas when the wrapper is in (or near) the viewport
   useEffect(() => {
@@ -333,6 +336,8 @@ export function PdfPage({
       } catch (err: any) {
         if (err?.name !== 'RenderingCancelledException') {
           console.error('Error rendering page:', err)
+          setRenderError(true)
+          onRenderError?.()
         }
       } finally {
         if (renderTaskRef.current === renderTask) {
@@ -672,6 +677,16 @@ export function PdfPage({
       {lazy && !isVisible ? (
         <div className="flex h-full items-center justify-center text-[11px] text-muted-foreground/40">
           Page {pageNumber}
+        </div>
+      ) : renderError ? (
+        <div className="flex h-full flex-col items-center justify-center gap-3 rounded-md border border-rose-200 bg-rose-50/50 p-6 dark:border-rose-800/30 dark:bg-rose-950/10">
+          <p className="text-xs font-medium text-rose-600 dark:text-rose-400">Failed to load page {pageNumber}</p>
+          <button
+            onClick={() => { setRenderError(false); setIsLoading(true); renderPageCanvas() }}
+            className="inline-flex items-center gap-1.5 rounded-lg bg-rose-500 px-3 py-1.5 text-[10px] font-bold text-white shadow-sm transition-all hover:bg-rose-400 active:scale-[0.97]"
+          >
+            Retry
+          </button>
         </div>
       ) : (
         <>

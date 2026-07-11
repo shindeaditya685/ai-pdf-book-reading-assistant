@@ -101,9 +101,9 @@ export function WordLabPreview() {
           )}
           {data && data.words.length > 0 && (
             <div className="mt-1.5 flex flex-wrap gap-1">
-              {data.words.slice(0, 5).map((w) => (
+              {data.words.slice(0, 5).map((w, i) => (
                 <span
-                  key={w}
+                  key={`${w}-${i}`}
                   className="rounded-md bg-stone-100 px-1.5 py-0.5 text-[9px] font-medium text-stone-500 dark:bg-stone-800 dark:text-stone-400"
                 >
                   {w}
