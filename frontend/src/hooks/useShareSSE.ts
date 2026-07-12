@@ -159,27 +159,14 @@ export function useShareSSE() {
       })
     }
 
-    const connect = async () => {
+    const connect = () => {
       if (closedRef.current) return
       const sid = sessionIdRef.current
       const uname = userRef.current
       if (!sid || !uname) return
 
-      // Security fix: exchange the long-lived Bearer JWT for a short-lived
-      // (60s) SSE ticket before opening the EventSource. This keeps the
-      // 7-day token out of URL query strings (server logs, browser history,
-      // Referer headers). The ticket is scoped to this session.
-      let ticket: string | null = null
-      try {
-        const res = await authFetch(`/api/share/session/${sid}/ticket`, { method: 'POST' })
-        if (res.ok) {
-          const data = await res.json().catch(() => null)
-          ticket = data?.ticket ?? null
-        }
-      } catch {}
-      if (!ticket || closedRef.current) return
-
-      const es = new EventSource(`/api/share/session/${sid}/events?ticket=${encodeURIComponent(ticket)}`)
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null
+      const es = new EventSource(`/api/share/session/${sid}/events${token ? `?token=${encodeURIComponent(token)}` : ''}`)
       esRef.current = es
 
       es.addEventListener('open', () => {

@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
 import { getUserFromRequest } from '@/lib/auth'
-import { requireSessionMember } from '@/lib/share-auth'
+import { ObjectId } from 'mongodb'
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const conn = await connectToDatabase()
+  if (!conn) return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
 
   const { id: annotationId } = await params
   const { sessionId, emoji } = await request.json()
@@ -13,42 +16,26 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: 'sessionId and emoji required' }, { status: 400 })
   }
 
-  // IDOR fix: verify membership before reacting.
-  const membership = await requireSessionMember(sessionId, user)
-  if (!membership.ok) {
-    return NextResponse.json({ error: membership.error }, { status: membership.status })
-  }
-
-  const conn = await connectToDatabase()
-  if (!conn) return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
-
-  const field = `reactions.${emoji}`
-  const ann = await conn.db.collection('sharedAnnotations').findOne({ annotationId, sessionId })
+  const ann = await conn.db.collection('sharedAnnotations').findOne({
+    annotationId,
+    sessionId,
+  })
   if (!ann) return NextResponse.json({ error: 'Annotation not found' }, { status: 404 })
 
-  const existing: string[] = (ann.reactions?.[emoji] as string[]) || []
-  const hasReacted = existing.includes(user.username)
+  const reactions = ann.reactions || {}
+  const users = reactions[emoji] || []
 
-  // Race-condition fix: use atomic $addToSet / $pull instead of
-  // read-modify-write, so concurrent reactions don't overwrite each other.
-  if (hasReacted) {
-    await conn.db.collection('sharedAnnotations').updateOne(
-      { annotationId, sessionId },
-      {
-        $pull: { [field]: user.username } as Record<string, any>,
-        $set: { updatedAt: new Date().toISOString() },
-      },
-    )
+  if (users.includes(user.username)) {
+    reactions[emoji] = users.filter((u: string) => u !== user.username)
+    if (reactions[emoji].length === 0) delete reactions[emoji]
   } else {
-    await conn.db.collection('sharedAnnotations').updateOne(
-      { annotationId, sessionId },
-      {
-        $addToSet: { [field]: user.username },
-        $set: { updatedAt: new Date().toISOString() },
-      },
-    )
+    reactions[emoji] = [...users, user.username]
   }
 
-  const updated = await conn.db.collection('sharedAnnotations').findOne({ annotationId, sessionId })
-  return NextResponse.json({ reactions: (updated as any)?.reactions || {}, annotationId, sessionId })
+  await conn.db.collection('sharedAnnotations').updateOne(
+    { annotationId, sessionId },
+    { $set: { reactions, updatedAt: new Date().toISOString() } }
+  )
+
+  return NextResponse.json({ reactions, annotationId, sessionId })
 }

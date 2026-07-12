@@ -1,24 +1,20 @@
 import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
 import { getUserFromRequest } from '@/lib/auth'
-import { requireSessionMember } from '@/lib/share-auth'
+import { ObjectId } from 'mongodb'
 
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
   const user = getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
 
-  const { id: sessionId } = await params
-
-  // IDOR fix: verify membership before mutating the timer.
-  const membership = await requireSessionMember(sessionId, user)
-  if (!membership.ok) {
-    return NextResponse.json({ error: membership.error }, { status: membership.status })
-  }
-
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
 
+  const { id: sessionId } = await params
   const { action, mode } = await request.json()
+
+  const session = await conn.db.collection('shareSessions').findOne({ _id: new ObjectId(sessionId) })
+  if (!session) return NextResponse.json({ error: 'Session not found' }, { status: 404 })
 
   const existing = await conn.db.collection('sessionTimers').findOne({ sessionId })
 

@@ -2,32 +2,18 @@ import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
 import { getUserFromRequest, verifyToken } from '@/lib/auth'
 import { ObjectId } from 'mongodb'
-import jwt from 'jsonwebtoken'
 
 const POLL_INTERVAL_MS = 500
 const PRESENCE_TIMEOUT_MS = 5000
 
-const JWT_SECRET = process.env.JWT_SECRET || ''
-
 function getUser(request: Request) {
-  // Prefer the Authorization header (standard API calls).
   let user = getUserFromRequest(request)
-  if (user) return user
-
-  // SSE fallback: a short-lived ticket scoped to this session.
-  // This replaces the previous pattern of passing the full 7-day JWT
-  // in the URL (?token=...), which leaked it into logs / history.
-  if (!JWT_SECRET) return null
-  const { searchParams } = new URL(request.url)
-  const ticket = searchParams.get('ticket')
-  if (!ticket) return null
-  try {
-    const payload = jwt.verify(ticket, JWT_SECRET) as any
-    if (payload?.t !== 'sse') return null
-    return { id: '', username: payload.u, isAdmin: false }
-  } catch {
-    return null
+  if (!user) {
+    const { searchParams } = new URL(request.url)
+    const token = searchParams.get('token')
+    if (token) user = verifyToken(token)
   }
+  return user
 }
 
 export async function GET(request: Request, { params }: { params: Promise<{ id: string }> }) {
@@ -153,19 +139,10 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const user = getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   const { id: sessionId } = await params
-
-  // IDOR fix: verify membership before accepting cursor / follow-mode events.
-  // Previously a non-member could inject cursors and hijack follow-mode.
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json({ error: 'Database error' }, { status: 500 })
-  const doc = await conn.db.collection('shareSessions').findOne({
-    _id: new ObjectId(sessionId),
-    'members.username': user.username,
-  })
-  if (!doc) {
-    return NextResponse.json({ error: 'Not a member of this session' }, { status: 403 })
-  }
-  const member = doc.members.find((m: any) => m.username === user.username)
+  const doc = await conn.db.collection('shareSessions').findOne({ _id: new ObjectId(sessionId) })
+  const member = doc?.members?.find((m: any) => m.username === user.username)
   const color = member?.color || '#3B82F6'
   const { type, data } = await request.json()
   const presence = conn.db.collection('sessionPresence')

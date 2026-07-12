@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server'
 import { ObjectId } from 'mongodb'
-import crypto from 'crypto'
 import { connectToDatabase } from '@/lib/db'
 import { getUserFromRequest } from '@/lib/auth'
 
@@ -9,9 +8,8 @@ const USER_COLORS = [
   '#8B5CF6', '#EC4899', '#06B6D4', '#F97316',
 ]
 
-/** Cryptographically secure invite code (8 hex chars). */
 function generateCode(): string {
-  return crypto.randomBytes(4).toString('hex').toUpperCase()
+  return Math.random().toString(36).substring(2, 8).toUpperCase()
 }
 
 export async function POST(request: Request) {
@@ -63,23 +61,13 @@ export async function GET(request: Request) {
     const code = searchParams.get('code')
 
     if (id) {
-      if (!ObjectId.isValid(id)) return NextResponse.json({ error: 'Invalid id' }, { status: 400 })
-      // IDOR fix: only return the session if the requesting user is a member.
-      const session = await conn.db.collection('shareSessions').findOne({
-        _id: new ObjectId(id),
-        'members.username': user.username,
-      })
-      if (!session) return NextResponse.json({ error: 'Not a member or not found' }, { status: 403 })
+      const session = await conn.db.collection('shareSessions').findOne({ _id: new ObjectId(id) })
+      if (!session) return NextResponse.json(null)
       return NextResponse.json(session)
     }
 
     if (code) {
-      // Invite-code lookup is allowed for non-members (they need to join),
-      // but return only minimal fields — no members list, no full metadata.
-      const session = await conn.db.collection('shareSessions').findOne(
-        { inviteCode: code.toUpperCase() },
-        { projection: { _id: 1, name: 1, pdfFileName: 1, createdBy: 1, inviteCode: 1 } },
-      )
+      const session = await conn.db.collection('shareSessions').findOne({ inviteCode: code })
       return NextResponse.json(session)
     }
 
@@ -92,6 +80,6 @@ export async function GET(request: Request) {
     return NextResponse.json(sessions)
   } catch (error) {
     console.error('[API Share Session Get] Error:', error)
-    return NextResponse.json({ error: 'Failed to fetch sessions' }, { status: 500 })
+    return NextResponse.json([])
   }
 }
