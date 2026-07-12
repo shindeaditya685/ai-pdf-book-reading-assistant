@@ -39,6 +39,11 @@ export async function POST(request: Request) {
     const { word, meaning, pronunciation, translation, sentence, pageNumber, pdfFileName } = body
     if (!word || !pdfFileName) return NextResponse.json({ success: false })
 
+    // Reject multi-word phrases saved as "words"
+    if (/\s/.test(word) || word.length > 50) {
+      return NextResponse.json({ success: false, error: 'word must be a single word' }, { status: 400 })
+    }
+
     const doc = {
       word,
       meaning: meaning || '',

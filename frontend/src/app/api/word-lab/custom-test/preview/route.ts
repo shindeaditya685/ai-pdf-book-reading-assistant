@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server'
 import { connectToDatabase } from '@/lib/db'
 import { getUserFromRequest } from '@/lib/auth'
 
+function isSingleWord(s: string): boolean {
+  return !!s && s.length <= 50 && /^\S+$/.test(s)
+}
+
 export async function POST(request: Request) {
   const user = getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -37,7 +41,7 @@ export async function POST(request: Request) {
     const words: any[] = []
     for (const s of sessions) {
       for (const w of (s.words || [])) {
-        if (!seen.has(w.id)) {
+        if (!seen.has(w.id) && isSingleWord(w.word)) {
           seen.add(w.id)
           words.push({ ...w, sessionDate: s.date })
         }

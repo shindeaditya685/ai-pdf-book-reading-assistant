@@ -7,6 +7,11 @@ function todayStr() {
   return new Date().toISOString().slice(0, 10)
 }
 
+/** Returns true if the string looks like a single word (no whitespace, reasonable length). */
+function isSingleWord(s: string): boolean {
+  return !!s && s.length <= 50 && /^\S+$/.test(s)
+}
+
 export async function GET(request: Request) {
   const user = getUserFromRequest(request)
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
@@ -24,11 +29,12 @@ export async function GET(request: Request) {
     })
 
     if (existing) {
-      // Deduplicate by word text in case duplicates were stored before the fix
+      // Deduplicate by word text and filter out non-word entries
       const seen = new Set<string>()
       const deduped = (existing.words || []).filter((w: any) => {
-        const key = w.word?.toLowerCase()
-        if (!key || seen.has(key)) return false
+        if (!w.word || !isSingleWord(w.word)) return false
+        const key = w.word.toLowerCase()
+        if (seen.has(key)) return false
         seen.add(key)
         return true
       })
@@ -62,6 +68,7 @@ export async function GET(request: Request) {
     const candidates: any[] = []
     for (const b of bookmarks) {
       if (candidates.length >= 10) break
+      if (!isSingleWord(b.word || '')) continue
       const wid = `bookmark-${b._id.toString()}`
       if (usedWordIds.has(wid)) continue
       if (candidates.some((c) => c.word.toLowerCase() === b.word?.toLowerCase())) continue
@@ -85,6 +92,7 @@ export async function GET(request: Request) {
 
       for (const h of historyEntries) {
         if (candidates.length >= 10) break
+        if (!isSingleWord(h.word || '')) continue
         const wid = `history-${h._id.toString()}`
         if (usedWordIds.has(wid)) continue
         if (candidates.some((c) => c.word.toLowerCase() === h.word?.toLowerCase())) continue
@@ -106,6 +114,7 @@ export async function GET(request: Request) {
         const aiWords = await generateWords(10 - candidates.length, candidates.map((c) => c.word))
         for (const w of aiWords) {
           if (candidates.length >= 10) break
+          if (!isSingleWord(w.word || '')) continue
           candidates.push({
             id: `ai-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
             word: w.word,

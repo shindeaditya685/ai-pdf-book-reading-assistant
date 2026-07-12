@@ -139,7 +139,8 @@ export function SelectionContextMenu() {
     } else {
       const span = target.closest('span')
       const raw = span?.textContent || target.textContent || ''
-      word = cleanText(raw) || ''
+      const cleaned = cleanText(raw) || ''
+      word = cleaned.split(/\s+/)[0] || ''
       sentence = word
       selectedText = word
     }
@@ -305,7 +306,7 @@ export function SelectionContextMenu() {
   const handleGetMeaning = useCallback(() => {
     if (!state) return
     setState(null)
-    const lookupWord = state.hasSelection && state.selectedText ? state.selectedText : state.word
+    const lookupWord = ((state.hasSelection && state.selectedText) || state.word).split(/\s+/)[0] || ''
     window.dispatchEvent(new CustomEvent('pdf-get-meaning', {
       detail: {
         word: lookupWord,

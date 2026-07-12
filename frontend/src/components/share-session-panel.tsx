@@ -195,7 +195,7 @@ export function ShareSessionPanel() {
           const joinRes = await authFetch(`/api/share/session/${session._id}`, {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ action: 'join' }),
+            body: JSON.stringify({ action: 'join', inviteCode: inviteCode.trim().toUpperCase() }),
           })
           if (joinRes.ok) {
             const updated = await joinRes.json()
