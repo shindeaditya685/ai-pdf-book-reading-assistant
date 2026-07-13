@@ -654,7 +654,20 @@ export function WordPopup() {
                   Example
                 </p>
                 <p className="mt-0.5 text-sm italic leading-relaxed text-foreground/80">
-                  {explanation.example}
+                  {(() => {
+                    const word = selectedWord || ''
+                    const ex = explanation.example || ''
+                    if (!word) return ex
+                    const idx = ex.toLowerCase().indexOf(word.toLowerCase())
+                    if (idx === -1) return ex
+                    return (
+                      <>
+                        {ex.slice(0, idx)}
+                        <strong className="font-semibold not-italic text-foreground">{ex.slice(idx, idx + word.length)}</strong>
+                        {ex.slice(idx + word.length)}
+                      </>
+                    )
+                  })()}
                 </p>
               </div>
             )}
