@@ -145,10 +145,21 @@ export async function DELETE(request: Request) {
   try {
     const { searchParams } = new URL(request.url)
     const id = searchParams.get('id')
-    if (!id) return NextResponse.json({ success: false })
+    const word = searchParams.get('word')
+    const pdfFileName = searchParams.get('pdfFileName')
 
-    const { ObjectId } = await import('mongodb')
-    await conn.db.collection('flashcards').deleteOne({ _id: new ObjectId(id), username: user.username })
+    let filter: any = { username: user.username }
+    if (id) {
+      const { ObjectId } = await import('mongodb')
+      filter._id = new ObjectId(id)
+    } else if (word && pdfFileName) {
+      filter.word = word
+      filter.pdfFileName = pdfFileName
+    } else {
+      return NextResponse.json({ success: false })
+    }
+
+    await conn.db.collection('flashcards').deleteOne(filter)
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ success: false })

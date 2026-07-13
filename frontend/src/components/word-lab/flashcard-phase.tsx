@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Loader2, Volume2, Sparkles, Calendar, Play, ArrowLeft } from 'lucide-react'
+import { Loader2, Volume2, Sparkles, Calendar, Play, ArrowLeft, Trash2 } from 'lucide-react'
 import { authFetch } from '@/lib/api'
 import { CustomTestWord } from './types'
 
@@ -51,6 +51,7 @@ export function FlashcardPhase() {
   const [currentIndex, setCurrentIndex] = useState(0)
   const [isFlipped, setIsFlipped] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [deletingId, setDeletingId] = useState<string | null>(null)
   const [reviewStats, setReviewStats] = useState({ reviewed: 0, again: 0, hard: 0, good: 0, easy: 0 })
 
   const currentCard = queue[currentIndex] || null
@@ -159,6 +160,28 @@ export function FlashcardPhase() {
       }
     }
   }, [currentCard, currentIndex, isSubmitting, retryQueue])
+
+  const handleDelete = useCallback(async (card: WordCard) => {
+    setDeletingId(card._id)
+    try {
+      await authFetch(`/api/word-lab/flashcards?id=${card._id}`, { method: 'DELETE' })
+      const isCurrent = queue[currentIndex]?._id === card._id
+      setCards((prev) => prev.filter((c) => c._id !== card._id))
+      setQueue((prev) => {
+        const next = prev.filter((c) => c._id !== card._id)
+        if (next.length === 0) setPhase('setup')
+        return next
+      })
+      setRetryQueue((prev) => prev.filter((c) => c._id !== card._id))
+      if (isCurrent && currentIndex >= queue.length - 1) {
+        setCurrentIndex((i) => Math.max(0, --i))
+      }
+    } catch {
+      // non-critical
+    } finally {
+      setDeletingId(null)
+    }
+  }, [queue, currentIndex])
 
   const currentCardView = queue[currentIndex] || null
 
@@ -283,6 +306,21 @@ export function FlashcardPhase() {
                 className="absolute inset-0 overflow-y-auto rounded-2xl border border-[--paper-border] bg-white p-4 shadow-lg shadow-stone-200/60 dark:border-stone-700/50 dark:bg-stone-900/60 dark:shadow-black/20"
                 style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
               >
+                <button
+                  onClick={(e) => {
+                    e.stopPropagation()
+                    if (currentCardView) handleDelete(currentCardView)
+                  }}
+                  disabled={deletingId === currentCardView?._id}
+                  className="absolute right-2 top-2 z-10 rounded-lg p-1.5 text-stone-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-stone-600 dark:hover:bg-red-950/20 dark:hover:text-red-400"
+                  title="Delete this flashcard"
+                >
+                  {deletingId === currentCardView?._id ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <Trash2 className="h-3.5 w-3.5" />
+                  )}
+                </button>
                 <div className="space-y-3">
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">

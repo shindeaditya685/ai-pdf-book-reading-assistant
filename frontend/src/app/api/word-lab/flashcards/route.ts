@@ -110,3 +110,26 @@ export async function POST(request: Request) {
     return NextResponse.json({ success: false, error: 'Internal error' })
   }
 }
+
+export async function DELETE(request: Request) {
+  const user = getUserFromRequest(request)
+  if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+
+  const conn = await connectToDatabase()
+  if (!conn) return NextResponse.json({ success: false })
+
+  try {
+    const { searchParams } = new URL(request.url)
+    const id = searchParams.get('id')
+    if (!id) return NextResponse.json({ success: false, error: 'Missing id' })
+
+    const { ObjectId } = await import('mongodb')
+    await conn.db.collection('word-lab-flashcards').deleteOne({
+      _id: new ObjectId(id),
+      username: user.username,
+    })
+    return NextResponse.json({ success: true })
+  } catch {
+    return NextResponse.json({ success: false })
+  }
+}
