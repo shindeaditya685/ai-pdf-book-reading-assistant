@@ -513,8 +513,8 @@ export function WordPopup() {
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1000
   const vh = typeof window !== 'undefined' ? window.innerHeight : 800
   const isMobile = vw < 640
-  const popupWidth = isMobile ? Math.min(360, vw - 24) : 320
-  const popupHeight = 300
+  const popupWidth = isMobile ? Math.min(380, vw - 24) : 360
+  const popupHeight = 360
 
   // Desktop floating popup layout
   let popupX = popupPosition.x - popupWidth / 2
@@ -540,50 +540,16 @@ export function WordPopup() {
   // Shared content (used by both desktop popup and mobile bottom sheet)
   const popupContent = (
     <div className="rounded-xl border border-border bg-background shadow-2xl overflow-hidden">
-      {/* Header - drag handle */}
+      {/* Slim header: grip (desktop) + bookmark + close */}
       <div
         onMouseDown={isMobile ? undefined : handleHeaderMouseDown}
         onTouchStart={isMobile ? undefined : handleHeaderTouchStart}
-        className={`flex items-start justify-between border-b px-3 pt-3 pb-2 select-none ${
+        className={`flex items-center justify-between px-3 pt-2.5 pb-0 select-none ${
           isMobile ? 'cursor-default' : isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
       >
-        <div className="flex items-center gap-1 flex-1 min-w-0">
-          {!isMobile && <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />}
-          <div className="flex-1 min-w-0">
-            <h3 className="text-base font-bold text-foreground truncate" title={selectedWord || ''}>
-              {selectedWord}
-            </h3>
-            {selectedSentence && selectedSentence.trim() !== (selectedWord || '').trim() && (
-              <p
-                className="text-[11px] text-muted-foreground/80 italic truncate -mt-0.5"
-                title={selectedSentence}
-              >
-                &ldquo;{selectedSentence.length > 60 ? selectedSentence.slice(0, 60).trimEnd() + '\u2026' : selectedSentence}&rdquo;
-              </p>
-            )}
-          </div>
-          {explanation?.pronunciation && !isExplaining && (
-            <div className="mt-0.5 flex items-center gap-1.5">
-              <button
-                onClick={() => {
-                  const utterance = new SpeechSynthesisUtterance(selectedWord)
-                    utterance.lang = accent
-                  utterance.rate = 0.85
-                  speechSynthesis.cancel()
-                  speechSynthesis.speak(utterance)
-                }}
-                className="cursor-pointer text-emerald-500 hover:text-emerald-600 transition-colors"
-                title="Click to hear pronunciation"
-              >
-                <Volume2 className="h-3 w-3" />
-              </button>
-              <p className="text-xs italic text-muted-foreground">
-                {explanation.pronunciation}
-              </p>
-            </div>
-          )}
-        </div>
+        {!isMobile && <GripVertical className="h-3.5 w-3.5 shrink-0 text-muted-foreground/30" />}
+        {isMobile && <div />}
         <div className="flex items-center gap-0.5">
           {selectedPageNumber && explanation && !isExplaining && (
             <Button
@@ -598,33 +564,12 @@ export function WordPopup() {
               />
             </Button>
           )}
-          {selectedPageNumber && quoteText && (
-            <Button
-              variant="ghost"
-              size="icon"
-              className={
-                isQuoteSaved
-                  ? 'h-6 w-6 text-yellow-600 hover:text-yellow-700'
-                  : 'text-muted-foreground hover:text-yellow-600'
-              }
-              onClick={handleSaveQuote}
-              disabled={quoteStatus === 'saving'}
-              title={isQuoteSaved ? 'Remove from quotes' : 'Save this sentence as a quote'}
-              aria-label={isQuoteSaved ? 'Remove from quotes' : 'Save quote'}
-            >
-              <QuoteIcon
-                className={`h-3.5 w-3.5 ${isQuoteSaved ? 'fill-yellow-500 text-yellow-600' : ''}`}
-              />
-            </Button>
-          )}
           <Button
             variant="ghost"
             size="icon"
             className="h-6 w-6 text-muted-foreground hover:text-foreground"
             onClick={() => {
-              if (isQuoteSaved) {
-                setShowQuotes(true)
-              }
+              if (isQuoteSaved) setShowQuotes(true)
               clearSelection()
             }}
           >
@@ -634,9 +579,9 @@ export function WordPopup() {
       </div>
 
       {/* Content */}
-      <div className="max-h-[60vh] overflow-y-auto px-4 py-3">
+      <div className="max-h-[60vh] overflow-y-auto px-4 pb-3 pt-1.5">
         {isExplaining ? (
-          <div className="flex items-center gap-2 py-2">
+          <div className="flex items-center gap-2 py-3">
             <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
             <span className="text-sm text-muted-foreground">
               Analyzing context...
@@ -644,23 +589,56 @@ export function WordPopup() {
           </div>
         ) : explanation ? (
           <div className="space-y-3">
+            {/* WORD HERO */}
+            <div className="flex items-start justify-between gap-3">
+              <div className="min-w-0">
+                <h3
+                  className="font-serif text-xl font-bold leading-tight text-foreground break-words"
+                  title={selectedWord || ''}
+                >
+                  {selectedWord}
+                </h3>
+                {explanation.pronunciation && (
+                  <div className="mt-1 flex items-center gap-1.5 flex-wrap">
+                    <span className="text-xs italic text-muted-foreground/70">
+                      {explanation.pronunciation}
+                    </span>
+                    <button
+                      onClick={() => {
+                        const u = new SpeechSynthesisUtterance(selectedWord)
+                        u.lang = accent
+                        u.rate = 0.85
+                        speechSynthesis.cancel()
+                        speechSynthesis.speak(u)
+                      }}
+                      className="text-emerald-500 hover:text-emerald-600 transition-colors shrink-0"
+                      title="Hear pronunciation"
+                    >
+                      <Volume2 className="h-3.5 w-3.5" />
+                    </button>
+                  </div>
+                )}
+              </div>
+              {explanation.partOfSpeech && (
+                <span className="shrink-0 self-start rounded-full bg-orange-100 px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wider text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+                  {explanation.partOfSpeech}
+                </span>
+              )}
+            </div>
+
+            {/* MEANING */}
             <div>
               <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-                {isOfflineResult ? 'Dictionary Meaning' : 'Contextual Meaning'}
+                {isOfflineResult ? 'Dictionary Meaning' : 'Meaning'}
               </p>
-              <p className="mt-1 text-sm leading-relaxed text-foreground">
+              <p className="mt-0.5 text-sm leading-relaxed text-foreground">
                 {explanation.meaning}
               </p>
-              {explanation.example && (
-                <p className="mt-1.5 text-xs italic text-muted-foreground/80 border-l-2 border-muted-foreground/20 pl-2">
-                  e.g., {explanation.example}
-                </p>
-              )}
               {isOfflineResult && !explanation.translation && selectedSentence && !isExplaining && (
                 <Button
                   variant="ghost"
                   size="sm"
-                  className="mt-2 h-7 gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
+                  className="mt-1.5 h-7 gap-1.5 text-xs text-amber-600 hover:text-amber-700 hover:bg-amber-50 dark:text-amber-400 dark:hover:bg-amber-950/30"
                   onClick={handleGetAIContext}
                 >
                   <Sparkles className="h-3 w-3" />
@@ -669,27 +647,41 @@ export function WordPopup() {
               )}
             </div>
 
+            {/* AI-GENERATED EXAMPLE */}
+            {explanation.example && (
+              <div className="border-l-2 border-muted-foreground/15 pl-2.5">
+                <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
+                  Example
+                </p>
+                <p className="mt-0.5 text-sm italic leading-relaxed text-foreground/80">
+                  {explanation.example}
+                </p>
+              </div>
+            )}
+
+            {/* TRANSLATION */}
             {explanation.translation && (
-              <div className="rounded-lg bg-emerald-50 p-2.5 dark:bg-emerald-950/20">
+              <div className="rounded-lg bg-emerald-50/70 p-2.5 dark:bg-emerald-950/15">
                 <div className="flex items-center gap-1.5">
                   <Languages className="h-3 w-3 text-emerald-600 dark:text-emerald-400" />
                   <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
                     {LANGUAGE_LABELS[translationLanguage]}
                   </p>
                 </div>
-                <p className="mt-1 text-sm font-medium text-foreground">
+                <p className="mt-0.5 text-sm font-medium text-foreground">
                   {explanation.translation}
                 </p>
               </div>
             )}
 
+            {/* SIMPLIFIED SENTENCE */}
             {selectedSentence && (
-              <div className="border-t pt-2">
+              <div>
                 {!showSimplified ? (
                   <Button
                     variant="ghost"
                     size="sm"
-                    className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground"
+                    className="h-7 gap-1.5 text-xs text-muted-foreground hover:text-foreground -ml-1.5"
                     onClick={handleSimplify}
                   >
                     <Sparkles className="h-3 w-3" />
@@ -698,16 +690,14 @@ export function WordPopup() {
                 ) : isSimplifying ? (
                   <div className="flex items-center gap-2 py-1">
                     <Loader2 className="h-3 w-3 animate-spin text-amber-500" />
-                    <span className="text-xs text-muted-foreground">
-                      Simplifying...
-                    </span>
+                    <span className="text-xs text-muted-foreground">Simplifying...</span>
                   </div>
                 ) : (
                   <div>
                     <p className="text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-                      Simplified Sentence
+                      Simplified
                     </p>
-                    <p className="mt-1 text-sm leading-relaxed text-foreground">
+                    <p className="mt-0.5 text-sm leading-relaxed text-foreground">
                       {simplified}
                     </p>
                   </div>
@@ -715,15 +705,36 @@ export function WordPopup() {
               </div>
             )}
 
+            {/* BOTTOM ACTION ROW: quote + highlight colors */}
             {selectedPageNumber && explanation && !isExplaining && (
-              <div className="flex items-center justify-between border-t border-border/80 pt-2.5 mt-2">
-                <span className="text-[10px] font-bold text-muted-foreground uppercase tracking-wider">Highlight Selection</span>
+              <div className="flex items-center justify-between border-t border-border/50 pt-2.5 -mx-4 px-4">
+                <div className="flex items-center gap-1">
+                  {quoteText && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-7 gap-1.5 text-[11px] ${
+                        isQuoteSaved
+                          ? 'text-yellow-600 hover:text-yellow-700'
+                          : 'text-muted-foreground hover:text-yellow-600'
+                      }`}
+                      onClick={handleSaveQuote}
+                      disabled={quoteStatus === 'saving'}
+                    >
+                      <QuoteIcon className={`h-3 w-3 ${isQuoteSaved ? 'fill-yellow-500' : ''}`} />
+                      {isQuoteSaved ? 'Saved' : 'Quote'}
+                    </Button>
+                  )}
+                </div>
                 <div className="flex items-center gap-1.5">
+                  <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60 mr-0.5">
+                    Highlight
+                  </span>
                   {HIGHLIGHT_COLORS.map((color) => (
                     <button
                       key={color.value}
                       onClick={() => handleHighlightFromPopup(color.value)}
-                      className={`h-5 w-5 rounded-full ${color.tailwind} transition-all hover:scale-125 border border-border shadow-sm active:scale-95`}
+                      className={`h-4.5 w-4.5 rounded-full ${color.tailwind} transition-all hover:scale-125 border border-border shadow-sm active:scale-95`}
                       title={`Highlight as ${color.label}`}
                     />
                   ))}
@@ -732,7 +743,7 @@ export function WordPopup() {
             )}
           </div>
         ) : (
-          <p className="py-2 text-sm text-muted-foreground">
+          <p className="py-3 text-sm text-muted-foreground">
             No explanation available
           </p>
         )}

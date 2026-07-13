@@ -9,6 +9,7 @@ export interface WordExplanation {
   translation: string;
   simplifiedSentence?: string;
   example?: string;
+  partOfSpeech?: string;
 }
 
 export interface PopupPosition {

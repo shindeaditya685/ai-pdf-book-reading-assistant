@@ -88,13 +88,18 @@ Based on the sentence context, provide:
 2. The pronunciation in IPA format and also in a simple phonetic respelling format (like "muh-TIK-yuh-luhs") — use the accent (${accentName}) for pronunciation
 ${langInstruction}
 
+3. The part of speech of the selected word as used in this sentence (e.g. noun, verb, adjective, adverb, etc.)
+4. A simple example sentence using the selected word in a different everyday context (not the same as the provided sentence) to help the user understand how to use the word
+
 IMPORTANT: Respond ONLY with valid JSON in this exact format, no extra text:
 {
   "word": "the selected word echoed back",
   "meaning": "the contextual meaning here",
   "pronunciation_ipa": "IPA pronunciation here",
   "pronunciation_phonetic": "simple phonetic respelling here",
-  "translation": "translation here or null if not requested"
+  "translation": "translation here or null if not requested",
+  "part_of_speech": "noun, verb, adjective, etc.",
+  "example": "a simple example sentence using the word in a different context"
 }`
 }
 
@@ -119,6 +124,8 @@ function formatResult(parsed: any, word: string, fallback: string) {
       ? `${parsed.pronunciation_ipa} (${parsed.pronunciation_phonetic || ''})`
       : parsed.pronunciation_phonetic || '',
     translation: parsed.translation || null,
+    partOfSpeech: parsed.part_of_speech || null,
+    example: parsed.example || null,
   }
 }
 

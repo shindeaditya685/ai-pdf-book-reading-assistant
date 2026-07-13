@@ -630,6 +630,7 @@ export function PDFViewer() {
             pronunciation: dictResult.pronunciation,
             translation: '',
             example: dictResult.example || undefined,
+            partOfSpeech: dictResult.partOfSpeech || undefined,
           })
         } else {
           setExplanation({ word, meaning: 'Word not found.', pronunciation: '', translation: '' })
