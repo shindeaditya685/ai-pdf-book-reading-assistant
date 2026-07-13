@@ -20,6 +20,13 @@ export function BookmarksPanel() {
     sharedBookmarks,
     removeSharedBookmark,
     addBookmark,
+    setSelectedWord,
+    setSelectedSentence,
+    setSelectedPageNumber,
+    setPopupPosition,
+    setExplanation,
+    setIsExplaining,
+    setIsOfflineResult,
   } = usePDFStore()
 
   const { user } = useAuth()
@@ -95,6 +102,23 @@ export function BookmarksPanel() {
       setImportingBookmarkId(null)
     }
   }, [pdfFileName, addBookmark])
+
+  const handleOpenWordPopup = useCallback((bm: { word: string; meaning: string; pronunciation: string; translation: string; sentence: string; pageNumber: number; example?: string; partOfSpeech?: string }) => {
+    setSelectedWord(bm.word)
+    setSelectedSentence(bm.sentence || null)
+    setSelectedPageNumber(bm.pageNumber)
+    setPopupPosition({ x: window.innerWidth / 2, y: window.innerHeight / 2 })
+    setExplanation({
+      word: bm.word,
+      meaning: bm.meaning,
+      pronunciation: bm.pronunciation || '',
+      translation: bm.translation || '',
+      example: bm.example || undefined,
+      partOfSpeech: bm.partOfSpeech || undefined,
+    })
+    setIsExplaining(false)
+    setIsOfflineResult(false)
+  }, [setSelectedWord, setSelectedSentence, setSelectedPageNumber, setPopupPosition, setExplanation, setIsExplaining, setIsOfflineResult])
 
   const handleExport = useCallback(() => {
     if (bookmarks.length === 0) return
@@ -207,7 +231,10 @@ export function BookmarksPanel() {
                   <div className="flex items-start justify-between">
                     <button
                       className="flex-1 text-left"
-                      onClick={() => handleGoToPage(bm.pageNumber)}
+                      onClick={() => {
+                        handleGoToPage(bm.pageNumber)
+                        handleOpenWordPopup(bm)
+                      }}
                     >
                       <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
                         {bm.word}
@@ -274,7 +301,10 @@ export function BookmarksPanel() {
                     <div className="flex items-start justify-between gap-2">
                       <button
                         className="flex-1 text-left min-w-0"
-                        onClick={() => handleGoToPage(bm.pageNumber)}
+                        onClick={() => {
+                          handleGoToPage(bm.pageNumber)
+                          handleOpenWordPopup(bm)
+                        }}
                       >
                         <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 truncate block">
                           {bm.word}
