@@ -197,6 +197,7 @@ export function BookmarksPanel() {
         ) : (
           <div className="divide-y">
             {[...bookmarks]
+              .filter((b) => !pdfFileName || b.pdfFileName === pdfFileName)
               .sort((a, b) => a.timestamp - b.timestamp)
               .map((bm) => (
                 <div

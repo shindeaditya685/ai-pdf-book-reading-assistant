@@ -101,7 +101,7 @@ export function WordPopup() {
 
   const isBookmarked = selectedPageNumber && selectedWord
     ? bookmarks.some(
-        (b) => b.pageNumber === selectedPageNumber && b.word === selectedWord
+        (b) => b.pageNumber === selectedPageNumber && b.word === selectedWord && b.pdfFileName === pdfFileName
       )
     : false
 
@@ -176,7 +176,7 @@ export function WordPopup() {
 
     if (isBookmarked) {
       const existing = bookmarks.find(
-        (b) => b.pageNumber === selectedPageNumber && b.word === selectedWord
+        (b) => b.pageNumber === selectedPageNumber && b.word === selectedWord && b.pdfFileName === pdfFileName
       )
       if (existing) {
         removeBookmark(existing.id)

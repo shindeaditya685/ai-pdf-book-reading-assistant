@@ -146,7 +146,7 @@ export function SelectionContextMenu() {
     }
 
     const isBookmarked = !!(word && store.bookmarks.some(
-      (b) => b.pageNumber === pageNumber && b.word === word
+      (b) => b.pageNumber === pageNumber && b.word === word && b.pdfFileName === pdfFileName
     ))
     const isQuoteSaved = !!(sentence && store.quotes.some(
       (q) => q.pageNumber === pageNumber && q.text === sentence && q.pdfFileName === pdfFileName
