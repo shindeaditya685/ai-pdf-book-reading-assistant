@@ -241,6 +241,8 @@ export interface Bookmark {
   sentence: string;
   timestamp: number;
   pdfFileName: string;
+  partOfSpeech?: string;
+  example?: string;
 }
 
 export interface Annotation {
@@ -296,6 +298,8 @@ export interface Flashcard {
   sentence: string;
   pageNumber: number;
   pdfFileName: string;
+  partOfSpeech?: string;
+  example?: string;
   ef: number;
   interval: number;
   repetitions: number;

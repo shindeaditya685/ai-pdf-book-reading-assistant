@@ -141,6 +141,8 @@ export function WordPopup() {
       sentence: selectedSentence || '',
       timestamp: Date.now(),
       pdfFileName: pdfFileName || 'unknown',
+      partOfSpeech: explanation.partOfSpeech || undefined,
+      example: explanation.example || undefined,
     }
     addBookmark(bookmark)
     authFetch('/api/db/bookmarks', {
@@ -177,6 +179,8 @@ export function WordPopup() {
         sentence: selectedSentence || '',
         pageNumber: selectedPageNumber || 1,
         pdfFileName: pdfFileName || 'unknown',
+        partOfSpeech: explanation.partOfSpeech || undefined,
+        example: explanation.example || undefined,
       }),
     }).then(async (res) => {
       const data = await res.json()
@@ -196,6 +200,8 @@ export function WordPopup() {
               sentence: selectedSentence || '',
               pageNumber: selectedPageNumber || 1,
               pdfFileName: pdfFileName || 'unknown',
+              partOfSpeech: explanation.partOfSpeech || undefined,
+              example: explanation.example || undefined,
             }),
           })
           if (shareRes.ok) {

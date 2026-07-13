@@ -405,6 +405,11 @@ export function FlashcardReview() {
                         <p className="text-center text-2xl font-bold text-foreground">
                           {currentCard.word}
                         </p>
+                        {currentCard.partOfSpeech && (
+                          <span className="mt-2 inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+                            {currentCard.partOfSpeech}
+                          </span>
+                        )}
                         {currentCard.pronunciation && (
                           <div className="mt-3 flex items-center gap-1.5">
                             <button
@@ -452,12 +457,35 @@ export function FlashcardReview() {
                           </div>
                         )}
 
-                        {currentCard.sentence && (
-                          <div className="mt-3">
+                        {currentCard.example && (
+                          <div className="mt-3 border-l-2 border-muted-foreground/15 pl-2.5">
                             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                               Example
                             </p>
-                            <p className="mt-0.5 text-xs italic text-muted-foreground/80 border-l-2 border-muted-foreground/20 pl-2">
+                            <p className="mt-0.5 text-xs italic leading-relaxed text-foreground/80">
+                              {(() => {
+                                const word = currentCard.word || ''
+                                const ex = currentCard.example || ''
+                                if (!word) return ex
+                                const idx = ex.toLowerCase().indexOf(word.toLowerCase())
+                                if (idx === -1) return ex
+                                return (
+                                  <>
+                                    {ex.slice(0, idx)}
+                                    <strong className="font-semibold not-italic text-foreground">{ex.slice(idx, idx + word.length)}</strong>
+                                    {ex.slice(idx + word.length)}
+                                  </>
+                                )
+                              })()}
+                            </p>
+                          </div>
+                        )}
+                        {currentCard.sentence && (
+                          <div className="mt-2.5">
+                            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                              From the book
+                            </p>
+                            <p className="mt-0.5 text-xs italic text-muted-foreground/60 border-l-2 border-muted-foreground/15 pl-2">
                               {currentCard.sentence}
                             </p>
                           </div>

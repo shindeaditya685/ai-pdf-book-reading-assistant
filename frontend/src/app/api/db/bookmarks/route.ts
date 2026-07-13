@@ -35,7 +35,7 @@ export async function POST(request: Request) {
 
   try {
     const body = await request.json()
-    const { word, meaning, pronunciation, translation, sentence, pageNumber, pdfFileName } = body
+    const { word, meaning, pronunciation, translation, sentence, pageNumber, pdfFileName, partOfSpeech, example } = body
 
     if (!word || !pdfFileName) {
       return NextResponse.json({ success: false })
@@ -54,6 +54,8 @@ export async function POST(request: Request) {
       sentence: sentence || '',
       pageNumber: pageNumber || 0,
       pdfFileName,
+      partOfSpeech: partOfSpeech || '',
+      example: example || '',
       username: user.username,
       timestamp: new Date(),
     }

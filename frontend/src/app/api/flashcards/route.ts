@@ -44,7 +44,7 @@ export async function POST(request: Request) {
     const { action } = body
 
     if (action === 'create') {
-      const { word, meaning, pronunciation, translation, sentence, pageNumber, pdfFileName, bookmarkId } = body
+      const { word, meaning, pronunciation, translation, sentence, pageNumber, pdfFileName, bookmarkId, partOfSpeech, example } = body
       if (!word || !pdfFileName) {
         return NextResponse.json({ success: false, error: 'Missing required fields' })
       }
@@ -69,6 +69,8 @@ export async function POST(request: Request) {
         sentence: sentence || '',
         pageNumber: pageNumber || 0,
         pdfFileName,
+        partOfSpeech: partOfSpeech || '',
+        example: example || '',
         username: user.username,
         ef: defaults.ef,
         stability: defaults.stability,
