@@ -37,14 +37,17 @@ export async function POST(request: Request) {
       .sort({ date: 1 })
       .toArray()
 
-    const seen = new Set<string>()
+    const seenIds = new Set<string>()
+    const seenWords = new Set<string>()
     const words: any[] = []
     for (const s of sessions) {
       for (const w of (s.words || [])) {
-        if (!seen.has(w.id) && isSingleWord(w.word)) {
-          seen.add(w.id)
-          words.push({ ...w, sessionDate: s.date })
-        }
+        if (!isSingleWord(w.word)) continue
+        const wordKey = w.word.toLowerCase()
+        if (seenIds.has(w.id) || seenWords.has(wordKey)) continue
+        seenIds.add(w.id)
+        seenWords.add(wordKey)
+        words.push({ ...w, sessionDate: s.date })
       }
     }
 
