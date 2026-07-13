@@ -74,6 +74,7 @@ export async function GET(request: Request) {
         translation: isUnlimited ? null : getDailyLimit(plan, 'translation'),
         quote_chat: isUnlimited ? null : getDailyLimit(plan, 'quote_chat'),
         ielts: isUnlimited ? null : getDailyLimit(plan, 'ielts'),
+        bulk_lookup: isUnlimited ? null : getDailyLimit(plan, 'bulk_lookup'),
       },
       perMinuteLimit: isUnlimited ? null : getPerMinuteLimit(plan),
       resetAt: nextMidnightUtc().toISOString(),

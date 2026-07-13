@@ -6,6 +6,7 @@ import Link from 'next/link'
 import { ArrowLeft, BookOpen, Search, ChevronDown, ChevronUp, Loader2, BookText, Calendar, Hash, Trash2, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
+import { BulkWordUpload } from '@/components/bulk-word-upload'
 
 const WORDS_PER_PAGE = 50
 
@@ -175,6 +176,11 @@ export default function VocabularyPage() {
               <option key={p} value={p}>{p.split('/').pop() || p}</option>
             ))}
           </select>
+        </div>
+
+        {/* ── BULK WORD IMPORT ── */}
+        <div className="mb-6">
+          <BulkWordUpload onComplete={loadWords} />
         </div>
 
         {/* ── ALPHABET NAVIGATION ── */}

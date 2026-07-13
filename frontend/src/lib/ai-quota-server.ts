@@ -147,6 +147,7 @@ export async function getQuotaStatus(userId: string): Promise<{
       translation: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'translation'),
       quote_chat: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'quote_chat'),
       ielts: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'ielts'),
+      bulk_lookup: isUnlimited ? Number.POSITIVE_INFINITY : getDailyLimit(plan, 'bulk_lookup'),
     },
     resetAt: nextMidnightUtc(),
     perMinuteLimit: isUnlimited ? Number.POSITIVE_INFINITY : getPerMinuteLimit(plan),
@@ -185,7 +186,9 @@ export async function consumeQuota(userId: string, feature: AIFeature): Promise<
         ? 'quoteChats'
         : feature === 'ielts'
           ? 'ielts'
-          : 'translations'
+          : feature === 'bulk_lookup'
+            ? 'bulkLookups'
+            : 'translations'
 
   // Fast-path: admins always allowed, no DB write needed
   const user = await db.collection('users').findOne(
