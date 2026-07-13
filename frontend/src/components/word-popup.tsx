@@ -2,7 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { X, Volume2, Loader2, Sparkles, Languages, Bookmark, GripVertical, Quote as QuoteIcon } from 'lucide-react'
+import { X, Volume2, Loader2, Sparkles, Languages, Bookmark, GripVertical, Quote as QuoteIcon, ListPlus, Brain } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { usePDFStore, LANGUAGE_LABELS } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
@@ -40,6 +40,13 @@ export function WordPopup() {
     setIsExplaining,
     setIsOfflineResult,
     addSharedBookmark,
+    autoFlashcard,
+    autoAddToList,
+    defaultListId,
+    flashcards,
+    addFlashcard,
+    removeFlashcard,
+    addSharedFlashcard,
   } = usePDFStore()
 
   const [simplified, setSimplified] = useState<string | null>(null)
@@ -108,6 +115,89 @@ export function WordPopup() {
 
   const [quoteStatus, setQuoteStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
 
+  const [showListMenu, setShowListMenu] = useState(false)
+  const [addingToList, setAddingToList] = useState(false)
+  const wordLists = usePDFStore((s) => s.wordLists)
+  const fetchLists = useCallback(async () => {
+    try {
+      const res = await authFetch('/api/word-lists')
+      const data = await res.json()
+      if (data.lists) usePDFStore.getState().setWordLists(data.lists)
+    } catch {}
+  }, [])
+  const handleAddToList = useCallback(async (listId: string) => {
+    if (!selectedWord || !explanation) return
+    setAddingToList(true)
+    try {
+      await authFetch(`/api/word-lists/${listId}/words`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          word: selectedWord,
+          meaning: explanation.meaning,
+          pronunciation: explanation.pronunciation,
+          translation: explanation.translation,
+          example: explanation.example,
+          partOfSpeech: explanation.partOfSpeech,
+        }),
+      })
+      fetchLists()
+      setShowListMenu(false)
+    } catch (err) {
+      console.error('Failed to add word to list:', err)
+    } finally {
+      setAddingToList(false)
+    }
+  }, [selectedWord, explanation, fetchLists])
+
+  const isFlashcardCreated = selectedWord && pdfFileName
+    ? flashcards.some((f) => f.word === selectedWord && f.pdfFileName === pdfFileName)
+    : false
+
+  const handleToggleFlashcard = useCallback(async () => {
+    if (!selectedWord || !explanation) return
+    if (isFlashcardCreated) {
+      removeFlashcard(selectedWord + pdfFileName)
+      await authFetch(
+        `/api/flashcards?word=${encodeURIComponent(selectedWord)}&pdfFileName=${encodeURIComponent(pdfFileName || '')}`,
+        { method: 'DELETE' }
+      ).catch(() => {})
+    } else {
+      const res = await authFetch('/api/flashcards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          word: selectedWord,
+          meaning: explanation.meaning,
+          pronunciation: explanation.pronunciation || '',
+          translation: explanation.translation || '',
+          sentence: selectedSentence || '',
+          pageNumber: selectedPageNumber || 1,
+          pdfFileName: pdfFileName || 'unknown',
+          partOfSpeech: explanation.partOfSpeech || undefined,
+          example: explanation.example || undefined,
+        }),
+      })
+      const data = await res.json()
+      if (data.success) {
+        addFlashcard(data.flashcard || { ...data, word: selectedWord, pdfFileName })
+        const session = usePDFStore.getState().shareSession
+        if (session) {
+          const shareRes = await authFetch('/api/share/flashcards', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: data.id, sessionId: session._id, word: selectedWord, pdfFileName }),
+          })
+          if (shareRes.ok) {
+            const shared = await shareRes.json()
+            addSharedFlashcard(shared)
+          }
+        }
+      }
+    }
+  }, [selectedWord, explanation, selectedSentence, selectedPageNumber, pdfFileName, isFlashcardCreated, removeFlashcard, addFlashcard, addSharedFlashcard])
+
   const handleBookmark = useCallback(() => {
     if (!selectedPageNumber || !explanation) return
 
@@ -166,52 +256,77 @@ export function WordPopup() {
       }).catch(() => {})
     }
 
-    // Auto-create flashcard on bookmark
-    authFetch('/api/flashcards', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        action: 'create',
-        word: selectedWord || '',
-        meaning: explanation.meaning,
-        pronunciation: explanation.pronunciation || '',
-        translation: explanation.translation || '',
-        sentence: selectedSentence || '',
-        pageNumber: selectedPageNumber || 1,
-        pdfFileName: pdfFileName || 'unknown',
-        partOfSpeech: explanation.partOfSpeech || undefined,
-        example: explanation.example || undefined,
-      }),
-    }).then(async (res) => {
-      const data = await res.json()
-      if (data.success) {
-        const currentSession = usePDFStore.getState().shareSession
-        if (currentSession) {
-          const shareRes = await authFetch('/api/share/flashcards', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              id: data.id,
-              sessionId: currentSession._id,
-              word: selectedWord || '',
-              meaning: explanation.meaning,
-              pronunciation: explanation.pronunciation || '',
-              translation: explanation.translation || '',
-              sentence: selectedSentence || '',
-              pageNumber: selectedPageNumber || 1,
-              pdfFileName: pdfFileName || 'unknown',
-              partOfSpeech: explanation.partOfSpeech || undefined,
-              example: explanation.example || undefined,
-            }),
-          })
-          if (shareRes.ok) {
-            const shared = await shareRes.json()
-            usePDFStore.getState().addSharedFlashcard(shared)
+    // Auto-create flashcard (only if setting enabled)
+    if (autoFlashcard) {
+      authFetch('/api/flashcards', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create',
+          word: selectedWord || '',
+          meaning: explanation.meaning,
+          pronunciation: explanation.pronunciation || '',
+          translation: explanation.translation || '',
+          sentence: selectedSentence || '',
+          pageNumber: selectedPageNumber || 1,
+          pdfFileName: pdfFileName || 'unknown',
+          partOfSpeech: explanation.partOfSpeech || undefined,
+          example: explanation.example || undefined,
+        }),
+      }).then(async (res) => {
+        const data = await res.json()
+        if (data.success) {
+          const currentSession = usePDFStore.getState().shareSession
+          if (currentSession) {
+            const shareRes = await authFetch('/api/share/flashcards', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                id: data.id,
+                sessionId: currentSession._id,
+                word: selectedWord || '',
+                meaning: explanation.meaning,
+                pronunciation: explanation.pronunciation || '',
+                translation: explanation.translation || '',
+                sentence: selectedSentence || '',
+                pageNumber: selectedPageNumber || 1,
+                pdfFileName: pdfFileName || 'unknown',
+                partOfSpeech: explanation.partOfSpeech || undefined,
+                example: explanation.example || undefined,
+              }),
+            })
+            if (shareRes.ok) {
+              const shared = await shareRes.json()
+              usePDFStore.getState().addSharedFlashcard(shared)
+            }
           }
         }
-      }
-    }).catch(() => {})
-  }, [selectedPageNumber, explanation, selectedWord, selectedSentence, addBookmark, removeBookmark, bookmarks, isBookmarked, pdfFileName])
+      }).catch(() => {})
+    }
+
+    // Auto-add to default list (if setting enabled + default list is set)
+    if (autoAddToList && defaultListId) {
+      authFetch(`/api/word-lists/${defaultListId}/words`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          word: selectedWord,
+          meaning: explanation.meaning,
+          pronunciation: explanation.pronunciation,
+          translation: explanation.translation,
+          example: explanation.example,
+          partOfSpeech: explanation.partOfSpeech,
+        }),
+      }).catch(() => {})
+      usePDFStore.getState().setWordLists(
+        usePDFStore.getState().wordLists.map((l) =>
+          l._id === defaultListId
+            ? { ...l, words: [...l.words, { word: selectedWord || '', meaning: explanation.meaning, addedAt: new Date().toISOString() }] }
+            : l
+        )
+      )
+    }
+  }, [selectedPageNumber, explanation, selectedWord, selectedSentence, addBookmark, removeBookmark, bookmarks, isBookmarked, pdfFileName, autoFlashcard, autoAddToList, defaultListId])
 
   const handleSaveQuote = useCallback(async () => {
     if (!selectedPageNumber || !quoteText || !pdfFileName) return
@@ -726,8 +841,23 @@ export function WordPopup() {
 
             {/* BOTTOM ACTION ROW: quote + highlight colors */}
             {selectedPageNumber && explanation && !isExplaining && (
-              <div className="flex items-center justify-between border-t border-border/50 pt-2.5 -mx-4 px-4">
+                <div className="flex items-center justify-between border-t border-border/50 pt-2.5 -mx-4 px-4">
                 <div className="flex items-center gap-1">
+                  {selectedPageNumber && explanation && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className={`h-7 gap-1.5 text-[11px] ${
+                        isFlashcardCreated
+                          ? 'text-violet-600 hover:text-violet-700'
+                          : 'text-muted-foreground hover:text-violet-600'
+                      }`}
+                      onClick={handleToggleFlashcard}
+                    >
+                      <Brain className={`h-3 w-3 ${isFlashcardCreated ? 'fill-violet-500' : ''}`} />
+                      {isFlashcardCreated ? 'Flashcard' : 'Flashcard'}
+                    </Button>
+                  )}
                   {quoteText && (
                     <Button
                       variant="ghost"
@@ -745,7 +875,41 @@ export function WordPopup() {
                     </Button>
                   )}
                 </div>
-                <div className="flex items-center gap-1.5">
+                <div className="relative flex items-center gap-1.5">
+                  {wordLists.length > 0 && (
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="h-7 gap-1 text-[11px] text-muted-foreground hover:text-emerald-600"
+                      onClick={() => { fetchLists(); setShowListMenu(!showListMenu) }}
+                    >
+                      <ListPlus className="h-3 w-3" />
+                      List
+                    </Button>
+                  )}
+                  {showListMenu && (
+                    <div className="absolute bottom-full right-0 mb-1 w-48 rounded-lg border bg-popover p-1 shadow-lg z-50">
+                      {wordLists.length === 0 ? (
+                        <p className="px-2 py-3 text-center text-xs text-muted-foreground">No lists yet</p>
+                      ) : (
+                        wordLists.map((l) => (
+                          <button
+                            key={l._id}
+                            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-foreground hover:bg-accent"
+                            onClick={() => handleAddToList(l._id)}
+                            disabled={addingToList}
+                          >
+                            {addingToList ? (
+                              <Loader2 className="h-3 w-3 animate-spin" />
+                            ) : (
+                              <ListPlus className="h-3 w-3 text-muted-foreground" />
+                            )}
+                            <span className="truncate">{l.name}</span>
+                          </button>
+                        ))
+                      )}
+                    </div>
+                  )}
                   <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60 mr-0.5">
                     Highlight
                   </span>

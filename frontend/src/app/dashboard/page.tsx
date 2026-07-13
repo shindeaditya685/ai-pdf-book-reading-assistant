@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2, Gift, GraduationCap } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2, Gift, GraduationCap, List } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
@@ -17,6 +17,7 @@ import { BookmarksPanel } from '@/components/bookmarks-panel'
 import { FlashcardReview } from '@/components/flashcard-review'
 import { ReadingAnalytics } from '@/components/reading-analytics'
 import { ShareSessionPanel } from '@/components/share-session-panel'
+
 import { RecentBookshelf } from '@/components/recent-bookshelf'
 import { StarsBackground } from '@/components/stars-background'
 import { ReadingStatsRow } from '@/components/reading-stats-row'
@@ -651,6 +652,15 @@ export default function DashboardPage() {
             </div>
           </div>
 
+          {/* Word Lists (always visible) */}
+          <Link
+            href="/lists"
+            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-muted/40 sm:h-8 sm:w-8"
+            title="Word Lists"
+          >
+            <List className="h-3.5 w-3.5" />
+          </Link>
+
           {/* Mobile overflow */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -665,6 +675,11 @@ export default function DashboardPage() {
               <DropdownMenuLabel className="text-xs text-muted-foreground">
                 Signed in as <span className="font-semibold text-foreground">{user?.username}</span>
               </DropdownMenuLabel>
+              <DropdownMenuItem asChild>
+                <Link href="/lists" className="flex items-center gap-2">
+                  <List className="h-3.5 w-3.5" /> Word Lists
+                </Link>
+              </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => toggleSharePanel()}>
                 <Users className="h-3.5 w-3.5" />
                 {shareSession ? shareSession.name : 'Collaborate'}

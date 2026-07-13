@@ -1,6 +1,6 @@
 'use client'
 
-import { Globe, Volume2, Sun, Moon, Settings2, Palette } from 'lucide-react'
+import { Globe, Volume2, Sun, Moon, Settings2, Palette, Bookmark, Brain, List } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -25,7 +25,7 @@ const ACCENT_OPTIONS = [
 ]
 
 export function SettingsPanel() {
-  const { translationLanguage, setTranslationLanguage, accent, setAccent, theme, toggleTheme, themeAccent, setThemeAccent } = usePDFStore()
+  const { translationLanguage, setTranslationLanguage, accent, setAccent, theme, toggleTheme, themeAccent, setThemeAccent, autoFlashcard, setAutoFlashcard, autoAddToList, setAutoAddToList, defaultListId, wordLists } = usePDFStore()
 
   return (
     <Popover>
@@ -119,6 +119,50 @@ export function SettingsPanel() {
                 />
               ))}
             </div>
+          </div>
+
+          {/* Vocabulary Workflow */}
+          <div className="border-t border-border/40 pt-3 space-y-3">
+            <div className="flex items-center gap-1.5">
+              <Bookmark className="h-3.5 w-3.5 text-emerald-500" />
+              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
+                When I Bookmark a Word
+              </label>
+            </div>
+            <label className="flex items-center justify-between rounded-lg px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/30">
+              <div className="flex items-center gap-2">
+                <Brain className="h-3.5 w-3.5 text-muted-foreground/60" />
+                <span>Auto-create flashcard</span>
+              </div>
+              <button
+                role="switch"
+                aria-checked={autoFlashcard}
+                onClick={() => setAutoFlashcard(!autoFlashcard)}
+                className={`relative h-4.5 w-8 rounded-full transition-colors ${autoFlashcard ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`}
+              >
+                <span className={`absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${autoFlashcard ? 'translate-x-3.5' : ''}`} />
+              </button>
+            </label>
+            <label className="flex items-center justify-between rounded-lg px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/30">
+              <div className="flex items-center gap-2">
+                <List className="h-3.5 w-3.5 text-muted-foreground/60" />
+                <span>Add to default list</span>
+              </div>
+              <button
+                role="switch"
+                aria-checked={autoAddToList}
+                onClick={() => setAutoAddToList(!autoAddToList)}
+                disabled={!defaultListId}
+                className={`relative h-4.5 w-8 rounded-full transition-colors ${autoAddToList && defaultListId ? 'bg-emerald-500' : 'bg-muted-foreground/20'} ${!defaultListId ? 'opacity-40 cursor-not-allowed' : ''}`}
+              >
+                <span className={`absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${autoAddToList && defaultListId ? 'translate-x-3.5' : ''}`} />
+              </button>
+            </label>
+            {!defaultListId && (
+              <p className="px-3 text-[10px] text-muted-foreground/50">
+                Open Word Lists and star one as default to enable this
+              </p>
+            )}
           </div>
 
           {/* Theme toggle */}

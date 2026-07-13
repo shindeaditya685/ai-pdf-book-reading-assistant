@@ -291,6 +291,7 @@ export interface Flashcard {
   _id?: string;
   id?: string;
   bookmarkId: string;
+  subscribedFrom?: string;
   word: string;
   meaning: string;
   pronunciation: string;
@@ -405,6 +406,28 @@ export interface SharedQuote {
   timestamp: string;
 }
 
+export interface WordListWord {
+  word: string
+  meaning?: string
+  pronunciation?: string
+  translation?: string
+  example?: string
+  partOfSpeech?: string
+  addedAt: string
+}
+
+export interface WordList {
+  _id: string
+  username: string
+  name: string
+  description: string
+  isPublic: boolean
+  words: WordListWord[]
+  subscriberCount: number
+  createdAt: string
+  updatedAt: string
+}
+
 interface PDFState {
   // PDF file state
   pdfFile: File | null;
@@ -472,6 +495,13 @@ interface PDFState {
   ocrText: Record<number, OcrPageData>;
   isOcrProcessing: boolean;
   ocrProgress: number;
+
+  // Word Lists
+  wordLists: WordList[]
+  subscribedLists: WordList[]
+  discoverLists: WordList[]
+  showWordLists: boolean
+  wordListsLoading: boolean
 
   // Flashcards
   flashcards: Flashcard[];
@@ -660,6 +690,22 @@ interface PDFState {
   toggleReadingStats: () => void;
   setShowReadingAnalytics: (show: boolean) => void;
 
+  // Word List state
+  defaultListId: string | null
+  autoFlashcard: boolean
+  autoAddToList: boolean
+
+  // Word List actions
+  setWordLists: (lists: WordList[]) => void
+  setSubscribedLists: (lists: WordList[]) => void
+  setDiscoverLists: (lists: WordList[]) => void
+  setShowWordLists: (show: boolean) => void
+  toggleWordLists: () => void
+  setWordListsLoading: (loading: boolean) => void
+  setDefaultListId: (id: string | null) => void
+  setAutoFlashcard: (on: boolean) => void
+  setAutoAddToList: (on: boolean) => void
+
   // Flashcard actions
   setFlashcards: (flashcards: Flashcard[]) => void;
   addFlashcard: (flashcard: Flashcard) => void;
@@ -830,6 +876,15 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   ocrText: {},
   isOcrProcessing: false,
   ocrProgress: 0,
+
+  wordLists: [],
+  subscribedLists: [],
+  discoverLists: [],
+  showWordLists: false,
+  wordListsLoading: false,
+  defaultListId: typeof window !== 'undefined' ? localStorage.getItem('word-list-default') : null,
+  autoFlashcard: typeof window !== 'undefined' ? localStorage.getItem('word-list-auto-flashcard') !== 'false' : true,
+  autoAddToList: typeof window !== 'undefined' ? localStorage.getItem('word-list-auto-add') === 'true' : false,
 
   flashcards: [],
   showFlashcards: false,
@@ -1044,6 +1099,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showFlashcards: false,
       showSharePanel: false,
       showReadingStats: false,
+      showWordLists: false,
     })),
   removeQuotesForFile: (pdfFileName) =>
     set((s) => ({
@@ -1120,6 +1176,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showSharePanel: false,
       showReadingStats: false,
       showQuotes: false,
+      showWordLists: false,
     })),
   setShowBookmarks: (show) => set({ showBookmarks: show }),
   toggleBookmarks: () =>
@@ -1133,6 +1190,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showSharePanel: false,
       showReadingStats: false,
       showQuotes: false,
+      showWordLists: false,
     })),
   setShowSearch: (show) => set({ showSearch: show }),
   toggleSearch: () =>
@@ -1146,6 +1204,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showSharePanel: false,
       showReadingStats: false,
       showQuotes: false,
+      showWordLists: false,
     })),
   setShowQuestionGenerator: (show) => set({ showQuestionGenerator: show }),
   toggleQuestionGenerator: () =>
@@ -1157,6 +1216,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showSharePanel: false,
       showReadingStats: false,
       showFlashcards: false,
+      showWordLists: false,
     })),
   setShowSummarizer: (show) => set({ showSummarizer: show }),
   toggleSummarizer: () =>
@@ -1168,6 +1228,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showSharePanel: false,
       showReadingStats: false,
       showFlashcards: false,
+      showWordLists: false,
     })),
 
   generateSummaryStart: () =>
@@ -1213,8 +1274,43 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showFlashcards: false,
       showSharePanel: false,
       showQuotes: false,
+      showWordLists: false,
     })),
   setShowReadingAnalytics: (show) => set({ showReadingAnalytics: show }),
+
+  setWordLists: (lists) => set({ wordLists: lists }),
+  setSubscribedLists: (lists) => set({ subscribedLists: lists }),
+  setDiscoverLists: (lists) => set({ discoverLists: lists }),
+  setShowWordLists: (show) => set({ showWordLists: show }),
+  toggleWordLists: () =>
+    set((s) => ({
+      showWordLists: !s.showWordLists,
+      showHistory: false,
+      showBookmarks: false,
+      showSearch: false,
+      showQuestionGenerator: false,
+      showSummarizer: false,
+      showFlashcards: false,
+      showSharePanel: false,
+      showReadingStats: false,
+      showQuotes: false,
+    })),
+  setWordListsLoading: (loading) => set({ wordListsLoading: loading }),
+  setDefaultListId: (id) => {
+    if (typeof window !== 'undefined') {
+      if (id) localStorage.setItem('word-list-default', id)
+      else localStorage.removeItem('word-list-default')
+    }
+    set({ defaultListId: id })
+  },
+  setAutoFlashcard: (on) => {
+    if (typeof window !== 'undefined') localStorage.setItem('word-list-auto-flashcard', String(on))
+    set({ autoFlashcard: on })
+  },
+  setAutoAddToList: (on) => {
+    if (typeof window !== 'undefined') localStorage.setItem('word-list-auto-add', String(on))
+    set({ autoAddToList: on })
+  },
 
   setFlashcards: (flashcards) => set({ flashcards }),
   addFlashcard: (flashcard) =>
@@ -1250,6 +1346,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showSharePanel: false,
       showReadingStats: false,
       showQuotes: false,
+      showWordLists: false,
     })),
 
   setFocusMode: (mode) => set({ focusMode: mode }),
@@ -1267,6 +1364,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showFlashcards: false,
       showReadingStats: false,
       showQuotes: false,
+      showWordLists: false,
     })),
   setShareSession: (session) => set({ shareSession: session }),
   setSharedAnnotations: (annotations) =>

@@ -157,11 +157,18 @@ export async function DELETE(request: Request) {
     } else if (word && pdfFileName) {
       filter.word = word
       filter.pdfFileName = pdfFileName
+    } else if (pdfFileName) {
+      filter.pdfFileName = pdfFileName
     } else {
       return NextResponse.json({ success: false })
     }
 
-    await conn.db.collection('flashcards').deleteOne(filter)
+    const isBulk = !!pdfFileName && !id && !word
+    if (isBulk) {
+      await conn.db.collection('flashcards').deleteMany(filter)
+    } else {
+      await conn.db.collection('flashcards').deleteOne(filter)
+    }
     return NextResponse.json({ success: true })
   } catch {
     return NextResponse.json({ success: false })
