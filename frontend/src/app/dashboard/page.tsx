@@ -604,18 +604,6 @@ export default function DashboardPage() {
 
           {/* Desktop action links */}
           <div className="hidden items-center gap-0.5 sm:flex sm:gap-1">
-            <button
-              onClick={toggleSharePanel}
-              className={`inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all ${
-                shareSession
-                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-              }`}
-              title={shareSession ? `Session: ${shareSession.name}` : 'Collaborative Reading'}
-            >
-              <Users className="h-3 w-3" />
-              <span className="hidden xl:inline">{shareSession ? shareSession.name : 'Collaborate'}</span>
-            </button>
             <Link
               href="/review"
               className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
@@ -631,6 +619,13 @@ export default function DashboardPage() {
               <BookText className="h-3 w-3" />
             </Link>
             <Link
+              href="/lists"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-muted/40"
+              title="Word Lists"
+            >
+              <List className="h-3.5 w-3.5" />
+            </Link>
+            <Link
               href="/ielts"
               className="inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-muted-foreground hover:text-emerald-600 hover:bg-muted/40 transition-colors"
               title="IELTS Prep"
@@ -638,6 +633,18 @@ export default function DashboardPage() {
               <GraduationCap className="h-3.5 w-3.5 text-emerald-500" />
               <span className="hidden lg:inline">IELTS Prep</span>
             </Link>
+            <button
+              onClick={toggleSharePanel}
+              className={`inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all ${
+                shareSession
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
+                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
+              }`}
+              title={shareSession ? `Session: ${shareSession.name}` : 'Collaborative Reading'}
+            >
+              <Users className="h-3 w-3" />
+              <span className="hidden xl:inline">{shareSession ? shareSession.name : 'Collaborate'}</span>
+            </button>
             {user?.isAdmin && (
               <Link
                 href="/admin"
@@ -651,15 +658,6 @@ export default function DashboardPage() {
               <SettingsPanel />
             </div>
           </div>
-
-          {/* Word Lists (always visible) */}
-          <Link
-            href="/lists"
-            className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-muted/40 sm:h-8 sm:w-8"
-            title="Word Lists"
-          >
-            <List className="h-3.5 w-3.5" />
-          </Link>
 
           {/* Mobile overflow */}
           <DropdownMenu>
@@ -676,15 +674,6 @@ export default function DashboardPage() {
                 Signed in as <span className="font-semibold text-foreground">{user?.username}</span>
               </DropdownMenuLabel>
               <DropdownMenuItem asChild>
-                <Link href="/lists" className="flex items-center gap-2">
-                  <List className="h-3.5 w-3.5" /> Word Lists
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toggleSharePanel()}>
-                <Users className="h-3.5 w-3.5" />
-                {shareSession ? shareSession.name : 'Collaborate'}
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
                 <Link href="/review" className="flex items-center gap-2">
                   <BrainCircuit className="h-3.5 w-3.5" /> Flashcard Review
                 </Link>
@@ -695,9 +684,18 @@ export default function DashboardPage() {
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>
+                <Link href="/lists" className="flex items-center gap-2">
+                  <List className="h-3.5 w-3.5" /> Word Lists
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
                 <Link href="/ielts" className="flex items-center gap-2">
                   <GraduationCap className="h-3.5 w-3.5 text-emerald-500" /> IELTS Prep
                 </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => toggleSharePanel()}>
+                <Users className="h-3.5 w-3.5" />
+                {shareSession ? shareSession.name : 'Collaborate'}
               </DropdownMenuItem>
               {user?.isAdmin && (
                 <DropdownMenuItem asChild>

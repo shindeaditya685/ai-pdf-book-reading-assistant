@@ -502,6 +502,24 @@ html {
   background: oklch(0.5 0 0 / 50%);
 }
 
+/* Word popup scrollbar */
+.popup-scrollbar::-webkit-scrollbar {
+  width: 5px;
+}
+
+.popup-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.popup-scrollbar::-webkit-scrollbar-thumb {
+  background: oklch(0.7 0.1 160 / 25%);
+  border-radius: 10px;
+}
+
+.popup-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: oklch(0.6 0.12 160 / 40%);
+}
+
 /* Sound wave animation */
 @keyframes soundWave {
   from { opacity: 0.4; transform: scaleY(0.6); }

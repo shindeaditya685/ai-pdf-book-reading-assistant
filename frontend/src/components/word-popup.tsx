@@ -634,7 +634,7 @@ export function WordPopup() {
   const vw = typeof window !== 'undefined' ? window.innerWidth : 1000
   const vh = typeof window !== 'undefined' ? window.innerHeight : 800
   const isMobile = vw < 640
-  const popupWidth = isMobile ? Math.min(380, vw - 24) : 360
+  const popupWidth = isMobile ? Math.min(380, vw - 24) : 400
   const popupHeight = 360
 
   // Desktop floating popup layout
@@ -660,12 +660,12 @@ export function WordPopup() {
 
   // Shared content (used by both desktop popup and mobile bottom sheet)
   const popupContent = (
-    <div className="rounded-xl border border-border bg-background shadow-2xl overflow-hidden">
+    <div className="flex max-h-[75vh] flex-col rounded-xl border border-border bg-background shadow-2xl overflow-hidden">
       {/* Slim header: grip (desktop) + bookmark + close */}
       <div
         onMouseDown={isMobile ? undefined : handleHeaderMouseDown}
         onTouchStart={isMobile ? undefined : handleHeaderTouchStart}
-        className={`flex items-center justify-between px-3 pt-2.5 pb-0 select-none ${
+        className={`shrink-0 flex items-center justify-between px-3 pt-2.5 pb-0 select-none ${
           isMobile ? 'cursor-default' : isDragging ? 'cursor-grabbing' : 'cursor-grab'
         }`}
       >
@@ -699,8 +699,8 @@ export function WordPopup() {
         </div>
       </div>
 
-      {/* Content */}
-      <div className="max-h-[60vh] overflow-y-auto px-4 pb-3 pt-1.5">
+      {/* Content (scrollable) */}
+      <div className="flex-1 overflow-y-auto px-4 pt-1.5 pb-2 popup-scrollbar">
         {isExplaining ? (
           <div className="flex items-center gap-2 py-3">
             <Loader2 className="h-4 w-4 animate-spin text-emerald-500" />
@@ -838,92 +838,6 @@ export function WordPopup() {
                 )}
               </div>
             )}
-
-            {/* BOTTOM ACTION ROW: quote + highlight colors */}
-            {selectedPageNumber && explanation && !isExplaining && (
-                <div className="flex items-center justify-between border-t border-border/50 pt-2.5 -mx-4 px-4">
-                <div className="flex items-center gap-1">
-                  {selectedPageNumber && explanation && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-7 gap-1.5 text-[11px] ${
-                        isFlashcardCreated
-                          ? 'text-violet-600 hover:text-violet-700'
-                          : 'text-muted-foreground hover:text-violet-600'
-                      }`}
-                      onClick={handleToggleFlashcard}
-                    >
-                      <Brain className={`h-3 w-3 ${isFlashcardCreated ? 'fill-violet-500' : ''}`} />
-                      {isFlashcardCreated ? 'Flashcard' : 'Flashcard'}
-                    </Button>
-                  )}
-                  {quoteText && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className={`h-7 gap-1.5 text-[11px] ${
-                        isQuoteSaved
-                          ? 'text-yellow-600 hover:text-yellow-700'
-                          : 'text-muted-foreground hover:text-yellow-600'
-                      }`}
-                      onClick={handleSaveQuote}
-                      disabled={quoteStatus === 'saving'}
-                    >
-                      <QuoteIcon className={`h-3 w-3 ${isQuoteSaved ? 'fill-yellow-500' : ''}`} />
-                      {isQuoteSaved ? 'Saved' : 'Quote'}
-                    </Button>
-                  )}
-                </div>
-                <div className="relative flex items-center gap-1.5">
-                  {wordLists.length > 0 && (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="h-7 gap-1 text-[11px] text-muted-foreground hover:text-emerald-600"
-                      onClick={() => { fetchLists(); setShowListMenu(!showListMenu) }}
-                    >
-                      <ListPlus className="h-3 w-3" />
-                      List
-                    </Button>
-                  )}
-                  {showListMenu && (
-                    <div className="absolute bottom-full right-0 mb-1 w-48 rounded-lg border bg-popover p-1 shadow-lg z-50">
-                      {wordLists.length === 0 ? (
-                        <p className="px-2 py-3 text-center text-xs text-muted-foreground">No lists yet</p>
-                      ) : (
-                        wordLists.map((l) => (
-                          <button
-                            key={l._id}
-                            className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-foreground hover:bg-accent"
-                            onClick={() => handleAddToList(l._id)}
-                            disabled={addingToList}
-                          >
-                            {addingToList ? (
-                              <Loader2 className="h-3 w-3 animate-spin" />
-                            ) : (
-                              <ListPlus className="h-3 w-3 text-muted-foreground" />
-                            )}
-                            <span className="truncate">{l.name}</span>
-                          </button>
-                        ))
-                      )}
-                    </div>
-                  )}
-                  <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60 mr-0.5">
-                    Highlight
-                  </span>
-                  {HIGHLIGHT_COLORS.map((color) => (
-                    <button
-                      key={color.value}
-                      onClick={() => handleHighlightFromPopup(color.value)}
-                      className={`h-4.5 w-4.5 rounded-full ${color.tailwind} transition-all hover:scale-125 border border-border shadow-sm active:scale-95`}
-                      title={`Highlight as ${color.label}`}
-                    />
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         ) : (
           <p className="py-3 text-sm text-muted-foreground">
@@ -931,6 +845,90 @@ export function WordPopup() {
           </p>
         )}
       </div>
+
+      {/* Fixed bottom action bar */}
+      {selectedPageNumber && explanation && !isExplaining && (
+        <div className="shrink-0 flex items-center justify-between border-t border-border/50 px-3 py-2 bg-background">
+          <div className="flex items-center gap-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              className={`h-7 gap-1.5 text-[11px] ${
+                isFlashcardCreated
+                  ? 'text-violet-600 hover:text-violet-700'
+                  : 'text-muted-foreground hover:text-violet-600'
+              }`}
+              onClick={handleToggleFlashcard}
+            >
+              <Brain className={`h-3 w-3 ${isFlashcardCreated ? 'fill-violet-500' : ''}`} />
+              {isFlashcardCreated ? 'Flashcard' : 'Flashcard'}
+            </Button>
+            {quoteText && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className={`h-7 gap-1.5 text-[11px] ${
+                  isQuoteSaved
+                    ? 'text-yellow-600 hover:text-yellow-700'
+                    : 'text-muted-foreground hover:text-yellow-600'
+                }`}
+                onClick={handleSaveQuote}
+                disabled={quoteStatus === 'saving'}
+              >
+                <QuoteIcon className={`h-3 w-3 ${isQuoteSaved ? 'fill-yellow-500' : ''}`} />
+                {isQuoteSaved ? 'Saved' : 'Quote'}
+              </Button>
+            )}
+          </div>
+          <div className="relative flex items-center gap-1.5">
+            {wordLists.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 gap-1 text-[11px] text-muted-foreground hover:text-emerald-600"
+                onClick={() => { fetchLists(); setShowListMenu(!showListMenu) }}
+              >
+                <ListPlus className="h-3 w-3" />
+                List
+              </Button>
+            )}
+            {showListMenu && (
+              <div className="absolute bottom-full right-0 mb-1 w-48 rounded-lg border bg-popover p-1 shadow-lg z-50">
+                {wordLists.length === 0 ? (
+                  <p className="px-2 py-3 text-center text-xs text-muted-foreground">No lists yet</p>
+                ) : (
+                  wordLists.map((l) => (
+                    <button
+                      key={l._id}
+                      className="flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-xs text-foreground hover:bg-accent"
+                      onClick={() => handleAddToList(l._id)}
+                      disabled={addingToList}
+                    >
+                      {addingToList ? (
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                      ) : (
+                        <ListPlus className="h-3 w-3 text-muted-foreground" />
+                      )}
+                      <span className="truncate">{l.name}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            )}
+            <span className="text-[9px] font-semibold uppercase tracking-wider text-muted-foreground/60 mr-0.5">
+              Highlight
+            </span>
+            {HIGHLIGHT_COLORS.map((color) => (
+              <button
+                key={color.value}
+                onClick={() => handleHighlightFromPopup(color.value)}
+                className={`h-4.5 w-4.5 rounded-full ${color.tailwind} transition-all hover:scale-125 border border-border shadow-sm active:scale-95`}
+                title={`Highlight as ${color.label}`}
+              />
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 

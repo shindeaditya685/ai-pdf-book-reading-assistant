@@ -1305,8 +1305,8 @@ export function PDFViewer() {
           {showSearch && <SearchBar />}
           <ToolButton icon={Search} active={showSearch} onClick={toggleSearch} title="Search in PDF (/)" />
           <ToolButton icon={Bookmark} active={false} onClick={toggleBookmarks} title="Bookmarks (B)" className="hidden sm:inline-flex" />
-          <ToolButton icon={QuoteIcon} active={false} onClick={toggleQuotes} title="Saved Quotes" className="hidden sm:inline-flex" />
           <ToolButton icon={Clock} active={false} onClick={toggleHistory} title="Word History (H)" className="hidden sm:inline-flex" />
+          <ToolButton icon={QuoteIcon} active={false} onClick={toggleQuotes} title="Saved Quotes" className="hidden sm:inline-flex" />
           <ToolButton icon={Brain} active={false} onClick={toggleFlashcards} title="Flashcards (G)" className="hidden sm:inline-flex" />
 
           <div className="mx-1 hidden h-4 w-px bg-border/25 sm:block" />
@@ -1333,7 +1333,6 @@ export function PDFViewer() {
 
           <div className="hidden items-center gap-0.5 sm:flex sm:gap-1">
             <ToolButton icon={Volume2} active={false} onClick={handleReadAloud} title="Read Aloud" />
-            <ToolButton icon={Users} active={!!shareSession} onClick={toggleSharePanel} title={shareSession ? `Session: ${shareSession.name}` : 'Collaborate'} />
             <ToolButton
               icon={scrollMode ? AlignJustify : BookOpen}
               active={scrollMode}
@@ -1351,6 +1350,7 @@ export function PDFViewer() {
               }}
               title={scrollMode ? 'Continuous scroll' : 'Single page'}
             />
+            <ToolButton icon={Users} active={!!shareSession} onClick={toggleSharePanel} title={shareSession ? `Session: ${shareSession.name}` : 'Collaborate'} />
           </div>
 
           <div className="mx-1 hidden h-4 w-px bg-border/25 sm:block" />
@@ -1390,11 +1390,11 @@ export function PDFViewer() {
               <DropdownMenuItem onSelect={() => toggleBookmarks()}>
                 <Bookmark className="h-3.5 w-3.5" /> Bookmarks <span className="ml-auto text-[10px] text-muted-foreground/60">B</span>
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toggleQuotes()}>
-                <QuoteIcon className="h-3.5 w-3.5" /> Saved Quotes
-              </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => toggleHistory()}>
                 <Clock className="h-3.5 w-3.5" /> Word History <span className="ml-auto text-[10px] text-muted-foreground/60">H</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => toggleQuotes()}>
+                <QuoteIcon className="h-3.5 w-3.5" /> Saved Quotes
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => toggleFlashcards()}>
                 <Brain className="h-3.5 w-3.5" /> Flashcards <span className="ml-auto text-[10px] text-muted-foreground/60">G</span>
@@ -1406,11 +1406,15 @@ export function PDFViewer() {
               <DropdownMenuItem onSelect={() => { if (summaryQuotaBlocked) setQuotaModalOpen(true); else toggleSummarizer() }} disabled={summaryQuotaBlocked}>
                 <Sparkles className="h-3.5 w-3.5" /> AI Summarizer
               </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toggleSharePanel()}>
-                <Users className="h-3.5 w-3.5" /> {shareSession ? shareSession.name : 'Collaborate'}
+              <DropdownMenuItem onSelect={() => setQuotaModalOpen(true)}>
+                <Sparkles className="h-3.5 w-3.5" /> AI Quota
               </DropdownMenuItem>
+              <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={() => handleReadAloud()}>
                 <Volume2 className="h-3.5 w-3.5" /> Read Aloud
+              </DropdownMenuItem>
+              <DropdownMenuItem onSelect={() => toggleSharePanel()}>
+                <Users className="h-3.5 w-3.5" /> {shareSession ? shareSession.name : 'Collaborate'}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuLabel className="text-xs text-muted-foreground">Zoom</DropdownMenuLabel>
@@ -1425,10 +1429,6 @@ export function PDFViewer() {
                   <ZoomIn className="h-3.5 w-3.5" />
                 </DropdownMenuItem>
               </div>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => setQuotaModalOpen(true)}>
-                <Sparkles className="h-3.5 w-3.5" /> AI Quota
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
         </div>
