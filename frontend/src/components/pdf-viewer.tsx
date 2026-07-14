@@ -804,7 +804,7 @@ export function PDFViewer() {
     const handler = async (e: Event) => {
       const detail = (e as CustomEvent<{ text: string; pageNumber: number; x: number; y: number }>).detail
       if (!detail || !detail.text) return
-      setSelectedWord(detail.text.split(/\s+/)[0] || '')
+      setSelectedWord(detail.text)
       setSelectedSentence(detail.text)
       setSelectedPageNumber(detail.pageNumber)
       setPopupPosition({ x: detail.x, y: detail.y })

@@ -41,9 +41,10 @@ export async function POST(request: Request) {
       return NextResponse.json({ success: false })
     }
 
-    // Reject multi-word phrases saved as "words"
-    if (/\s/.test(word) || word.length > 50) {
-      return NextResponse.json({ success: false, error: 'word must be a single word' }, { status: 400 })
+    // Allow single words AND multi-word phrases (removed single-word
+    // restriction so users can bookmark selected phrases/lines).
+    if (word.length > 200) {
+      return NextResponse.json({ success: false, error: 'word too long' }, { status: 400 })
     }
 
     const doc = {

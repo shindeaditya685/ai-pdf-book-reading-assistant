@@ -121,7 +121,7 @@ export function SelectionContextMenu() {
 
     if (hasSelection && sel) {
       selectedText = cleanText(sel.toString().replace(/\s+/g, ' '))
-      word = selectedText.split(/\s+/)[0] || ''
+      word = selectedText
       sentence = selectedText
       const canvasElement = textLayer.parentElement?.querySelector('canvas')
       if (canvasElement) {
@@ -306,7 +306,7 @@ export function SelectionContextMenu() {
   const handleGetMeaning = useCallback(() => {
     if (!state) return
     setState(null)
-    const lookupWord = ((state.hasSelection && state.selectedText) || state.word).split(/\s+/)[0] || ''
+    const lookupWord = (state.hasSelection && state.selectedText) || state.word
     window.dispatchEvent(new CustomEvent('pdf-get-meaning', {
       detail: {
         word: lookupWord,

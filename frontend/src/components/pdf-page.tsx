@@ -594,13 +594,10 @@ export function PdfPage({
       return
     }
 
-    // Drag-select of 2+ words → don't open the meaning popup.
-    // The right-click context menu handles Quote/Highlight/Copy
-    // for multi-word selections. Single-word clicks/double-clicks
-    // (wordCount === 1) still open the meaning popup as before.
-    const wordCount = selectedText.split(/\s+/).length
-    if (wordCount > 1) return
-
+    // Drag-select opens the meaning popup for any selection.
+    // Previously multi-word selections were suppressed; now the
+    // full selected text is treated as the word/phrase so users
+    // can bookmark phrases and get AI context for the selection.
     const word = selectedText
     const pageText = await getPageText(pageNumber)
     const sentence = extractSentence(pageText, word)
