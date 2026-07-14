@@ -9,14 +9,12 @@ import {
   Plus,
   Trash2,
   Loader2,
-  BookOpen,
   ChevronLeft,
   BookText,
-  Layers,
-  Clock,
   Brain,
-  ExternalLink,
   X,
+  ListChecks,
+  BookMarked,
 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
@@ -57,7 +55,6 @@ export default function CollectionsPage() {
 
   const [studyMode, setStudyMode] = useState<'flashcard' | 'test' | null>(null)
 
-  // Create state
   const [showCreate, setShowCreate] = useState(false)
   const [createName, setCreateName] = useState('')
   const [creating, setCreating] = useState(false)
@@ -124,11 +121,10 @@ export default function CollectionsPage() {
         if (selectedId === id) {
           setSelected(null)
           setSelectedId(null)
-          router.replace('/collections')
         }
       }
     } catch {}
-  }, [selectedId, router])
+  }, [selectedId])
 
   const handleDeleteWord = useCallback(async (word: string) => {
     if (!selectedId) return
@@ -148,145 +144,162 @@ export default function CollectionsPage() {
     } catch {}
   }, [selectedId])
 
+  const goToList = useCallback(() => {
+    setSelected(null)
+    setSelectedId(null)
+  }, [])
+
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
+      <div className="flex h-screen items-center justify-center bg-[#1C1917]">
         <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-emerald-500/10 bg-background/60 px-4 shadow-[0_1px_0_0_rgba(16,185,129,0.05)] backdrop-blur-xl">
-        <div className="flex items-center gap-3">
+    <div className="min-h-screen bg-[#1C1917]">
+      {/* Header */}
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#3F3A35] bg-[#1C1917]/90 px-4 backdrop-blur-md">
+        <div className="flex items-center gap-3 min-w-0">
           {selectedId ? (
             <button
-              onClick={() => { setSelected(null); setSelectedId(null); router.replace('/collections') }}
-              className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-all hover:border-muted-foreground/20 hover:bg-muted/50 hover:text-foreground"
+              onClick={goToList}
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#3F3A35] bg-[#26221E] text-[#A09890] transition-colors hover:border-[#5A5245] hover:text-[#FBF9F6]"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
           ) : (
-            <Link href="/dashboard" className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-all hover:border-muted-foreground/20 hover:bg-muted/50 hover:text-foreground">
+            <Link href="/dashboard" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#3F3A35] bg-[#26221E] text-[#A09890] transition-colors hover:border-[#5A5245] hover:text-[#FBF9F6]">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           )}
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md shadow-emerald-500/20 ring-1 ring-emerald-500/20">
-            <Library className="h-4 w-4 text-white" />
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#10B981]/20 ring-1 ring-[#10B981]/30">
+              <BookMarked className="h-3.5 w-3.5 text-[#10B981]" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate font-serif text-sm font-bold text-[#FBF9F6]">
+                {selected ? selected.name : 'Collections'}
+              </h1>
+              {selected ? (
+                <p className="text-[11px] text-[#7C6F5E]">{selected.wordCount} words</p>
+              ) : (
+                <p className="text-[11px] text-[#7C6F5E]">{collections.length} collections</p>
+              )}
+            </div>
           </div>
-          <span className="text-sm font-bold text-foreground">
-            {selected ? selected.name : 'Collections'}
-          </span>
-          {!selected && (
-            <span className="rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              {collections.length}
-            </span>
-          )}
         </div>
+
         {!selectedId && (
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="flex h-8 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors"
+            className="flex h-7 items-center gap-1.5 rounded-lg bg-[#10B981] px-2.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#059669]"
           >
-            <Plus className="h-3.5 w-3.5" />
+            <Plus className="h-3 w-3" />
             <span className="hidden sm:inline">New Collection</span>
           </button>
         )}
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6">
         {selectedId ? (
           /* ── COLLECTION DETAIL ── */
           <div>
             {selectedLoading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="h-6 w-6 animate-spin text-[#10B981]" />
               </div>
             ) : selected ? (
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Layers className="h-3.5 w-3.5" />
-                      {selected.wordCount} word{selected.wordCount !== 1 ? 's' : ''}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-3.5 w-3.5" />
-                      {new Date(selected.createdAt).toLocaleDateString()}
-                    </span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    {selected.words.length > 0 && (
-                      <>
-                        <button
-                          onClick={() => setStudyMode('flashcard')}
-                          className="flex h-7 items-center gap-1.5 rounded-lg bg-emerald-500 px-2.5 text-[11px] font-semibold text-white hover:bg-emerald-600 transition-colors"
-                        >
-                          <Brain className="h-3 w-3" />
-                          Review
-                        </button>
-                        <button
-                          onClick={() => setStudyMode('test')}
-                          className="flex h-7 items-center gap-1.5 rounded-lg bg-amber-500 px-2.5 text-[11px] font-semibold text-white hover:bg-amber-600 transition-colors"
-                        >
-                          <BookText className="h-3 w-3" />
-                          Quiz
-                        </button>
-                      </>
-                    )}
+              <div>
+                {/* Action bar */}
+                {selected.words.length > 0 && (
+                  <div className="mb-6 flex items-center gap-2">
                     <button
-                      onClick={() => { if (confirm('Delete this collection?')) handleDelete(selected._id) }}
-                      className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-950/20 transition-colors"
-                      title="Delete collection"
+                      onClick={() => setStudyMode('flashcard')}
+                      className="flex h-8 items-center gap-1.5 rounded-lg border border-[#10B981]/30 bg-[#10B981]/10 px-3 text-[11px] font-semibold text-[#10B981] transition-all hover:bg-[#10B981]/20 active:scale-95"
                     >
-                      <Trash2 className="h-3.5 w-3.5" />
+                      <Brain className="h-3.5 w-3.5" />
+                      Review
                     </button>
+                    <button
+                      onClick={() => setStudyMode('test')}
+                      className="flex h-8 items-center gap-1.5 rounded-lg border border-[#D4A373]/30 bg-[#D4A373]/10 px-3 text-[11px] font-semibold text-[#D4A373] transition-all hover:bg-[#D4A373]/20 active:scale-95"
+                    >
+                      <ListChecks className="h-3.5 w-3.5" />
+                      Quiz
+                    </button>
+                    <div className="ml-auto">
+                      <button
+                        onClick={() => { if (confirm('Delete this collection?')) handleDelete(selected._id) }}
+                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[#7C6F5E] transition-colors hover:bg-[#B33A3A]/10 hover:text-[#B33A3A]"
+                        title="Delete collection"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
                   </div>
-                </div>
+                )}
 
+                {/* Empty state */}
                 {selected.words.length === 0 ? (
-                  <div className="flex flex-col items-center gap-3 py-20 text-center">
-                    <BookText className="h-10 w-10 text-muted-foreground/20" />
-                    <p className="text-sm font-semibold text-muted-foreground/50">No words yet</p>
-                    <p className="text-xs text-muted-foreground/40">Import words into this collection from the vocabulary page</p>
-                    <Link href="/vocabulary" className="mt-2 rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors">
+                  <div className="flex flex-col items-center gap-4 py-20 text-center">
+                    <BookText className="h-10 w-10 text-[#7C6F5E]/30" />
+                    <div>
+                      <p className="font-serif text-base font-semibold text-[#7C6F5E]">No words yet</p>
+                      <p className="mt-1 text-xs text-[#7C6F5E]/50">Import words from the vocabulary page</p>
+                    </div>
+                    <Link
+                      href="/vocabulary"
+                      className="rounded-lg bg-[#10B981] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#059669]"
+                    >
                       Go to Vocabulary
                     </Link>
                   </div>
                 ) : (
-                  <div className="space-y-1">
-                    {selected.words.map((w) => (
-                      <div key={w.word + w.order} className="group rounded-lg border border-border/40 bg-background/40 p-3 shadow-sm transition-all hover:border-border/70">
+                  /* Word list — margin notes style */
+                  <div className="border-l border-[#3F3A35] pl-4 sm:pl-6">
+                    {selected.words.map((w, i) => (
+                      <div
+                        key={w.word + w.order}
+                        className="group relative border-b border-[#3F3A35]/50 py-3 last:border-0"
+                      >
+                        {/* Dot on the left ruler */}
+                        <div className="absolute -left-[19px] top-[18px] h-1.5 w-1.5 rounded-full bg-[#10B981]/40 sm:-left-[25px]" />
+
                         <div className="flex items-start justify-between gap-3">
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2">
-                              <span className="text-sm font-bold text-foreground">{w.word}</span>
+                          <div className="min-w-0 flex-1">
+                            <div className="flex items-center gap-2.5 flex-wrap">
+                              <span className="font-serif text-base font-bold tracking-tight text-[#FBF9F6]">
+                                {w.word}
+                              </span>
                               {w.pronunciation && (
-                                <span className="text-[11px] italic text-muted-foreground/50">{w.pronunciation}</span>
+                                <span className="font-mono text-[11px] tracking-wide text-[#7C6F5E]/60">
+                                  {w.pronunciation}
+                                </span>
                               )}
                               {w.partOfSpeech && (
-                                <span className="rounded-full bg-orange-100 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+                                <span className="rounded-full border border-[#D4A373]/20 bg-[#D4A373]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#D4A373]">
                                   {w.partOfSpeech}
                                 </span>
                               )}
                             </div>
                             {w.meaning && (
-                              <p className="mt-0.5 text-xs text-muted-foreground">{w.meaning}</p>
+                              <p className="mt-0.5 text-sm leading-relaxed text-[#A09890]">{w.meaning}</p>
                             )}
                             {w.example && (
-                              <p className="mt-1 text-[11px] italic text-muted-foreground/60 border-l-2 border-muted-foreground/15 pl-2">
+                              <p className="mt-1 text-[12px] italic text-[#7C6F5E]/50 border-l-2 border-[#3F3A35] pl-2">
                                 {w.example}
                               </p>
                             )}
                           </div>
-                          <div className="flex items-center gap-1.5 shrink-0">
+                          <div className="flex items-center gap-2 shrink-0 pt-1">
                             {w.translation && (
-                              <span className="text-[11px] font-medium text-emerald-600 dark:text-emerald-400">{w.translation}</span>
+                              <span className="text-[11px] font-medium text-[#10B981]/70">{w.translation}</span>
                             )}
                             <button
                               onClick={() => handleDeleteWord(w.word)}
-                              className="opacity-0 group-hover:opacity-100 rounded p-0.5 text-muted-foreground/20 transition-all hover:text-red-500"
+                              className="rounded p-0.5 text-[#7C6F5E]/20 opacity-0 transition-all hover:text-[#B33A3A] group-hover:opacity-100"
                               title="Remove word"
                             >
                               <X className="h-3 w-3" />
@@ -297,45 +310,39 @@ export default function CollectionsPage() {
                     ))}
                   </div>
                 )}
-
-                <div className="flex items-center gap-2 text-xs text-muted-foreground/40 pt-2">
-                  <BookOpen className="h-3 w-3" />
-                  <span>Words in this collection are also saved to your vocabulary</span>
-                </div>
               </div>
             ) : (
-              <div className="flex flex-col items-center gap-3 py-20 text-center">
-                <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
-                <p className="text-sm text-muted-foreground">Loading collection...</p>
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="h-6 w-6 animate-spin text-[#10B981]" />
               </div>
             )}
           </div>
         ) : (
           /* ── COLLECTIONS LIST ── */
-          <div className="space-y-6">
+          <div>
             {/* Create form */}
             {showCreate && (
-              <div className="rounded-xl border border-emerald-200/50 bg-emerald-50/50 p-4 shadow-sm dark:border-emerald-900/30 dark:bg-emerald-950/10">
+              <div className="mb-6 rounded-xl border border-[#10B981]/20 bg-[#10B981]/5 px-4 py-3">
                 <div className="flex items-center gap-3">
                   <input
                     value={createName}
                     onChange={(e) => setCreateName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleCreate() }}
-                    placeholder="Collection name (e.g. The Great Gatsby)"
-                    className="flex-1 h-9 rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none transition-all focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+                    placeholder="Collection name"
+                    className="flex-1 h-9 rounded-lg border border-[#3F3A35] bg-[#26221E] px-3 text-sm text-[#FBF9F6] placeholder:text-[#7C6F5E]/40 outline-none transition-all focus:border-[#10B981]/50 focus:ring-2 focus:ring-[#10B981]/15"
                     autoFocus
                   />
                   <button
                     onClick={handleCreate}
                     disabled={!createName.trim() || creating}
-                    className="flex h-9 items-center gap-1.5 rounded-lg bg-emerald-500 px-3 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors disabled:opacity-50"
+                    className="flex h-9 items-center gap-1.5 rounded-lg bg-[#10B981] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#059669] disabled:opacity-50"
                   >
                     {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                     Create
                   </button>
                   <button
                     onClick={() => setShowCreate(false)}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 transition-colors"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-[#7C6F5E] transition-colors hover:bg-[#26221E] hover:text-[#FBF9F6]"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -344,56 +351,51 @@ export default function CollectionsPage() {
             )}
 
             {loading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="h-6 w-6 animate-spin text-emerald-500" />
+              <div className="flex items-center justify-center py-24">
+                <Loader2 className="h-6 w-6 animate-spin text-[#10B981]" />
               </div>
             ) : collections.length === 0 ? (
-              <div className="flex flex-col items-center gap-3 py-20 text-center">
-                <Library className="h-10 w-10 text-muted-foreground/20" />
-                <p className="text-sm font-semibold text-muted-foreground/50">No collections yet</p>
-                <p className="text-xs text-muted-foreground/40">
-                  Create a collection and import words from the vocabulary page
-                </p>
+              <div className="flex flex-col items-center gap-4 py-20 text-center">
+                <Library className="h-10 w-10 text-[#7C6F5E]/30" />
+                <div>
+                  <p className="font-serif text-base font-semibold text-[#7C6F5E]">No collections yet</p>
+                  <p className="mt-1 text-xs text-[#7C6F5E]/50">Create one and import words from vocabulary</p>
+                </div>
                 <button
                   onClick={() => setShowCreate(true)}
-                  className="mt-2 rounded-lg bg-emerald-500 px-4 py-2 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors"
+                  className="rounded-lg bg-[#10B981] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#059669]"
                 >
                   Create Collection
                 </button>
               </div>
             ) : (
-              <div className="grid gap-3 sm:grid-cols-2">
+              /* Ledger-style list */
+              <div className="border-l border-[#3F3A35] pl-4 sm:pl-6">
                 {collections.map((c) => (
                   <button
                     key={c._id}
-                    onClick={() => { setSelectedId(c._id); fetchCollection(c._id); router.push(`/collections?id=${c._id}`, { scroll: false }) }}
-                    className="group rounded-xl border border-border/40 bg-background/60 p-4 text-left shadow-sm transition-all hover:border-emerald-200/50 hover:shadow-md hover:shadow-emerald-500/5 dark:hover:border-emerald-800/30"
+                    onClick={() => { setSelectedId(c._id); fetchCollection(c._id) }}
+                    className="group relative flex w-full items-center gap-4 border-b border-[#3F3A35]/50 py-3.5 text-left transition-all hover:border-[#3F3A35] last:border-0"
                   >
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-2.5">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-100 dark:bg-emerald-900/30">
-                          <Library className="h-4 w-4 text-emerald-600 dark:text-emerald-400" />
-                        </div>
-                        <div>
-                          <p className="text-sm font-bold text-foreground group-hover:text-emerald-600 dark:group-hover:text-emerald-400 transition-colors">
-                            {c.name}
-                          </p>
-                          <p className="mt-0.5 text-[11px] text-muted-foreground/60">
-                            {c.wordCount} word{c.wordCount !== 1 ? 's' : ''}
-                          </p>
-                        </div>
-                      </div>
-                      <ExternalLink className="h-3.5 w-3.5 text-muted-foreground/20 group-hover:text-emerald-500 transition-colors" />
+                    {/* Dot on the ruler line */}
+                    <div className="absolute -left-[19px] top-[19px] h-1.5 w-1.5 rounded-full bg-[#10B981]/20 transition-colors group-hover:bg-[#10B981]/60 sm:-left-[25px]" />
+
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#26221E] ring-1 ring-[#3F3A35] transition-all group-hover:ring-[#10B981]/30">
+                      <BookMarked className="h-4 w-4 text-[#7C6F5E] transition-colors group-hover:text-[#10B981]" />
                     </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-serif text-sm font-bold text-[#FBF9F6] transition-colors group-hover:text-[#10B981]">
+                        {c.name}
+                      </p>
+                      <p className="mt-0.5 font-mono text-[11px] text-[#7C6F5E]/60">
+                        {c.wordCount} word{c.wordCount !== 1 ? 's' : ''}
+                      </p>
+                    </div>
+                    <ChevronLeft className="h-3.5 w-3.5 -rotate-180 text-[#7C6F5E]/30 transition-colors group-hover:text-[#7C6F5E]/60" />
                   </button>
                 ))}
               </div>
             )}
-
-            <div className="flex items-center gap-2 text-xs text-muted-foreground/40 pt-2">
-              <BookOpen className="h-3 w-3" />
-              <span>Import words into collections from the vocabulary page</span>
-            </div>
           </div>
         )}
       </main>
