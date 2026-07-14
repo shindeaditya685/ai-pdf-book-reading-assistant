@@ -15,6 +15,7 @@ import {
   X,
   ListChecks,
   BookMarked,
+  ChevronDown,
 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
@@ -52,6 +53,8 @@ export default function CollectionsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(initialId)
   const [selected, setSelected] = useState<Collection | null>(null)
   const [selectedLoading, setSelectedLoading] = useState(false)
+
+  const [expanded, setExpanded] = useState<string | null>(null)
 
   const [studyMode, setStudyMode] = useState<'flashcard' | 'test' | null>(null)
 
@@ -257,57 +260,116 @@ export default function CollectionsPage() {
                     </Link>
                   </div>
                 ) : (
-                  /* Word list — margin notes style */
+                  /* Word list — expandable accordion cards */
                   <div className="border-l border-[#3F3A35] pl-4 sm:pl-6">
-                    {selected.words.map((w, i) => (
-                      <div
-                        key={w.word + w.order}
-                        className="group relative border-b border-[#3F3A35]/50 py-3 last:border-0"
-                      >
-                        {/* Dot on the left ruler */}
-                        <div className="absolute -left-[19px] top-[18px] h-1.5 w-1.5 rounded-full bg-[#10B981]/40 sm:-left-[25px]" />
+                    {selected.words.map((w, i) => {
+                      const isExpanded = expanded === `${w.word}-${w.order}`
+                      return (
+                        <div
+                          key={w.word + w.order}
+                          className="border-b border-[#3F3A35]/40 last:border-0"
+                        >
+                          {/* Ruler dot */}
+                          <div className={`absolute -left-[19px] h-1.5 w-1.5 rounded-full transition-colors sm:-left-[25px] ${isExpanded ? 'bg-[#D4A373]' : 'bg-[#10B981]/40'}`}
+                            style={{ marginTop: '18px' }}
+                          />
 
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 flex-1">
-                            <div className="flex items-center gap-2.5 flex-wrap">
-                              <span className="font-serif text-base font-bold tracking-tight text-[#FBF9F6]">
-                                {w.word}
-                              </span>
-                              {w.pronunciation && (
-                                <span className="font-mono text-[11px] tracking-wide text-[#7C6F5E]/60">
-                                  {w.pronunciation}
+                          {/* Collapsed row */}
+                          <div
+                            role="button"
+                            tabIndex={0}
+                            onClick={() => setExpanded(isExpanded ? null : `${w.word}-${w.order}`)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter' || e.key === ' ') {
+                                e.preventDefault()
+                                setExpanded(isExpanded ? null : `${w.word}-${w.order}`)
+                              }
+                            }}
+                            className={`group flex w-full cursor-pointer items-center gap-3 py-3 text-left transition-colors hover:bg-[#26221E]/30 ${
+                              isExpanded ? 'bg-[#26221E]/20' : ''
+                            }`}
+                          >
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2.5 flex-wrap">
+                                <span className="font-serif text-base font-bold tracking-tight text-[#FBF9F6]">
+                                  {w.word}
                                 </span>
-                              )}
-                              {w.partOfSpeech && (
-                                <span className="rounded-full border border-[#D4A373]/20 bg-[#D4A373]/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#D4A373]">
-                                  {w.partOfSpeech}
-                                </span>
+                                {w.partOfSpeech && (
+                                  <span className="rounded-full border border-[#D4A373]/20 bg-[#D4A373]/8 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#D4A373]">
+                                    {w.partOfSpeech}
+                                  </span>
+                                )}
+                              </div>
+                              {w.meaning && (
+                                <p className="mt-0.5 truncate text-sm text-[#A09890]/70">{w.meaning}</p>
                               )}
                             </div>
-                            {w.meaning && (
-                              <p className="mt-0.5 text-sm leading-relaxed text-[#A09890]">{w.meaning}</p>
-                            )}
-                            {w.example && (
-                              <p className="mt-1 text-[12px] italic text-[#7C6F5E]/50 border-l-2 border-[#3F3A35] pl-2">
-                                {w.example}
+
+                            <div className="flex items-center gap-2 shrink-0">
+                              {w.translation && !isExpanded && (
+                                <span className="hidden text-[11px] font-medium text-[#10B981]/60 sm:block">{w.translation}</span>
+                              )}
+                              <ChevronDown className={`h-3.5 w-3.5 text-[#7C6F5E]/30 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                              <button
+                                onClick={(e) => { e.stopPropagation(); handleDeleteWord(w.word) }}
+                                className="rounded p-0.5 text-[#7C6F5E]/10 opacity-0 transition-all hover:text-[#B33A3A] group-hover:opacity-100"
+                                title="Remove word"
+                              >
+                                <X className="h-3 w-3" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Expanded details */}
+                          {isExpanded && (
+                            <div className="border-l-2 border-[#D4A373]/30 pb-4 pl-3 ml-0.5">
+                              {/* Part of speech + pronunciation row */}
+                              <div className="mb-3 flex items-center gap-2.5 flex-wrap">
+                                {w.partOfSpeech && (
+                                  <span className="rounded-full border border-[#D4A373]/25 bg-[#D4A373]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#D4A373]">
+                                    {w.partOfSpeech}
+                                  </span>
+                                )}
+                                {w.pronunciation && (
+                                  <span className="font-mono text-[11px] tracking-wide text-[#7C6F5E]/60">
+                                    {w.pronunciation}
+                                  </span>
+                                )}
+                              </div>
+
+                              {/* Meaning */}
+                              <p className="text-sm leading-relaxed text-[#FBF9F6]">
+                                {w.meaning || <span className="italic text-[#7C6F5E]/40">No meaning</span>}
                               </p>
-                            )}
-                          </div>
-                          <div className="flex items-center gap-2 shrink-0 pt-1">
-                            {w.translation && (
-                              <span className="text-[11px] font-medium text-[#10B981]/70">{w.translation}</span>
-                            )}
-                            <button
-                              onClick={() => handleDeleteWord(w.word)}
-                              className="rounded p-0.5 text-[#7C6F5E]/20 opacity-0 transition-all hover:text-[#B33A3A] group-hover:opacity-100"
-                              title="Remove word"
-                            >
-                              <X className="h-3 w-3" />
-                            </button>
-                          </div>
+
+                              {/* Translation */}
+                              {w.translation && (
+                                <p className="mt-2 text-sm font-medium text-[#10B981]/80">
+                                  {w.translation}
+                                </p>
+                              )}
+
+                              {/* Example */}
+                              {w.example && (
+                                <div className="mt-2.5">
+                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7C6F5E]/60">
+                                    Example
+                                  </p>
+                                  <p className="mt-0.5 border-l-2 border-[#3F3A35] pl-3 text-sm italic leading-relaxed text-[#A09890]">
+                                    &ldquo;{w.example}&rdquo;
+                                  </p>
+                                </div>
+                              )}
+
+                              {/* Date */}
+                              <p className="mt-2 text-[10px] text-[#7C6F5E]/30">
+                                Added {new Date(w.createdAt).toLocaleDateString()}
+                              </p>
+                            </div>
+                          )}
                         </div>
-                      </div>
-                    ))}
+                      )
+                    })}
                   </div>
                 )}
               </div>

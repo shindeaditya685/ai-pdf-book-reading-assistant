@@ -143,6 +143,15 @@ async function callAi(prompt: string): Promise<string> {
   }
 }
 
+interface BulkWordResult {
+  word: string
+  meaning: string
+  pronunciation: string
+  partOfSpeech: string
+  example: string
+  translation: string | null
+}
+
 async function processBatch(
   words: string[],
   username: string,
@@ -150,8 +159,8 @@ async function processBatch(
   createFlashcards: boolean,
   conn: Awaited<ReturnType<typeof connectToDatabase>>,
   pdfFileName: string = 'bulk-import',
-): Promise<{ added: number; words: { word: string; meaning: string; translation?: string }[]; errors: string[] }> {
-  const result = { added: 0, words: [] as { word: string; meaning: string; translation?: string }[], errors: [] as string[] }
+): Promise<{ added: number; words: BulkWordResult[]; errors: string[] }> {
+  const result = { added: 0, words: [] as BulkWordResult[], errors: [] as string[] }
 
   const prompt = buildBulkPrompt(words, translationLanguage)
   const content = await callAi(prompt)
@@ -198,7 +207,14 @@ async function processBatch(
       })
     }
 
-    result.words.push({ word: w, meaning: item.meaning || '', translation: item.translation || undefined })
+    result.words.push({
+      word: w,
+      meaning: item.meaning || '',
+      pronunciation: item.pronunciation || '',
+      partOfSpeech: item.part_of_speech || '',
+      example: item.example || '',
+      translation: item.translation || null,
+    })
     result.added++
   }
 
@@ -264,7 +280,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Database unavailable' }, { status: 503 })
     }
 
-    const allResults: { word: string; meaning: string; translation?: string }[] = []
+    const allResults: BulkWordResult[] = []
     const allErrors: string[] = []
     let totalAdded = 0
 
@@ -298,10 +314,10 @@ export async function POST(req: NextRequest) {
       const collectionWords = allResults.map((r, i) => ({
         word: r.word,
         meaning: r.meaning,
-        pronunciation: '',
-        translation: r.translation || null,
-        partOfSpeech: '',
-        example: '',
+        pronunciation: r.pronunciation || '',
+        translation: r.translation,
+        partOfSpeech: r.partOfSpeech || '',
+        example: r.example || '',
         order: i,
         createdAt: now,
       }))
