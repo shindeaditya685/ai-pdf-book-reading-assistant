@@ -72,7 +72,7 @@ export function WordPopup() {
       historyAddedRef.current = true
       const entry = {
         id: `hist-${Date.now()}`,
-        word: selectedWord,
+        word: selectedWord.toLowerCase(),
         meaning: explanation.meaning,
         pronunciation: explanation.pronunciation,
         translation: explanation.translation,

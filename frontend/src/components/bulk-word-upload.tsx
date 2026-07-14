@@ -1,8 +1,8 @@
 'use client'
 
-import { useState } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Upload, ChevronDown, Loader2, CheckCircle2, XCircle, Brain, AlertCircle, Library, ExternalLink } from 'lucide-react'
+import { Upload, ChevronDown, Loader2, CheckCircle2, XCircle, Brain, AlertCircle, Library, ExternalLink, BookText } from 'lucide-react'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { authFetch } from '@/lib/api'
@@ -19,17 +19,47 @@ interface CollectionInfo {
   wordCount: number
 }
 
+interface Book {
+  name: string
+  label: string
+}
+
 export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
   const [expanded, setExpanded] = useState(false)
   const [input, setInput] = useState('')
   const [createFlashcards, setCreateFlashcards] = useState(false)
   const [collectionName, setCollectionName] = useState('')
+  const [selectedBook, setSelectedBook] = useState<Book | null>(null)
+  const [books, setBooks] = useState<Book[]>([])
+  const [booksLoading, setBooksLoading] = useState(false)
   const [status, setStatus] = useState<'idle' | 'processing' | 'done' | 'error'>('idle')
   const [progress, setProgress] = useState('')
   const [currentBatch, setCurrentBatch] = useState(0)
   const [totalBatches, setTotalBatches] = useState(0)
   const [result, setResult] = useState<{ added: number; flashcardCount: number; words: BulkResult[]; errors?: string[]; collection?: CollectionInfo } | null>(null)
   const [errorMsg, setErrorMsg] = useState('')
+  const [bookDropdownOpen, setBookDropdownOpen] = useState(false)
+  const bookRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    if (!expanded) return
+    setBooksLoading(true)
+    authFetch('/api/books')
+      .then((r) => r.json())
+      .then((data) => setBooks(data.books || []))
+      .catch(() => {})
+      .finally(() => setBooksLoading(false))
+  }, [expanded])
+
+  useEffect(() => {
+    const handler = (e: MouseEvent) => {
+      if (bookRef.current && !bookRef.current.contains(e.target as Node)) {
+        setBookDropdownOpen(false)
+      }
+    }
+    document.addEventListener('mousedown', handler)
+    return () => document.removeEventListener('mousedown', handler)
+  }, [])
 
   const wordCount = input
     ? [...new Set(input.split(',').map((w) => w.trim().toLowerCase()).filter(Boolean))].length
@@ -61,6 +91,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
           words: uniqueWords.join(','),
           createFlashcards,
           collectionName: collectionName.trim() || undefined,
+          pdfFileName: selectedBook?.name || undefined,
         }),
       })
 
@@ -87,6 +118,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
   const reset = () => {
     setInput('')
     setCollectionName('')
+    setSelectedBook(null)
     setCreateFlashcards(false)
     setStatus('idle')
     setResult(null)
@@ -136,17 +168,70 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
                 disabled={status === 'processing'}
               />
 
+              {/* Book selector */}
+              <div ref={bookRef} className="relative">
+                <label className="block text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
+                  <BookText className="h-3 w-3" />
+                  Link to book (optional &mdash; associates words with a specific book)
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setBookDropdownOpen(!bookDropdownOpen)}
+                  className="flex h-9 w-full items-center justify-between rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground outline-none transition-all focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
+                  disabled={status === 'processing'}
+                >
+                  <span className={selectedBook ? '' : 'text-muted-foreground/50'}>
+                    {selectedBook ? selectedBook.label : booksLoading ? 'Loading books...' : 'Select a book...'}
+                  </span>
+                  <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/50 transition-transform ${bookDropdownOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {bookDropdownOpen && (
+                  <div className="absolute top-full left-0 right-0 z-10 mt-1 max-h-48 overflow-y-auto rounded-lg border border-border/60 bg-background shadow-lg">
+                    {books.length === 0 && !booksLoading && (
+                      <div className="px-3 py-2 text-xs text-muted-foreground/60">
+                        {booksLoading ? 'Loading...' : 'No books found. Read a PDF first.'}
+                      </div>
+                    )}
+                    {booksLoading && (
+                      <div className="flex items-center gap-2 px-3 py-2 text-xs text-muted-foreground/60">
+                        <Loader2 className="h-3 w-3 animate-spin" />
+                        Loading...
+                      </div>
+                    )}
+                    <button
+                      type="button"
+                      onClick={() => { setSelectedBook(null); setBookDropdownOpen(false) }}
+                      className={`flex w-full items-center px-3 py-2 text-left text-xs transition-colors hover:bg-muted ${!selectedBook ? 'bg-emerald-50/50 dark:bg-emerald-950/20 font-semibold' : 'text-muted-foreground'}`}
+                    >
+                      None
+                    </button>
+                    {books.map((book) => (
+                      <button
+                        key={book.name}
+                        type="button"
+                        onClick={() => { setSelectedBook(book); setBookDropdownOpen(false) }}
+                        className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted ${selectedBook?.name === book.name ? 'bg-emerald-50/50 dark:bg-emerald-950/20 font-semibold text-foreground' : 'text-foreground'}`}
+                      >
+                        <BookText className="h-3 w-3 shrink-0 text-muted-foreground/50" />
+                        <span className="truncate">{book.label}</span>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+
               {/* Collection name */}
               <div>
                 <label className="block text-[11px] font-medium text-muted-foreground mb-1.5 flex items-center gap-1.5">
                   <Library className="h-3 w-3" />
-                  Collection (optional &mdash; groups these words together)
+                  Or create a collection (optional &mdash; groups these words together)
                 </label>
                 <input
                   type="text"
                   value={collectionName}
                   onChange={(e) => setCollectionName(e.target.value)}
-                  placeholder="e.g. The Great Gatsby, IELTS Vocabulary, Chapter 5"
+                  placeholder="e.g. IELTS Vocabulary, Chapter 5, Exam Prep"
                   className="h-9 w-full rounded-lg border border-border/60 bg-background px-3 text-sm text-foreground placeholder:text-muted-foreground/40 outline-none transition-all focus:border-emerald-400 focus:ring-2 focus:ring-emerald-500/15"
                   disabled={status === 'processing'}
                 />

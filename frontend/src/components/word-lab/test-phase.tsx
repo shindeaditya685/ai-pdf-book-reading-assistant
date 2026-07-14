@@ -1,7 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect, useCallback } from 'react'
-import { CheckCircle2, XCircle, Lightbulb, ArrowLeft, ArrowRight, AlertTriangle, Eye, EyeOff } from 'lucide-react'
+import { CheckCircle2, XCircle, Lightbulb, ArrowLeft, ArrowRight, AlertTriangle, Eye, EyeOff, X } from 'lucide-react'
 import { TestResult } from './types'
 
 export interface TestQuestion {
@@ -17,9 +17,11 @@ export interface TestQuestion {
 export function TestPhase({
   questions,
   onComplete,
+  onClose,
 }: {
   questions: TestQuestion[]
   onComplete: (results: TestResult[]) => void
+  onClose?: () => void
 }) {
   const [index, setIndex] = useState(0)
   const [answers, setAnswers] = useState<Record<number, string>>({})
@@ -131,8 +133,17 @@ export function TestPhase({
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-stone-950 select-none" style={{ userSelect: 'none' }}>
       {/* ── Top bar ── */}
-      <div className="flex items-center justify-between border-b border-stone-800 px-6 py-3">
+      <div className="flex items-center justify-between border-b border-stone-800 px-4 py-3 sm:px-6">
         <div className="flex items-center gap-3 text-sm text-stone-400">
+          {onClose && (
+            <button
+              onClick={onClose}
+              className="flex items-center gap-1.5 rounded-lg border border-stone-700 bg-stone-900 px-2.5 py-1.5 text-xs font-semibold text-stone-300 shadow-sm transition-colors hover:border-stone-600 hover:bg-stone-800 hover:text-stone-100"
+            >
+              <X className="h-3.5 w-3.5" />
+              Back
+            </button>
+          )}
           <span className="font-bold text-amber-500">{index + 1}</span>
           <span className="text-stone-600">/ {questions.length}</span>
         </div>

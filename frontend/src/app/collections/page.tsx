@@ -20,6 +20,7 @@ import {
 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
+import { CollectionStudy } from '@/components/collection-study'
 
 interface CollectionWord {
   word: string
@@ -53,6 +54,8 @@ export default function CollectionsPage() {
   const [selectedId, setSelectedId] = useState<string | null>(initialId)
   const [selected, setSelected] = useState<Collection | null>(null)
   const [selectedLoading, setSelectedLoading] = useState(false)
+
+  const [studyMode, setStudyMode] = useState<'flashcard' | 'test' | null>(null)
 
   // Create state
   const [showCreate, setShowCreate] = useState(false)
@@ -145,36 +148,6 @@ export default function CollectionsPage() {
     } catch {}
   }, [selectedId])
 
-  const handleBulkFlashcards = useCallback(async () => {
-    if (!selected || selected.words.length === 0) return
-    let created = 0
-    for (const w of selected.words) {
-      try {
-        const res = await authFetch('/api/flashcards', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            action: 'create',
-            word: w.word,
-            meaning: w.meaning,
-            pronunciation: w.pronunciation,
-            translation: w.translation || '',
-            sentence: w.example || '',
-            pageNumber: 0,
-            pdfFileName: `collection:${selected.name}`,
-            partOfSpeech: w.partOfSpeech || undefined,
-            example: w.example || undefined,
-          }),
-        })
-        const data = await res.json()
-        if (data.success) created++
-      } catch {}
-    }
-    if (created > 0) {
-      alert(`Created ${created} flashcard${created > 1 ? 's' : ''}!`)
-    }
-  }, [selected])
-
   if (authLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
@@ -245,13 +218,22 @@ export default function CollectionsPage() {
                   </div>
                   <div className="flex items-center gap-2">
                     {selected.words.length > 0 && (
-                      <button
-                        onClick={handleBulkFlashcards}
-                        className="flex h-7 items-center gap-1.5 rounded-lg bg-violet-500 px-2.5 text-[11px] font-semibold text-white hover:bg-violet-600 transition-colors"
-                      >
-                        <Brain className="h-3 w-3" />
-                        Create Flashcards
-                      </button>
+                      <>
+                        <button
+                          onClick={() => setStudyMode('flashcard')}
+                          className="flex h-7 items-center gap-1.5 rounded-lg bg-emerald-500 px-2.5 text-[11px] font-semibold text-white hover:bg-emerald-600 transition-colors"
+                        >
+                          <Brain className="h-3 w-3" />
+                          Review
+                        </button>
+                        <button
+                          onClick={() => setStudyMode('test')}
+                          className="flex h-7 items-center gap-1.5 rounded-lg bg-amber-500 px-2.5 text-[11px] font-semibold text-white hover:bg-amber-600 transition-colors"
+                        >
+                          <BookText className="h-3 w-3" />
+                          Quiz
+                        </button>
+                      </>
                     )}
                     <button
                       onClick={() => { if (confirm('Delete this collection?')) handleDelete(selected._id) }}
@@ -415,6 +397,15 @@ export default function CollectionsPage() {
           </div>
         )}
       </main>
+
+      {studyMode && selected && (
+        <CollectionStudy
+          words={selected.words}
+          collectionName={selected.name}
+          initialMode={studyMode}
+          onClose={() => setStudyMode(null)}
+        />
+      )}
     </div>
   )
 }

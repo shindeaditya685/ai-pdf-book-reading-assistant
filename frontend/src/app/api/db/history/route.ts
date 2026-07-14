@@ -45,7 +45,7 @@ export async function POST(request: Request) {
     }
 
     const doc = {
-      word,
+      word: word.toLowerCase(),
       meaning: meaning || '',
       pronunciation: pronunciation || '',
       translation: translation || '',

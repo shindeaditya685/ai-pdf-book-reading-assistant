@@ -149,6 +149,7 @@ async function processBatch(
   translationLanguage: string,
   createFlashcards: boolean,
   conn: Awaited<ReturnType<typeof connectToDatabase>>,
+  pdfFileName: string = 'bulk-import',
 ): Promise<{ added: number; words: { word: string; meaning: string; translation?: string }[]; errors: string[] }> {
   const result = { added: 0, words: [] as { word: string; meaning: string; translation?: string }[], errors: [] as string[] }
 
@@ -162,12 +163,10 @@ async function processBatch(
   const historyDocs: any[] = []
   const flashcardDocs: any[] = []
   const now = new Date()
-  const nowISO = now.toISOString()
-  const source = 'bulk-import'
 
   for (const item of parsed) {
     if (!item || !item.word) continue
-    const w = String(item.word).trim()
+    const w = String(item.word).trim().toLowerCase()
     if (!w) continue
 
     historyDocs.push({
@@ -177,7 +176,7 @@ async function processBatch(
       translation: item.translation || null,
       sentence: item.example || '',
       pageNumber: 0,
-      pdfFileName: source,
+      pdfFileName: pdfFileName,
       username,
       timestamp: now,
     })
@@ -191,7 +190,7 @@ async function processBatch(
         translation: item.translation || '',
         sentence: item.example || '',
         pageNumber: 0,
-        pdfFileName: source,
+        pdfFileName: pdfFileName,
         partOfSpeech: item.part_of_speech || '',
         example: item.example || '',
         username,
@@ -225,6 +224,7 @@ export async function POST(req: NextRequest) {
     const createFlashcards = body.createFlashcards === true
     const translationLanguage = body.translationLanguage || 'none'
     const collectionName = body.collectionName?.trim()
+    const pdfFileName = body.pdfFileName?.trim()
 
     if (!rawInput || typeof rawInput !== 'string' || !rawInput.trim()) {
       return NextResponse.json({ error: 'Please provide at least one word' }, { status: 400 })
@@ -276,6 +276,7 @@ export async function POST(req: NextRequest) {
           translationLanguage,
           createFlashcards,
           conn,
+          pdfFileName || undefined,
         )
         totalAdded += batchResult.added
         allResults.push(...batchResult.words)
