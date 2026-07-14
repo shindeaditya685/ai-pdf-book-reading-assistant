@@ -117,7 +117,7 @@ export function CollectionStudy({
       <TestPhase
         questions={generatedQuestions}
         onComplete={handleTestComplete}
-        onClose={handleBackToSetup}
+        onClose={onClose}
       />
     )
   }
@@ -259,6 +259,14 @@ export function CollectionStudy({
                   </>
                 )}
               </button>
+
+              <button
+                onClick={onClose}
+                className="mt-3 flex w-full items-center justify-center gap-1.5 rounded-xl border border-[#3F3A35] bg-[#26221E]/50 px-4 py-2 text-xs font-semibold text-[#7C6F5E] transition-colors hover:border-[#5A5245] hover:text-[#FBF9F6]"
+              >
+                <X className="h-3.5 w-3.5" />
+                Close
+              </button>
             </motion.div>
           </div>
         </div>
@@ -392,6 +400,15 @@ export function CollectionStudy({
             >
               <ArrowRight className="h-4 w-4" />
             </button>
+            <div className="ml-2 border-l border-[#3F3A35]/50 pl-3">
+              <button
+                onClick={onClose}
+                className="flex items-center gap-1.5 rounded-lg border border-[#B33A3A]/30 bg-[#B33A3A]/10 px-3 py-2 text-xs font-semibold text-[#B33A3A] transition-colors hover:bg-[#B33A3A]/20"
+              >
+                <X className="h-3.5 w-3.5" />
+                Close
+              </button>
+            </div>
           </div>
         </div>
       )}

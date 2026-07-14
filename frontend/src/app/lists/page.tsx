@@ -15,13 +15,18 @@ import {
   BookOpen,
   Star,
   ChevronRight,
+  ChevronLeft,
   ExternalLink,
+  Brain,
+  Sparkles,
+  ChevronDown,
 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { usePDFStore, type WordList, type WordListWord } from '@/store/use-pdf-store'
+import { CollectionStudy } from '@/components/collection-study'
 
 export default function ListsPage() {
   const { user, isLoading: authLoading } = useAuth()
@@ -48,12 +53,34 @@ export default function ListsPage() {
   const [createPublic, setCreatePublic] = useState(false)
   const [creating, setCreating] = useState(false)
   const [tab, setTab] = useState<'lists' | 'discover'>('lists')
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [studyMode, setStudyMode] = useState<'flashcard' | 'test' | null>(null)
+  const [studyWord, setStudyWord] = useState<WordListWord | null>(null)
+  const [wordPage, setWordPage] = useState(1)
+  const WORDS_PER_PAGE = 50
+
+  const toCollectionWords = useCallback((words: WordListWord[]) =>
+    words.map((w, i) => ({
+      word: w.word,
+      meaning: w.meaning || '',
+      pronunciation: w.pronunciation || '',
+      translation: w.translation || null,
+      partOfSpeech: w.partOfSpeech || '',
+      example: w.example || '',
+      order: i,
+      createdAt: w.addedAt,
+    })), [])
 
   useEffect(() => {
     if (authLoading) return
     if (!user) { router.push('/login'); return }
     fetchLists()
   }, [user, authLoading, router])
+
+  useEffect(() => {
+    setWordPage(1)
+    setExpanded(null)
+  }, [selectedList?._id])
 
   const fetchLists = useCallback(async () => {
     setLoading(true)
@@ -164,26 +191,105 @@ export default function ListsPage() {
       </div>
     )
     return (
-      <div className="divide-y">
-        {words.map((w) => (
-          <div key={w.word} className="flex items-start justify-between py-3 group">
-            <div className="min-w-0 flex-1">
-              <div className="flex items-center gap-2">
-                <span className="font-serif text-sm font-bold text-foreground">{w.word}</span>
-                {w.partOfSpeech && (
-                  <span className="rounded bg-orange-500/10 px-1.5 py-0.5 text-[10px] font-medium text-orange-500">{w.partOfSpeech}</span>
-                )}
+      <div>
+        {words.map((w) => {
+          const key = `${w.word}-${w.addedAt}`
+          const isExpanded = expanded === key
+          return (
+            <div key={key} className="border-b border-border/40 last:border-0">
+              {/* Collapsed row */}
+              <div
+                role="button"
+                tabIndex={0}
+                onClick={() => setExpanded(isExpanded ? null : key)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault()
+                    setExpanded(isExpanded ? null : key)
+                  }
+                }}
+                className={`group flex w-full cursor-pointer items-center gap-3 py-3 text-left transition-colors hover:bg-accent/30 ${isExpanded ? 'bg-accent/20' : ''}`}
+              >
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-serif text-sm font-bold text-foreground">{w.word}</span>
+                    {w.partOfSpeech && (
+                      <span className="rounded-full border border-orange-500/20 bg-orange-500/10 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-orange-500">
+                        {w.partOfSpeech}
+                      </span>
+                    )}
+                  </div>
+                  {w.meaning && (
+                    <p className="mt-0.5 truncate text-xs text-muted-foreground/70">{w.meaning}</p>
+                  )}
+                </div>
+
+                <div className="flex items-center gap-2 shrink-0">
+                  <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/30 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                  {isOwn && (
+                    <button
+                      onClick={(e) => { e.stopPropagation(); handleRemoveWord(w.word) }}
+                      className="rounded p-0.5 text-muted-foreground/10 opacity-0 transition-all hover:text-destructive group-hover:opacity-100"
+                      title="Remove word"
+                    >
+                      <Trash2 className="h-3 w-3" />
+                    </button>
+                  )}
+                </div>
               </div>
-              {w.meaning && <p className="mt-0.5 text-xs text-muted-foreground">{w.meaning}</p>}
-              {w.translation && <p className="mt-0.5 text-xs text-muted-foreground/60">{w.translation}</p>}
+
+              {/* Expanded details */}
+              {isExpanded && (
+                <div className="border-l-2 border-orange-500/30 pb-4 pl-3 ml-0.5 space-y-2.5">
+                  {w.partOfSpeech && (
+                    <span className="inline-flex rounded-full border border-orange-500/20 bg-orange-500/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-orange-500">
+                      {w.partOfSpeech}
+                    </span>
+                  )}
+
+                  <p className="text-sm leading-relaxed text-foreground">
+                    {w.meaning || <span className="italic text-muted-foreground/40">No meaning</span>}
+                  </p>
+
+                  {w.translation && (
+                    <p className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                      {w.translation}
+                    </p>
+                  )}
+
+                  {w.pronunciation && (
+                    <p className="font-mono text-[11px] tracking-wide text-muted-foreground/50">
+                      {w.pronunciation}
+                    </p>
+                  )}
+
+                  {w.example && (
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Example</p>
+                      <p className="mt-0.5 border-l-2 border-border pl-3 text-sm italic leading-relaxed text-muted-foreground/80">
+                        &ldquo;{w.example}&rdquo;
+                      </p>
+                    </div>
+                  )}
+
+                  <p className="text-[10px] text-muted-foreground/30">
+                    Added {new Date(w.addedAt).toLocaleDateString()}
+                  </p>
+
+                  <div className="pt-2 border-t border-border/30">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setStudyWord(w) }}
+                      className="flex items-center gap-1.5 text-[11px] font-semibold text-emerald-600/50 dark:text-emerald-400/50 transition-colors hover:text-emerald-600 dark:hover:text-emerald-400"
+                    >
+                      <Brain className="h-3 w-3" />
+                      Flashcard this word
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
-            {isOwn && (
-              <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 opacity-0 group-hover:opacity-100" onClick={() => handleRemoveWord(w.word)}>
-                <Trash2 className="h-3 w-3" />
-              </Button>
-            )}
-          </div>
-        ))}
+          )
+        })}
       </div>
     )
   }
@@ -199,11 +305,16 @@ export default function ListsPage() {
   if (selectedList) {
     const isOwn = selectedList.username === user?.username
     const isDefault = defaultListId === selectedList._id
+    const total = selectedList.words.length
+    const start = (wordPage - 1) * WORDS_PER_PAGE
+    const end = Math.min(start + WORDS_PER_PAGE, total)
+    const totalPages = Math.ceil(total / WORDS_PER_PAGE)
+    const pageWords = selectedList.words.slice(start, end)
     return (
-      <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-        <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
-          <div className="mx-auto flex h-14 max-w-4xl items-center gap-3 px-4">
-            <button onClick={() => setSelectedList(null)} className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50">
+      <div className="min-h-screen bg-background">
+        <header className="sticky top-0 z-50 flex h-14 items-center border-b border-border/50 bg-background/90 px-4 backdrop-blur-md">
+          <div className="mx-auto flex w-full max-w-4xl items-center gap-3">
+            <button onClick={() => setSelectedList(null)} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background/80 text-muted-foreground transition-colors hover:border-muted-foreground/30 hover:text-foreground">
               <ArrowLeft className="h-4 w-4" />
             </button>
             <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
@@ -260,19 +371,99 @@ export default function ListsPage() {
             {isOwn && <span className="flex items-center gap-1"><Lock className="h-3 w-3" /> Private</span>}
             {!isOwn && <span>by {selectedList.username}</span>}
           </div>
+
+          {/* Study desk toolbar */}
+          {selectedList.words.length > 0 && (
+            <div className="sticky top-14 z-20 -mx-4 px-4 sm:-mx-0 sm:px-0 py-3 mb-5 bg-background/90 backdrop-blur-md border-b border-border/30">
+              <div className="flex items-center gap-3">
+                <button
+                  onClick={() => setStudyMode('flashcard')}
+                  className="group flex flex-1 items-center gap-3 rounded-xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/8 to-transparent p-3 transition-all hover:border-emerald-500/35 hover:from-emerald-500/15 active:scale-[0.98]"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-emerald-500/15 ring-1 ring-emerald-500/25">
+                    <Brain className="h-4 w-4 text-emerald-500" />
+                  </div>
+                  <div className="text-left min-w-0">
+                    <p className="text-xs font-semibold text-foreground">Review</p>
+                    <p className="text-[10px] text-muted-foreground">Flashcards</p>
+                  </div>
+                </button>
+
+                <button
+                  onClick={() => setStudyMode('test')}
+                  className="group flex flex-1 items-center gap-3 rounded-xl border border-orange-500/20 bg-gradient-to-br from-orange-500/8 to-transparent p-3 transition-all hover:border-orange-500/35 hover:from-orange-500/15 active:scale-[0.98]"
+                >
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-orange-500/15 ring-1 ring-orange-500/25">
+                    <Sparkles className="h-4 w-4 text-orange-500" />
+                  </div>
+                  <div className="text-left min-w-0">
+                    <p className="text-xs font-semibold text-foreground">Quiz</p>
+                    <p className="text-[10px] text-muted-foreground">AI-generated</p>
+                  </div>
+                </button>
+
+                <div className="flex items-center gap-2 pl-2 border-l border-border/50">
+                  <span className="font-mono text-[10px] text-muted-foreground/50 whitespace-nowrap">
+                    {selectedList.words.length}
+                  </span>
+                </div>
+              </div>
+            </div>
+          )}
+
           <div className="rounded-xl border bg-background/60 p-4 shadow-sm backdrop-blur-sm">
-            {renderWords(selectedList.words, isOwn)}
+            {renderWords(pageWords, isOwn)}
           </div>
+
+          {totalPages > 1 && (
+            <div className="mt-5 flex items-center justify-center gap-4 text-xs">
+              <button
+                onClick={() => setWordPage((p) => Math.max(1, p - 1))}
+                disabled={wordPage === 1}
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-muted-foreground/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                <ChevronLeft className="h-3 w-3" />
+              </button>
+              <span className="font-mono text-[11px] text-muted-foreground/50">
+                {start + 1}&ndash;{end} of {total}
+              </span>
+              <button
+                onClick={() => setWordPage((p) => Math.min(totalPages, p + 1))}
+                disabled={wordPage === totalPages}
+                className="flex h-7 w-7 items-center justify-center rounded-lg border border-border text-muted-foreground transition-colors hover:border-muted-foreground/30 hover:text-foreground disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                <ChevronRight className="h-3 w-3" />
+              </button>
+            </div>
+          )}
         </main>
+
+        {studyMode && (
+          <CollectionStudy
+            words={toCollectionWords(selectedList.words)}
+            collectionName={selectedList.name}
+            initialMode={studyMode}
+            onClose={() => setStudyMode(null)}
+          />
+        )}
+
+        {studyWord && (
+          <CollectionStudy
+            words={toCollectionWords([studyWord])}
+            collectionName={selectedList.name}
+            initialMode="flashcard"
+            onClose={() => setStudyWord(null)}
+          />
+        )}
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <header className="sticky top-0 z-50 border-b bg-background/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-14 max-w-4xl items-center gap-3 px-4">
-          <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50">
+    <div className="min-h-screen bg-background">
+      <header className="sticky top-0 z-50 flex h-14 items-center border-b border-border/50 bg-background/90 px-4 backdrop-blur-md">
+        <div className="mx-auto flex w-full max-w-4xl items-center gap-3">
+          <Link href="/dashboard" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-border bg-background/80 text-muted-foreground transition-colors hover:border-muted-foreground/30 hover:text-foreground">
             <ArrowLeft className="h-4 w-4" />
           </Link>
           <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
@@ -448,4 +639,5 @@ export default function ListsPage() {
       </main>
     </div>
   )
+
 }

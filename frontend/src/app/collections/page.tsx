@@ -10,12 +10,14 @@ import {
   Trash2,
   Loader2,
   ChevronLeft,
+  ChevronRight,
   BookText,
   Brain,
   X,
   ListChecks,
   BookMarked,
   ChevronDown,
+  Sparkles,
 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
@@ -57,6 +59,10 @@ export default function CollectionsPage() {
   const [expanded, setExpanded] = useState<string | null>(null)
 
   const [studyMode, setStudyMode] = useState<'flashcard' | 'test' | null>(null)
+  const [studyWord, setStudyWord] = useState<CollectionWord | null>(null)
+
+  const [wordPage, setWordPage] = useState(1)
+  const WORDS_PER_PAGE = 50
 
   const [showCreate, setShowCreate] = useState(false)
   const [createName, setCreateName] = useState('')
@@ -73,6 +79,7 @@ export default function CollectionsPage() {
   }, [])
 
   const fetchCollection = useCallback(async (id: string) => {
+    setWordPage(1)
     setSelectedLoading(true)
     try {
       const res = await authFetch(`/api/collections/${id}`)
@@ -215,31 +222,51 @@ export default function CollectionsPage() {
               </div>
             ) : selected ? (
               <div>
-                {/* Action bar */}
+                {/* Study desk toolbar */}
                 {selected.words.length > 0 && (
-                  <div className="mb-6 flex items-center gap-2">
-                    <button
-                      onClick={() => setStudyMode('flashcard')}
-                      className="flex h-8 items-center gap-1.5 rounded-lg border border-[#10B981]/30 bg-[#10B981]/10 px-3 text-[11px] font-semibold text-[#10B981] transition-all hover:bg-[#10B981]/20 active:scale-95"
-                    >
-                      <Brain className="h-3.5 w-3.5" />
-                      Review
-                    </button>
-                    <button
-                      onClick={() => setStudyMode('test')}
-                      className="flex h-8 items-center gap-1.5 rounded-lg border border-[#D4A373]/30 bg-[#D4A373]/10 px-3 text-[11px] font-semibold text-[#D4A373] transition-all hover:bg-[#D4A373]/20 active:scale-95"
-                    >
-                      <ListChecks className="h-3.5 w-3.5" />
-                      Quiz
-                    </button>
-                    <div className="ml-auto">
+                  <div className="sticky top-14 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 py-3 mb-5 bg-[#1C1917]/90 backdrop-blur-md border-b border-[#3F3A35]/30">
+                    <div className="flex items-center gap-3">
+                      {/* Review tool card */}
                       <button
-                        onClick={() => { if (confirm('Delete this collection?')) handleDelete(selected._id) }}
-                        className="flex h-8 w-8 items-center justify-center rounded-lg text-[#7C6F5E] transition-colors hover:bg-[#B33A3A]/10 hover:text-[#B33A3A]"
-                        title="Delete collection"
+                        onClick={() => setStudyMode('flashcard')}
+                        className="group flex flex-1 items-center gap-3 rounded-xl border border-[#10B981]/20 bg-gradient-to-br from-[#10B981]/8 to-transparent p-3 transition-all hover:border-[#10B981]/35 hover:from-[#10B981]/15 active:scale-[0.98]"
                       >
-                        <Trash2 className="h-3.5 w-3.5" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#10B981]/15 ring-1 ring-[#10B981]/25">
+                          <Brain className="h-4 w-4 text-[#10B981]" />
+                        </div>
+                        <div className="text-left min-w-0">
+                          <p className="text-xs font-semibold text-[#FBF9F6]">Review</p>
+                          <p className="text-[10px] text-[#7C6F5E]">Flashcards</p>
+                        </div>
                       </button>
+
+                      {/* Quiz tool card */}
+                      <button
+                        onClick={() => setStudyMode('test')}
+                        className="group flex flex-1 items-center gap-3 rounded-xl border border-[#D4A373]/20 bg-gradient-to-br from-[#D4A373]/8 to-transparent p-3 transition-all hover:border-[#D4A373]/35 hover:from-[#D4A373]/15 active:scale-[0.98]"
+                      >
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#D4A373]/15 ring-1 ring-[#D4A373]/25">
+                          <Sparkles className="h-4 w-4 text-[#D4A373]" />
+                        </div>
+                        <div className="text-left min-w-0">
+                          <p className="text-xs font-semibold text-[#FBF9F6]">Quiz</p>
+                          <p className="text-[10px] text-[#7C6F5E]">AI-generated</p>
+                        </div>
+                      </button>
+
+                      {/* Word count + delete */}
+                      <div className="flex items-center gap-2 pl-2 border-l border-[#3F3A35]/50">
+                        <span className="font-mono text-[10px] text-[#7C6F5E]/50 whitespace-nowrap">
+                          {selected.words.length}
+                        </span>
+                        <button
+                          onClick={() => { if (confirm('Delete this collection?')) handleDelete(selected._id) }}
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-[#7C6F5E]/20 transition-colors hover:bg-[#B33A3A]/10 hover:text-[#B33A3A]"
+                          title="Delete collection"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                        </button>
+                      </div>
                     </div>
                   </div>
                 )}
@@ -259,119 +286,152 @@ export default function CollectionsPage() {
                       Go to Vocabulary
                     </Link>
                   </div>
-                ) : (
-                  /* Word list — expandable accordion cards */
-                  <div className="border-l border-[#3F3A35] pl-4 sm:pl-6">
-                    {selected.words.map((w, i) => {
-                      const isExpanded = expanded === `${w.word}-${w.order}`
-                      return (
-                        <div
-                          key={w.word + w.order}
-                          className="border-b border-[#3F3A35]/40 last:border-0"
-                        >
-                          {/* Ruler dot */}
-                          <div className={`absolute -left-[19px] h-1.5 w-1.5 rounded-full transition-colors sm:-left-[25px] ${isExpanded ? 'bg-[#D4A373]' : 'bg-[#10B981]/40'}`}
-                            style={{ marginTop: '18px' }}
-                          />
+                ) : (() => {
+                  const total = selected.words.length
+                  const start = (wordPage - 1) * WORDS_PER_PAGE
+                  const end = Math.min(start + WORDS_PER_PAGE, total)
+                  const totalPages = Math.ceil(total / WORDS_PER_PAGE)
+                  const pageWords = selected.words.slice(start, end)
+                  return (
+                    <div>
+                      {/* Word list — expandable accordion cards */}
+                      <div className="border-l border-[#3F3A35] pl-4 sm:pl-6">
+                        {pageWords.map((w, i) => {
+                          const isExpanded = expanded === `${w.word}-${w.order}`
+                          return (
+                            <div
+                              key={w.word + w.order}
+                              className="border-b border-[#3F3A35]/40 last:border-0"
+                            >
+                              {/* Ruler dot */}
+                              <div className={`absolute -left-[19px] h-1.5 w-1.5 rounded-full transition-colors sm:-left-[25px] ${isExpanded ? 'bg-[#D4A373]' : 'bg-[#10B981]/40'}`}
+                                style={{ marginTop: '18px' }}
+                              />
 
-                          {/* Collapsed row */}
-                          <div
-                            role="button"
-                            tabIndex={0}
-                            onClick={() => setExpanded(isExpanded ? null : `${w.word}-${w.order}`)}
-                            onKeyDown={(e) => {
-                              if (e.key === 'Enter' || e.key === ' ') {
-                                e.preventDefault()
-                                setExpanded(isExpanded ? null : `${w.word}-${w.order}`)
-                              }
-                            }}
-                            className={`group flex w-full cursor-pointer items-center gap-3 py-3 text-left transition-colors hover:bg-[#26221E]/30 ${
-                              isExpanded ? 'bg-[#26221E]/20' : ''
-                            }`}
-                          >
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center gap-2.5 flex-wrap">
-                                <span className="font-serif text-base font-bold tracking-tight text-[#FBF9F6]">
-                                  {w.word}
-                                </span>
-                                {w.partOfSpeech && (
-                                  <span className="rounded-full border border-[#D4A373]/20 bg-[#D4A373]/8 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#D4A373]">
-                                    {w.partOfSpeech}
-                                  </span>
-                                )}
-                              </div>
-                              {w.meaning && (
-                                <p className="mt-0.5 truncate text-sm text-[#A09890]/70">{w.meaning}</p>
-                              )}
-                            </div>
-
-                            <div className="flex items-center gap-2 shrink-0">
-                              {w.translation && !isExpanded && (
-                                <span className="hidden text-[11px] font-medium text-[#10B981]/60 sm:block">{w.translation}</span>
-                              )}
-                              <ChevronDown className={`h-3.5 w-3.5 text-[#7C6F5E]/30 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
-                              <button
-                                onClick={(e) => { e.stopPropagation(); handleDeleteWord(w.word) }}
-                                className="rounded p-0.5 text-[#7C6F5E]/10 opacity-0 transition-all hover:text-[#B33A3A] group-hover:opacity-100"
-                                title="Remove word"
+                              {/* Collapsed row */}
+                              <div
+                                role="button"
+                                tabIndex={0}
+                                onClick={() => setExpanded(isExpanded ? null : `${w.word}-${w.order}`)}
+                                onKeyDown={(e) => {
+                                  if (e.key === 'Enter' || e.key === ' ') {
+                                    e.preventDefault()
+                                    setExpanded(isExpanded ? null : `${w.word}-${w.order}`)
+                                  }
+                                }}
+                                className={`group flex w-full cursor-pointer items-center gap-3 py-3 text-left transition-colors hover:bg-[#26221E]/30 ${isExpanded ? 'bg-[#26221E]/20' : ''}`}
                               >
-                                <X className="h-3 w-3" />
-                              </button>
-                            </div>
-                          </div>
+                                <div className="flex-1 min-w-0">
+                                  <div className="flex items-center gap-2.5 flex-wrap">
+                                    <span className="font-serif text-base font-bold tracking-tight text-[#FBF9F6]">
+                                      {w.word}
+                                    </span>
+                                    {w.partOfSpeech && (
+                                      <span className="rounded-full border border-[#D4A373]/20 bg-[#D4A373]/8 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#D4A373]">
+                                        {w.partOfSpeech}
+                                      </span>
+                                    )}
+                                  </div>
+                                  {w.meaning && (
+                                    <p className="mt-0.5 truncate text-sm text-[#A09890]/70">{w.meaning}</p>
+                                  )}
+                                </div>
 
-                          {/* Expanded details */}
-                          {isExpanded && (
-                            <div className="border-l-2 border-[#D4A373]/30 pb-4 pl-3 ml-0.5">
-                              {/* Part of speech + pronunciation row */}
-                              <div className="mb-3 flex items-center gap-2.5 flex-wrap">
-                                {w.partOfSpeech && (
-                                  <span className="rounded-full border border-[#D4A373]/25 bg-[#D4A373]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#D4A373]">
-                                    {w.partOfSpeech}
-                                  </span>
-                                )}
-                                {w.pronunciation && (
-                                  <span className="font-mono text-[11px] tracking-wide text-[#7C6F5E]/60">
-                                    {w.pronunciation}
-                                  </span>
-                                )}
+                                <div className="flex items-center gap-2 shrink-0">
+                                  {w.translation && !isExpanded && (
+                                    <span className="hidden text-[11px] font-medium text-[#10B981]/60 sm:block">{w.translation}</span>
+                                  )}
+                                  <ChevronDown className={`h-3.5 w-3.5 text-[#7C6F5E]/30 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                  <button
+                                    onClick={(e) => { e.stopPropagation(); handleDeleteWord(w.word) }}
+                                    className="rounded p-0.5 text-[#7C6F5E]/10 opacity-0 transition-all hover:text-[#B33A3A] group-hover:opacity-100"
+                                    title="Remove word"
+                                  >
+                                    <X className="h-3 w-3" />
+                                  </button>
+                                </div>
                               </div>
 
-                              {/* Meaning */}
-                              <p className="text-sm leading-relaxed text-[#FBF9F6]">
-                                {w.meaning || <span className="italic text-[#7C6F5E]/40">No meaning</span>}
-                              </p>
+                              {/* Expanded details */}
+                              {isExpanded && (
+                                <div className="border-l-2 border-[#D4A373]/30 pb-4 pl-3 ml-0.5">
+                                  <div className="mb-3 flex items-center gap-2.5 flex-wrap">
+                                    {w.partOfSpeech && (
+                                      <span className="rounded-full border border-[#D4A373]/25 bg-[#D4A373]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#D4A373]">
+                                        {w.partOfSpeech}
+                                      </span>
+                                    )}
+                                    {w.pronunciation && (
+                                      <span className="font-mono text-[11px] tracking-wide text-[#7C6F5E]/60">
+                                        {w.pronunciation}
+                                      </span>
+                                    )}
+                                  </div>
 
-                              {/* Translation */}
-                              {w.translation && (
-                                <p className="mt-2 text-sm font-medium text-[#10B981]/80">
-                                  {w.translation}
-                                </p>
-                              )}
+                                  <p className="text-sm leading-relaxed text-[#FBF9F6]">
+                                    {w.meaning || <span className="italic text-[#7C6F5E]/40">No meaning</span>}
+                                  </p>
 
-                              {/* Example */}
-                              {w.example && (
-                                <div className="mt-2.5">
-                                  <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7C6F5E]/60">
-                                    Example
+                                  {w.translation && (
+                                    <p className="mt-2 text-sm font-medium text-[#10B981]/80">
+                                      {w.translation}
+                                    </p>
+                                  )}
+
+                                  {w.example && (
+                                    <div className="mt-2.5">
+                                      <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7C6F5E]/60">Example</p>
+                                      <p className="mt-0.5 border-l-2 border-[#3F3A35] pl-3 text-sm italic leading-relaxed text-[#A09890]">
+                                        &ldquo;{w.example}&rdquo;
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  <p className="mt-2 text-[10px] text-[#7C6F5E]/30">
+                                    Added {new Date(w.createdAt).toLocaleDateString()}
                                   </p>
-                                  <p className="mt-0.5 border-l-2 border-[#3F3A35] pl-3 text-sm italic leading-relaxed text-[#A09890]">
-                                    &ldquo;{w.example}&rdquo;
-                                  </p>
+
+                                  <div className="mt-2.5 pt-2 border-t border-[#3F3A35]/30">
+                                    <button
+                                      onClick={(e) => { e.stopPropagation(); setStudyWord(w) }}
+                                      className="flex items-center gap-1.5 text-[11px] font-semibold text-[#10B981]/50 transition-colors hover:text-[#10B981]"
+                                    >
+                                      <Brain className="h-3 w-3" />
+                                      Flashcard this word
+                                    </button>
+                                  </div>
                                 </div>
                               )}
-
-                              {/* Date */}
-                              <p className="mt-2 text-[10px] text-[#7C6F5E]/30">
-                                Added {new Date(w.createdAt).toLocaleDateString()}
-                              </p>
                             </div>
-                          )}
+                          )
+                        })}
+                      </div>
+
+                      {/* ── Pagination ── */}
+                      {totalPages > 1 && (
+                        <div className="mt-6 flex items-center justify-center gap-4 text-xs">
+                          <button
+                            onClick={() => setWordPage((p) => Math.max(1, p - 1))}
+                            disabled={wordPage === 1}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#3F3A35] text-[#7C6F5E] transition-colors hover:border-[#5A5245] hover:text-[#FBF9F6] disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <ChevronLeft className="h-3 w-3" />
+                          </button>
+                          <span className="font-mono text-[11px] text-[#7C6F5E]/50">
+                            {start + 1}&ndash;{end} of {total}
+                          </span>
+                          <button
+                            onClick={() => setWordPage((p) => Math.min(totalPages, p + 1))}
+                            disabled={wordPage === totalPages}
+                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#3F3A35] text-[#7C6F5E] transition-colors hover:border-[#5A5245] hover:text-[#FBF9F6] disabled:cursor-not-allowed disabled:opacity-30"
+                          >
+                            <ChevronRight className="h-3 w-3" />
+                          </button>
                         </div>
-                      )
-                    })}
-                  </div>
-                )}
+                      )}
+                    </div>
+                  )
+                })()}
               </div>
             ) : (
               <div className="flex items-center justify-center py-24">
@@ -468,6 +528,15 @@ export default function CollectionsPage() {
           collectionName={selected.name}
           initialMode={studyMode}
           onClose={() => setStudyMode(null)}
+        />
+      )}
+
+      {studyWord && selected && (
+        <CollectionStudy
+          words={[studyWord]}
+          collectionName={selected.name}
+          initialMode="flashcard"
+          onClose={() => setStudyWord(null)}
         />
       )}
     </div>
