@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useMemo } from 'react'
-import { ChevronLeft, ChevronRight, Volume2, CheckCircle2, Circle } from 'lucide-react'
+import { useState, useRef } from 'react'
+import { ChevronLeft, ChevronRight, Volume2, Check, Sparkles } from 'lucide-react'
 import { WordLabWord } from './types'
 
 export function StudyPhase({
@@ -16,112 +16,159 @@ export function StudyPhase({
   onStartTest: () => void
 }) {
   const [index, setIndex] = useState(0)
+  const [animDir, setAnimDir] = useState<'left' | 'right'>('right')
   const current = words[index]
   const allStudied = studiedIds.length >= words.length
+  const isStudied = studiedIds.includes(current?.id)
+  const cardRef = useRef<HTMLDivElement>(null)
 
   const goNext = () => {
     if (!studiedIds.includes(current.id)) onMarkStudied(current.id)
-    if (index < words.length - 1) setIndex((i) => i + 1)
+    if (index < words.length - 1) { setAnimDir('right'); setIndex((i) => i + 1) }
   }
 
   const goPrev = () => {
-    if (index > 0) setIndex((i) => i - 1)
+    if (index > 0) { setAnimDir('left'); setIndex((i) => i - 1) }
   }
 
+  if (!current) return null
+
   return (
-    <div className="space-y-5">
-      <div className="flex flex-wrap gap-1.5">
+    <div className="space-y-6">
+      {/* ── Progress meter ── */}
+      <div className="flex items-center justify-center gap-2">
         {words.map((w, i) => {
-          const studied = studiedIds.includes(w.id)
+          const s = studiedIds.includes(w.id)
           const active = i === index
           return (
             <button
               key={w.id}
-              onClick={() => setIndex(i)}
-              className={`inline-flex items-center gap-1 rounded-lg px-2.5 py-1 text-xs font-semibold transition-all ${
+              onClick={() => { if (i !== index) { setAnimDir(i > index ? 'right' : 'left'); setIndex(i) } }}
+              className={`flex h-8 w-8 items-center justify-center rounded-full text-[11px] font-bold leading-none transition-all duration-300 ${
                 active
-                  ? 'bg-amber-500 text-white shadow-sm'
-                  : studied
-                    ? 'bg-stone-100 text-stone-600 dark:bg-stone-800 dark:text-stone-300'
-                    : 'bg-white text-stone-400 ring-1 ring-stone-200 dark:bg-stone-900 dark:text-stone-500 dark:ring-stone-700'
+                  ? 'bg-brand text-brand-fg shadow-sm scale-110'
+                  : s
+                    ? 'bg-brand/10 text-brand ring-1 ring-brand/25'
+                    : 'bg-transparent text-muted-foreground/30 ring-1 ring-border hover:ring-muted-foreground/30'
               }`}
             >
-              {studied ? <CheckCircle2 className="h-3 w-3" /> : <Circle className="h-3 w-3" />}
-              {w.word}
+              {s && !active ? <Check className="h-3 w-3" strokeWidth={2.5} /> : i + 1}
+              <span className="sr-only">{w.word}</span>
             </button>
           )
         })}
       </div>
 
-      <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
-        <div className="mb-6 text-center">
-          <p className="text-2xl font-bold tracking-tight text-stone-900 dark:text-white">
-            {current.word}
-          </p>
-          <div className="mt-1.5 flex items-center justify-center gap-2 text-sm text-stone-400 dark:text-stone-500">
-            <span>{current.pronunciation}</span>
-            <button
-              onClick={() => {
-                const u = new SpeechSynthesisUtterance(current.word)
-                u.lang = 'en-US'
-                u.rate = 0.85
-                speechSynthesis.cancel()
-                speechSynthesis.speak(u)
-              }}
-              className="rounded-md p-1 text-stone-400 transition-colors hover:text-amber-500"
-              title="Listen"
+      {/* ── Specimen card ── */}
+      <div
+        ref={cardRef}
+        className="relative overflow-hidden rounded-2xl border border-paper-border bg-card shadow-sm transition-shadow hover:shadow-md"
+      >
+        {/* Studied badge */}
+        {isStudied && (
+          <div className="absolute right-3 top-3 flex items-center gap-1 rounded-full bg-brand/10 px-2.5 py-0.5 text-[10px] font-bold text-brand ring-1 ring-brand/20 z-10">
+            <Check className="h-3 w-3" strokeWidth={2.5} />
+            Studied
+          </div>
+        )}
+
+        <div
+          key={current.id}
+          className="px-6 py-8 sm:px-8 sm:py-10 animate-in fade-in duration-300"
+        >
+          {/* ── Word section ── */}
+          <div className="text-center">
+            <p
+              className="text-4xl font-bold italic leading-none tracking-tight text-ink sm:text-5xl"
+              style={{ fontFamily: 'var(--font-serif)' }}
             >
-              <Volume2 className="h-4 w-4" />
-            </button>
-          </div>
-        </div>
-
-        <div className="space-y-4">
-          <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500">
-              Meaning
+              {current.word}
             </p>
-            <p className="mt-1 text-sm text-stone-700 dark:text-stone-300">{current.meaning}</p>
+            <div className="mt-3 flex items-center justify-center gap-2.5">
+              {current.pronunciation && (
+                <span
+                  className="text-xs tracking-wide text-muted-foreground/70"
+                  style={{ fontFamily: 'var(--font-mono)' }}
+                >
+                  {current.pronunciation}
+                </span>
+              )}
+              <button
+                onClick={() => {
+                  const u = new SpeechSynthesisUtterance(current.word)
+                  u.lang = 'en-US'
+                  u.rate = 0.8
+                  speechSynthesis.cancel()
+                  speechSynthesis.speak(u)
+                }}
+                className="flex h-7 w-7 items-center justify-center rounded-full text-muted-foreground/40 transition-colors hover:text-brand"
+                title="Listen"
+              >
+                <Volume2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
 
-          {current.translation && (
-            <div>
-              <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500">
-                Translation
-              </p>
-              <p className="mt-1 text-sm text-stone-600 dark:text-stone-400">{current.translation}</p>
-            </div>
-          )}
+          {/* ── Hairline divider ── */}
+          <div className="my-6 border-t border-paper-border/60" />
 
+          {/* ── Definition ── */}
+          <div className="space-y-5">
+            <div>
+              <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
+                Definition
+              </p>
+              <p className="mt-1.5 text-sm leading-relaxed text-ink/85">
+                {current.meaning}
+              </p>
+            </div>
+
+            {current.translation && (
+              <div>
+                <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
+                  Translation
+                </p>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground/80">
+                  {current.translation}
+                </p>
+              </div>
+            )}
+          </div>
+
+          {/* ── Hairline divider ── */}
+          <div className="my-6 border-t border-paper-border/60" />
+
+          {/* ── Example ── */}
           <div>
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+            <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
               Example
             </p>
-            <p className="mt-1 text-sm italic leading-relaxed text-stone-600 dark:text-stone-400">
+            <p className="mt-1.5 text-sm italic leading-relaxed text-muted-foreground/80">
               &ldquo;{current.example}&rdquo;
             </p>
           </div>
         </div>
       </div>
 
+      {/* ── Navigation ── */}
       <div className="flex items-center justify-between">
         <button
           onClick={goPrev}
           disabled={index === 0}
-          className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-stone-500 transition-all hover:text-stone-700 disabled:opacity-30 dark:text-stone-400 dark:hover:text-stone-300"
+          className="inline-flex items-center gap-1 rounded-lg px-3 py-2 text-xs font-semibold text-muted-foreground/70 transition-colors hover:text-ink disabled:pointer-events-none disabled:opacity-20"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
           Previous
         </button>
 
-        <div className="text-xs text-stone-400 dark:text-stone-500">
+        <span className="text-[11px] tabular-nums text-muted-foreground/50 font-medium">
           {index + 1} / {words.length}
-        </div>
+        </span>
 
         {index < words.length - 1 ? (
           <button
             onClick={goNext}
-            className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-amber-600 active:scale-[0.97]"
+            className="inline-flex items-center gap-1 rounded-lg bg-brand px-4 py-2 text-xs font-bold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97]"
           >
             Next
             <ChevronRight className="h-3.5 w-3.5" />
@@ -129,20 +176,22 @@ export function StudyPhase({
         ) : (
           <button
             onClick={goNext}
-            className="inline-flex items-center gap-1 rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all hover:bg-amber-600 active:scale-[0.97]"
+            className="inline-flex items-center gap-1.5 rounded-lg bg-brand px-4 py-2 text-xs font-bold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97]"
           >
-            Done Studying
-            <CheckCircle2 className="h-3.5 w-3.5" />
+            <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
+            Done
           </button>
         )}
       </div>
 
+      {/* ── Start test ── */}
       {allStudied && (
-        <div className="text-center">
+        <div className="text-center pt-2">
           <button
             onClick={onStartTest}
-            className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-8 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-stone-800 active:scale-[0.97] dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
+            className="group inline-flex items-center gap-2 rounded-xl bg-ink px-8 py-3 text-sm font-bold text-canvas shadow-sm transition-all hover:brightness-125 active:scale-[0.97] dark:bg-canvas dark:text-ink dark:ring-1 dark:ring-border"
           >
+            <Sparkles className="h-4 w-4 transition-transform group-hover:scale-110" />
             Start Daily Test
           </button>
         </div>

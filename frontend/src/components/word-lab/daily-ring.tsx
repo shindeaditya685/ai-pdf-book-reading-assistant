@@ -42,7 +42,7 @@ export function DailyRing({
       width={size}
       height={size}
       viewBox={`0 0 ${size} ${size}`}
-      className={pulse || glow ? 'drop-shadow-[0_0_8px_rgba(217,119,6,0.5)]' : ''}
+      className={pulse || glow ? 'drop-shadow-[0_0_8px_var(--brand)]' : ''}
     >
       <circle
         cx={cx}
@@ -51,7 +51,7 @@ export function DailyRing({
         fill="none"
         stroke="currentColor"
         strokeWidth={strokeWidth}
-        className="text-stone-200 dark:text-stone-700"
+        className="text-muted/50"
       />
       <circle
         cx={cx}
@@ -63,7 +63,7 @@ export function DailyRing({
         strokeLinecap="round"
         strokeDasharray={circumference}
         strokeDashoffset={offset}
-        className="text-amber-500 transition-all duration-700 ease-out"
+        className="text-brand transition-all duration-700 ease-out"
         style={{ rotate: '-90deg', transformOrigin: 'center' }}
       />
       <text
@@ -72,7 +72,7 @@ export function DailyRing({
         textAnchor="middle"
         dominantBaseline="central"
         className={`fill-current text-xs font-bold transition-all duration-700 ${
-          studied === total ? 'text-amber-600' : 'text-stone-600 dark:text-stone-300'
+          studied === total ? 'text-brand' : 'text-muted-foreground'
         }`}
       >
         {studied}/{total}

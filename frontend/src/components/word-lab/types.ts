@@ -62,6 +62,6 @@ export interface CustomTestSession {
   createdAt: string
 }
 
-export type LabPhase = 'study' | 'test' | 'results' | 'history' | 'review' | 'flashcard' | 'custom-setup' | 'custom-test' | 'custom-results'
+export type LabPhase = 'study' | 'test' | 'results' | 'history' | 'review' | 'flashcard' | 'custom-setup' | 'custom-test' | 'custom-results' | 'pronunciation'
 
 export type QuestionType = 'fill-blank' | 'multiple-choice' | 'reverse-recall'

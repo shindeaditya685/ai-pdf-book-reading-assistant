@@ -107,53 +107,53 @@ export function ResultsView({
         <div className="mx-auto mb-3">
           <DailyRing studied={correct} total={total} size={72} strokeWidth={5} glow={accuracy === 100} />
         </div>
-        <h2 className="text-xl font-bold tracking-tight text-stone-900 dark:text-white">
+        <h2 className="text-xl font-bold tracking-tight text-ink">
           {accuracy === 100 ? 'Perfect Score!' : 'Daily Test Complete'}
         </h2>
-        <p className="mt-1 text-sm text-stone-400 dark:text-stone-500">
+        <p className="mt-1 text-sm text-muted-foreground">
           {correct}/{total} correct &middot; {accuracy}% accuracy
         </p>
       </div>
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <div className="rounded-xl border border-stone-200 bg-white p-3 text-center dark:border-stone-700/50 dark:bg-stone-900/60">
-          <Flame className="mx-auto h-4 w-4 text-amber-500" />
-          <p className="mt-1 text-lg font-bold text-stone-900 dark:text-white">{stats?.currentStreak || 0}</p>
-          <p className="text-[9px] font-medium text-stone-400 dark:text-stone-500">Day streak</p>
+        <div className="rounded-xl border border-paper-border bg-card p-3 text-center">
+          <Flame className="mx-auto h-4 w-4 text-brand" />
+          <p className="mt-1 text-lg font-bold text-ink">{stats?.currentStreak || 0}</p>
+          <p className="text-[9px] font-medium text-muted-foreground">Day streak</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-3 text-center dark:border-stone-700/50 dark:bg-stone-900/60">
-          <BookText className="mx-auto h-4 w-4 text-amber-500" />
-          <p className="mt-1 text-lg font-bold text-stone-900 dark:text-white">{stats?.totalWordsLearned || 0}</p>
-          <p className="text-[9px] font-medium text-stone-400 dark:text-stone-500">Words learned</p>
+        <div className="rounded-xl border border-paper-border bg-card p-3 text-center">
+          <BookText className="mx-auto h-4 w-4 text-brand" />
+          <p className="mt-1 text-lg font-bold text-ink">{stats?.totalWordsLearned || 0}</p>
+          <p className="text-[9px] font-medium text-muted-foreground">Words learned</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-3 text-center dark:border-stone-700/50 dark:bg-stone-900/60">
-          <TrendingUp className="mx-auto h-4 w-4 text-amber-500" />
-          <p className="mt-1 text-lg font-bold text-stone-900 dark:text-white">
+        <div className="rounded-xl border border-paper-border bg-card p-3 text-center">
+          <TrendingUp className="mx-auto h-4 w-4 text-brand" />
+          <p className="mt-1 text-lg font-bold text-ink">
             {stats && stats.totalAttempted > 0 ? Math.round((stats.totalCorrect / stats.totalAttempted) * 100) : 0}%
           </p>
-          <p className="text-[9px] font-medium text-stone-400 dark:text-stone-500">Avg accuracy</p>
+          <p className="text-[9px] font-medium text-muted-foreground">Avg accuracy</p>
         </div>
-        <div className="rounded-xl border border-stone-200 bg-white p-3 text-center dark:border-stone-700/50 dark:bg-stone-900/60">
+        <div className="rounded-xl border border-paper-border bg-card p-3 text-center">
           <Award className={`mx-auto h-4 w-4 ${levelInfo.color}`} />
-          <p className="mt-1 text-lg font-bold text-stone-900 dark:text-white">{levelInfo.icon}</p>
-          <p className="text-[9px] font-medium text-stone-400 dark:text-stone-500">{levelInfo.label}</p>
+          <p className="mt-1 text-lg font-bold text-ink">{levelInfo.icon}</p>
+          <p className="text-[9px] font-medium text-muted-foreground">{levelInfo.label}</p>
         </div>
       </div>
 
       {missed.length > 0 && (
         <div>
-          <p className="mb-2 text-xs font-semibold text-stone-500 dark:text-stone-400">Words to review</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">Words to review</p>
           <div className="space-y-1.5">
             {missed.map((r, i) => {
               const wordData = words.find((w) => w.id === r.wordId)
               return (
                 <div
                   key={`${r.wordId}-${r.questionType}-${i}`}
-                  className="flex items-start gap-2 rounded-lg border border-stone-200 bg-white p-3 dark:border-stone-700/50 dark:bg-stone-900/60"
+                  className="flex items-start gap-2 rounded-lg border border-paper-border bg-card p-3"
                 >
                   <XCircle className="mt-0.5 h-3.5 w-3.5 shrink-0 text-rose-500" />
                   <div className="min-w-0 flex-1">
-                    <p className="text-xs font-bold text-stone-900 dark:text-white">{r.word}</p>
+                    <p className="text-xs font-bold text-ink">{r.word}</p>
                     <p className="text-[10px] text-rose-500">
                       You typed: {r.userAnswer || '(empty)'}
                     </p>
@@ -161,7 +161,7 @@ export function ResultsView({
                       Correct: {r.correctAnswer}
                     </p>
                     {wordData?.meaning && (
-                      <p className="mt-0.5 text-[10px] text-stone-400 dark:text-stone-500">{wordData.meaning}</p>
+                      <p className="mt-0.5 text-[10px] text-muted-foreground">{wordData.meaning}</p>
                     )}
                   </div>
                 </div>
@@ -172,7 +172,7 @@ export function ResultsView({
             <div className="mt-4 text-center">
               <button
                 onClick={() => onRetest(missedWords)}
-                className="inline-flex items-center gap-2 rounded-xl bg-amber-500 px-6 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-amber-400 active:scale-[0.97]"
+                className="inline-flex items-center gap-2 rounded-xl bg-brand px-6 py-2.5 text-xs font-bold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97]"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Retest Missed ({missedWords.length})
@@ -183,14 +183,14 @@ export function ResultsView({
       )}
 
       <div>
-        <p className="mb-2 text-xs font-semibold text-stone-500 dark:text-stone-400">Last 30 days</p>
+        <p className="mb-2 text-xs font-semibold text-muted-foreground">Last 30 days</p>
         <CalendarHeatmap logs={calendarData} />
       </div>
 
       <div className="text-center">
         <button
           onClick={onDone}
-          className="inline-flex items-center gap-2 rounded-xl bg-stone-900 px-8 py-3 text-sm font-bold text-white shadow-sm transition-all hover:bg-stone-800 active:scale-[0.97] dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
+          className="inline-flex items-center gap-2 rounded-xl bg-ink px-8 py-3 text-sm font-bold text-canvas shadow-sm transition-all hover:brightness-125 active:scale-[0.97] dark:bg-canvas dark:text-ink dark:ring-1 dark:ring-border"
         >
           Done — Back to Dashboard
         </button>

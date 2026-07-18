@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, GraduationCap, Flame, Loader2, BookOpen } from 'lucide-react'
+import { ArrowLeft, GraduationCap, Flame, Loader2, BookOpen, Sparkles, History, Ear, Brain, ListChecks } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 import { DailyRing } from '@/components/word-lab/daily-ring'
@@ -14,6 +14,7 @@ import { HistoryView } from '@/components/word-lab/history-view'
 import { ReviewPhase } from '@/components/word-lab/review-phase'
 import { CustomTestSetup } from '@/components/word-lab/custom-test-setup'
 import { FlashcardPhase } from '@/components/word-lab/flashcard-phase'
+import { PronunciationCoach } from '@/components/word-lab/pronunciation-coach'
 import { WordLabWord, LabPhase, TestResult, WordLabStats, CustomTestWord } from '@/components/word-lab/types'
 
 export default function WordLabPage() {
@@ -244,55 +245,71 @@ export default function WordLabPage() {
   if (!user) return null
 
   return (
-    <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
-      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-stone-200 bg-white/80 px-4 backdrop-blur-xl dark:border-stone-800 dark:bg-stone-900/80">
+    <div className="min-h-screen bg-canvas">
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-paper-border bg-card/80 px-4 backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-stone-200 text-stone-400 transition-all hover:border-stone-300 hover:text-stone-600 dark:border-stone-700 dark:hover:border-stone-600 dark:hover:text-stone-300">
+          <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-paper-border text-muted-foreground/60 transition-all hover:border-muted-foreground/30 hover:text-ink">
             <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-amber-500 shadow-sm">
-            <GraduationCap className="h-3.5 w-3.5 text-white" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand shadow-sm">
+            <GraduationCap className="h-3.5 w-3.5 text-brand-fg" />
           </div>
-          <span className="font-serif text-sm font-bold tracking-tight text-stone-900 dark:text-white">Word Lab</span>
+          <span className="font-serif text-sm font-bold tracking-tight text-ink">Word Lab</span>
           {stats && stats.currentStreak > 0 && (
-            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-bold text-amber-700 dark:bg-amber-900/30 dark:text-amber-400">
+            <span className="hidden sm:inline-flex items-center gap-1 rounded-full bg-brand/10 px-2 py-0.5 text-[10px] font-bold text-brand ring-1 ring-brand/20">
               <Flame className="h-3 w-3" />
               {stats.currentStreak}-day streak
             </span>
           )}
         </div>
-          <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5">
+          <div className="hidden sm:flex items-center gap-1">
+            {[
+              { key: 'flashcard', label: 'Cards', phaseCheck: 'flashcard' },
+              { key: 'review', label: 'Review', phaseCheck: 'review' },
+              { key: 'pronunciation', label: 'Speak', phaseCheck: 'pronunciation' },
+            ].map((btn) => {
+              const isActive = phase === btn.phaseCheck
+              return (
+                <button
+                  key={btn.key}
+                  onClick={() => setPhase(btn.phaseCheck as any)}
+                  className={`rounded-lg px-2.5 py-1 text-[10px] font-bold tracking-wider transition-all ${
+                    isActive
+                      ? 'bg-brand text-brand-fg shadow-sm'
+                      : 'text-muted-foreground/60 hover:text-ink hover:bg-muted/50'
+                  }`}
+                >
+                  {btn.label}
+                </button>
+              )
+            })}
+            <div className="mx-1 h-4 w-px bg-paper-border" />
             <button
               onClick={() => setPhase(phase === 'custom-setup' ? (words.length > 0 ? 'study' : 'history') : 'custom-setup')}
-              className="rounded-lg border border-violet-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-violet-500 transition-all hover:border-violet-300 hover:text-violet-700 dark:border-violet-800/30 dark:text-violet-400 dark:hover:border-violet-700"
+              className={`rounded-lg px-2 py-1 text-[10px] font-bold tracking-wider transition-all ${
+                phase === 'custom-setup' || phase === 'custom-test' || phase === 'custom-results'
+                  ? 'bg-brand/10 text-brand'
+                  : 'text-muted-foreground/40 hover:text-muted-foreground/70'
+              }`}
             >
-              {phase === 'custom-setup' || phase === 'custom-test' || phase === 'custom-results' ? 'Daily' : 'Custom Test'}
-            </button>
-            <button
-              onClick={() => setPhase(phase === 'flashcard' ? 'study' : 'flashcard')}
-              className="rounded-lg border border-sky-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-sky-500 transition-all hover:border-sky-300 hover:text-sky-700 dark:border-sky-800/30 dark:text-sky-400 dark:hover:border-sky-700"
-            >
-              Flashcards
-            </button>
-            <button
-              onClick={() => setPhase(phase === 'review' ? 'study' : 'review')}
-              className="rounded-lg border border-rose-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-rose-500 transition-all hover:border-rose-300 hover:text-rose-700 dark:border-rose-800/30 dark:text-rose-400 dark:hover:border-rose-700"
-            >
-              Review
+              {phase === 'custom-setup' || phase === 'custom-test' || phase === 'custom-results' ? 'Daily' : 'Custom'}
             </button>
             <button
               onClick={() => setPhase(phase === 'history' ? 'study' : 'history')}
-              className="rounded-lg border border-stone-200 px-2.5 py-1 text-[10px] font-bold tracking-wider text-stone-500 transition-all hover:border-stone-300 hover:text-stone-700 dark:border-stone-700 dark:text-stone-400 dark:hover:border-stone-600 dark:hover:text-stone-200"
+              className={`rounded-lg px-2 py-1 text-[10px] font-bold tracking-wider transition-all ${
+                phase === 'history'
+                  ? 'bg-brand/10 text-brand'
+                  : 'text-muted-foreground/40 hover:text-muted-foreground/70'
+              }`}
             >
               {phase === 'history' ? 'Today' : 'History'}
             </button>
-
           </div>
           {phase === 'study' && (
-            <div className="flex items-center gap-2">
-              <DailyRing studied={studiedIds.length} total={words.length} size={32} strokeWidth={3} />
-            </div>
+            <DailyRing studied={studiedIds.length} total={words.length} size={28} strokeWidth={3} />
           )}
+        </div>
       </header>
 
       <main className="mx-auto max-w-2xl px-4 py-6 sm:px-6">
@@ -302,7 +319,7 @@ export default function WordLabPage() {
           </div>
         )}
 
-        {words.length === 0 && !error && !['custom-setup', 'custom-test', 'custom-results', 'history', 'review', 'flashcard'].includes(phase) ? (
+        {words.length === 0 && !error && !['custom-setup', 'custom-test', 'custom-results', 'history', 'review', 'flashcard', 'pronunciation'].includes(phase) ? (
           <div className="rounded-xl border border-stone-200 bg-white p-10 text-center shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
             <GraduationCap className="mx-auto h-10 w-10 text-stone-300 dark:text-stone-600" />
             <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-stone-900 dark:text-white">No Words Yet</h3>
@@ -365,6 +382,13 @@ export default function WordLabPage() {
 
             {phase === 'flashcard' && (
               <FlashcardPhase />
+            )}
+
+            {phase === 'pronunciation' && words.length > 0 && (
+              <PronunciationCoach
+                words={words}
+                onBack={() => setPhase('study')}
+              />
             )}
 
             {phase === 'custom-setup' && (

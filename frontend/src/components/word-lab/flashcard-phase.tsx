@@ -188,8 +188,8 @@ export function FlashcardPhase() {
   if (phase === 'loading') {
     return (
       <div className="flex flex-col items-center justify-center py-24">
-        <Loader2 className="h-10 w-10 animate-spin text-emerald-500" />
-        <p className="mt-4 text-sm font-medium text-stone-500">Creating flashcards...</p>
+        <Loader2 className="h-10 w-10 animate-spin text-brand" />
+        <p className="mt-4 text-sm font-medium text-muted-foreground">Creating flashcards...</p>
       </div>
     )
   }
@@ -198,9 +198,9 @@ export function FlashcardPhase() {
     return (
       <div className="flex items-center justify-center py-12">
         <div className="w-full max-w-sm text-center">
-          <Sparkles className="mx-auto h-10 w-10 text-amber-500" />
-          <h3 className="mt-4 font-serif text-xl font-bold text-stone-900 dark:text-white">Session Complete!</h3>
-          <p className="mt-1 text-sm text-stone-400">You reviewed {reviewStats.reviewed} cards</p>
+          <Sparkles className="mx-auto h-10 w-10 text-brand" />
+          <h3 className="mt-4 font-serif text-xl font-bold text-ink">Session Complete!</h3>
+          <p className="mt-1 text-sm text-muted-foreground">You reviewed {reviewStats.reviewed} cards</p>
 
           <div className="mx-auto mt-6 grid w-full max-w-[220px] grid-cols-2 gap-2">
             <StatBadge label="Again" count={reviewStats.again} color="bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300" />
@@ -212,7 +212,7 @@ export function FlashcardPhase() {
           <div className="mt-8 flex justify-center gap-3">
             <button
               onClick={() => setPhase('setup')}
-              className="inline-flex items-center gap-2 rounded-xl border border-stone-200 px-5 py-2.5 text-xs font-bold text-stone-600 transition-all hover:border-stone-300 dark:border-stone-700 dark:text-stone-400"
+              className="inline-flex items-center gap-2 rounded-xl border border-paper-border px-5 py-2.5 text-xs font-bold text-muted-foreground transition-all hover:text-ink"
             >
               <ArrowLeft className="h-3.5 w-3.5" />
               Back
@@ -234,23 +234,23 @@ export function FlashcardPhase() {
                 key={i}
                 className={`h-1 flex-1 rounded-full transition-colors duration-300 ${
                   i < currentIndex
-                    ? 'bg-emerald-400 dark:bg-emerald-500'
+                    ? 'bg-brand'
                     : i === currentIndex
-                    ? 'bg-stone-400 dark:bg-stone-500'
-                    : 'bg-stone-200 dark:bg-stone-700'
+                    ? 'bg-muted-foreground/60'
+                    : 'bg-muted/50'
                 }`}
               />
             ))}
             {queue.length > 20 && (
-              <span className="ml-1 text-[10px] font-medium text-stone-400 dark:text-stone-500">
+              <span className="ml-1 text-[10px] font-medium text-muted-foreground/60">
                 +{queue.length - 20}
               </span>
             )}
           </div>
-          <span className="shrink-0 text-[11px] font-semibold text-stone-400 dark:text-stone-500 tabular-nums">
+          <span className="shrink-0 text-[11px] font-semibold text-muted-foreground/70 tabular-nums">
             {currentIndex + 1}/{queue.length}
             {retryQueue.length > 0 && (
-              <span className="ml-1.5 text-red-400 dark:text-red-500">+{retryQueue.length}</span>
+              <span className="ml-1.5 text-rose-400">+{retryQueue.length}</span>
             )}
           </span>
         </div>
@@ -269,10 +269,10 @@ export function FlashcardPhase() {
             >
               {/* Front — word */}
               <div
-                className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-[--paper-border] bg-white shadow-lg shadow-stone-200/60 dark:border-stone-700/50 dark:bg-stone-900/60 dark:shadow-black/20"
+                className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border border-paper-border bg-card shadow-lg shadow-black/5"
                 style={{ backfaceVisibility: 'hidden' }}
               >
-                <p className="px-4 text-center font-serif text-3xl font-bold tracking-tight text-[--ink] dark:text-white">
+                <p className="px-4 text-center font-serif text-3xl font-bold italic tracking-tight text-ink">
                   {currentCardView?.word}
                 </p>
                 {currentCardView?.pronunciation && (
@@ -285,17 +285,20 @@ export function FlashcardPhase() {
                         speechSynthesis.cancel()
                         speechSynthesis.speak(u)
                       }}
-                      className="text-emerald-500 transition-colors hover:text-emerald-600"
+                      className="text-brand transition-colors hover:brightness-110"
                     >
                       <Volume2 className="h-3.5 w-3.5" />
                     </button>
-                    <span className="text-xs italic text-stone-400 dark:text-stone-500">
+                    <span
+                      className="text-xs text-muted-foreground/70"
+                      style={{ fontFamily: 'var(--font-mono)' }}
+                    >
                       {currentCardView.pronunciation}
                     </span>
                   </div>
                 )}
                 <div className="absolute bottom-4 left-1/2 -translate-x-1/2">
-                  <p className="text-[10px] font-medium text-stone-300 dark:text-stone-600">
+                  <p className="text-[10px] font-medium text-muted-foreground/40">
                     Tap to reveal
                   </p>
                 </div>
@@ -303,7 +306,7 @@ export function FlashcardPhase() {
 
               {/* Back — meaning */}
               <div
-                className="absolute inset-0 overflow-y-auto rounded-2xl border border-[--paper-border] bg-white p-4 shadow-lg shadow-stone-200/60 dark:border-stone-700/50 dark:bg-stone-900/60 dark:shadow-black/20"
+                className="absolute inset-0 overflow-y-auto rounded-2xl border border-paper-border bg-card p-4 shadow-lg shadow-black/5"
                 style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
               >
                 <button
@@ -312,7 +315,7 @@ export function FlashcardPhase() {
                     if (currentCardView) handleDelete(currentCardView)
                   }}
                   disabled={deletingId === currentCardView?._id}
-                  className="absolute right-2 top-2 z-10 rounded-lg p-1.5 text-stone-300 transition-colors hover:bg-red-50 hover:text-red-500 dark:text-stone-600 dark:hover:bg-red-950/20 dark:hover:text-red-400"
+                  className="absolute right-2 top-2 z-10 rounded-lg p-1.5 text-muted-foreground/40 transition-colors hover:bg-rose-500/10 hover:text-rose-500"
                   title="Delete this flashcard"
                 >
                   {deletingId === currentCardView?._id ? (
@@ -323,20 +326,20 @@ export function FlashcardPhase() {
                 </button>
                 <div className="space-y-3">
                   <div>
-                    <p className="text-[10px] font-semibold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                      Meaning
+                    <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
+                      Definition
                     </p>
-                    <p className="mt-0.5 text-sm leading-relaxed text-stone-800 dark:text-stone-200">
+                    <p className="mt-0.5 text-sm leading-relaxed text-ink/85">
                       {currentCardView?.meaning}
                     </p>
                   </div>
 
                   {currentCardView?.translation && (
-                    <div className="rounded-lg bg-stone-50 p-2.5 dark:bg-stone-800/60">
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+                    <div>
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
                         Translation
                       </p>
-                      <p className="mt-0.5 text-sm font-medium text-stone-800 dark:text-stone-200">
+                      <p className="mt-0.5 text-sm font-medium text-muted-foreground/80">
                         {currentCardView.translation}
                       </p>
                     </div>
@@ -344,10 +347,10 @@ export function FlashcardPhase() {
 
                   {currentCardView?.example && (
                     <div>
-                      <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-400 dark:text-stone-500">
+                      <p className="text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
                         Example
                       </p>
-                      <p className="mt-0.5 border-l-2 border-stone-200 pl-2.5 text-xs italic leading-relaxed text-stone-500 dark:border-stone-700 dark:text-stone-400">
+                      <p className="mt-0.5 text-xs italic leading-relaxed text-muted-foreground/80">
                         &ldquo;{currentCardView.example}&rdquo;
                       </p>
                     </div>
@@ -387,7 +390,7 @@ export function FlashcardPhase() {
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="text-center text-[11px] font-medium text-stone-300 dark:text-stone-600"
+              className="text-center text-[11px] font-medium text-muted-foreground/40"
             >
               Tap the card to see the answer
             </motion.div>
@@ -400,10 +403,10 @@ export function FlashcardPhase() {
   // Setup phase
   return (
     <div className="space-y-5">
-      <div className="rounded-xl border border-[--paper-border] bg-white p-5 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
+      <div className="rounded-xl border border-paper-border bg-card p-5 shadow-sm">
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
+            <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
               <Calendar className="h-3 w-3" />
               From
             </label>
@@ -412,11 +415,11 @@ export function FlashcardPhase() {
               value={dateFrom}
               onChange={(e) => { setDateFrom(e.target.value); setPreview(null) }}
               max={dateTo}
-              className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-stone-700 dark:bg-stone-800 dark:text-white dark:focus:border-emerald-500 dark:focus:ring-emerald-800/30"
+              className="mt-1 w-full rounded-lg border border-paper-border bg-card px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
           </div>
           <div>
-            <label className="flex items-center gap-1.5 text-xs font-semibold text-stone-500 dark:text-stone-400">
+            <label className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.15em] text-muted-foreground/50">
               <Calendar className="h-3 w-3" />
               To
             </label>
@@ -426,7 +429,7 @@ export function FlashcardPhase() {
               onChange={(e) => { setDateTo(e.target.value); setPreview(null) }}
               min={dateFrom}
               max={today}
-              className="mt-1 w-full rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-900 focus:border-emerald-400 focus:outline-none focus:ring-2 focus:ring-emerald-200 dark:border-stone-700 dark:bg-stone-800 dark:text-white dark:focus:border-emerald-500 dark:focus:ring-emerald-800/30"
+              className="mt-1 w-full rounded-lg border border-paper-border bg-card px-3 py-2 text-sm text-ink focus:border-brand focus:outline-none focus:ring-2 focus:ring-brand/20"
             />
           </div>
         </div>
@@ -435,7 +438,7 @@ export function FlashcardPhase() {
           <button
             onClick={handlePreview}
             disabled={!dateFrom || !dateTo || previewing}
-            className="flex items-center gap-1.5 rounded-lg bg-[--ink] px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-stone-800 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
+            className="flex items-center gap-1.5 rounded-lg bg-ink px-4 py-2 text-xs font-bold text-canvas shadow-sm transition-all hover:brightness-125 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-40 dark:bg-canvas dark:text-ink dark:ring-1 dark:ring-border"
           >
             {previewing ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
@@ -445,7 +448,7 @@ export function FlashcardPhase() {
             {previewing ? 'Loading...' : 'Preview'}
           </button>
           {preview && preview.wordCount > 0 && (
-            <span className="text-xs text-stone-500 dark:text-stone-400">
+            <span className="text-xs text-muted-foreground/70">
               {preview.wordCount} word{preview.wordCount !== 1 ? 's' : ''}
             </span>
           )}
@@ -453,32 +456,32 @@ export function FlashcardPhase() {
       </div>
 
       {error && (
-        <div className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-xs text-rose-600 dark:border-rose-800/30 dark:bg-rose-950/10 dark:text-rose-400">
+        <div className="rounded-lg border border-rose-500/20 bg-rose-500/5 p-3 text-xs text-rose-600 dark:text-rose-400">
           {error}
         </div>
       )}
 
       {preview && preview.wordCount > 0 && (
-        <div className="rounded-xl border border-[--paper-border] bg-white p-5 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
+        <div className="rounded-xl border border-paper-border bg-card p-5 shadow-sm">
           <div className="flex items-center justify-between">
             <div>
-              <span className="text-2xl font-bold text-stone-900 dark:text-white">{preview.wordCount}</span>
-              <span className="ml-1.5 text-sm text-stone-400 dark:text-stone-500">words to study</span>
+              <span className="text-2xl font-bold text-ink">{preview.wordCount}</span>
+              <span className="ml-1.5 text-sm text-muted-foreground/70">words to study</span>
             </div>
             <button
               onClick={handleStart}
-              className="flex items-center gap-1.5 rounded-lg bg-emerald-500 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-all hover:bg-emerald-400 active:scale-[0.97]"
+              className="flex items-center gap-1.5 rounded-lg bg-brand px-5 py-2.5 text-xs font-bold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97]"
             >
               <Play className="h-3.5 w-3.5" />
               Start
             </button>
           </div>
-          <div className="mt-3 max-h-40 overflow-y-auto rounded-lg bg-stone-50 p-3 dark:bg-stone-800/50">
+          <div className="mt-3 max-h-40 overflow-y-auto rounded-lg bg-muted/30 p-3">
             <div className="flex flex-wrap gap-1.5">
               {preview.words.map((w) => (
                 <span
                   key={w.id}
-                  className="rounded-md bg-white px-2 py-1 text-xs font-medium text-stone-700 shadow-sm dark:bg-stone-800 dark:text-stone-300"
+                  className="rounded-md bg-card px-2 py-1 text-xs font-medium text-muted-foreground shadow-sm ring-1 ring-paper-border"
                 >
                   {w.word}
                 </span>
