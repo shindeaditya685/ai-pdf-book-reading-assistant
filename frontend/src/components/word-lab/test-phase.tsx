@@ -31,26 +31,36 @@ export function TestPhase({
   const [showCheatWarning, setShowCheatWarning] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
   const q = questions[index]
+
+  const normalizeType = (raw: string): 'fill-blank' | 'multiple-choice' | 'reverse-recall' => {
+    const t = raw?.toLowerCase().replace(/[\s_-]+/g, ' ') || ''
+    if (t.includes('fill') && t.includes('blank')) return 'fill-blank'
+    if (t.includes('multiple') || t.includes('choice') || t === 'mcq') return 'multiple-choice'
+    if (t.includes('reverse') || t.includes('recall')) return 'reverse-recall'
+    return 'multiple-choice'
+  }
+
+  const safeType = q ? normalizeType(q.type) : 'multiple-choice'
   const MAX_TAB_WARNINGS = 3
 
   const finishTest = useCallback(() => {
     const results: TestResult[] = questions.map((q, i) => ({
       wordId: q.wordId,
       word: q.word,
-      questionType: q.type,
+      questionType: normalizeType(q.type),
       userAnswer: answers[i] || '',
       correctAnswer: q.correctAnswer,
-      correct: (answers[i] || '').trim().toLowerCase() === q.correctAnswer.trim().toLowerCase(),
+      correct: (answers[i] || '').trim().toLowerCase() === (q.correctAnswer || '').trim().toLowerCase(),
       sentence: q.sentence,
     }))
     onComplete(results)
   }, [questions, answers, onComplete])
 
   useEffect(() => {
-    if (q.type === 'fill-blank' || q.type === 'reverse-recall') {
+    if (safeType === 'fill-blank' || safeType === 'reverse-recall') {
       inputRef.current?.focus()
     }
-  }, [index, q.type])
+  }, [index, safeType])
 
   // ── Cheating prevention ──
   useEffect(() => {
@@ -106,7 +116,7 @@ export function TestPhase({
 
   const checkAnswer = () => {
     const userAnswer = (answers[index] || '').trim().toLowerCase()
-    const correct = q.correctAnswer.trim().toLowerCase()
+    const correct = (q.correctAnswer || '').trim().toLowerCase()
     setShowResult((prev) => ({ ...prev, [index]: true }))
     if (userAnswer === correct) {
       setTimeout(() => {
@@ -127,8 +137,16 @@ export function TestPhase({
   }
 
   const progress = Object.keys(showResult).length
-  const isCorrect = showResult[index] &&
-    (answers[index] || '').trim().toLowerCase() === q.correctAnswer.trim().toLowerCase()
+  const isCorrect = showResult[index] && !!q &&
+    (answers[index] || '').trim().toLowerCase() === (q.correctAnswer || '').trim().toLowerCase()
+
+  if (!q) {
+    return (
+      <div className="fixed inset-0 z-50 flex flex-col items-center justify-center bg-stone-950">
+        <p className="text-sm text-stone-400">No questions available.</p>
+      </div>
+    )
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col bg-stone-950 select-none" style={{ userSelect: 'none' }}>
@@ -183,15 +201,15 @@ export function TestPhase({
           {/* Question type badge */}
           <div className="mb-6 text-center">
             <span className="inline-block rounded-full border border-stone-700 bg-stone-900 px-4 py-1 text-[11px] font-semibold uppercase tracking-widest text-stone-400">
-              {q.type === 'fill-blank' && 'Fill in the Blank'}
-              {q.type === 'multiple-choice' && 'Multiple Choice'}
-              {q.type === 'reverse-recall' && 'Reverse Recall'}
+              {safeType === 'fill-blank' && 'Fill in the Blank'}
+              {safeType === 'multiple-choice' && 'Multiple Choice'}
+              {safeType === 'reverse-recall' && 'Reverse Recall'}
             </span>
           </div>
 
           {/* Question card */}
           <div className="rounded-2xl border border-stone-800 bg-stone-900/80 p-8 shadow-2xl backdrop-blur-sm">
-            {q.type === 'fill-blank' && (
+            {safeType === 'fill-blank' && (
               <div className="space-y-6">
                 <p className="text-center text-lg leading-relaxed text-stone-100">
                   {q.prompt.split('__________').map((part, i, arr) => (
@@ -199,7 +217,7 @@ export function TestPhase({
                       {part}
                       {i < arr.length - 1 && (
                         <span className="mx-2 inline-block min-w-[120px] border-b-2 border-dashed border-amber-500 px-2 pb-0.5 text-amber-400">
-                          {showResult[index] ? q.correctAnswer : ' '.repeat(Math.max(4, q.correctAnswer.length))}
+                          {showResult[index] ? (q.correctAnswer || '') : ' '.repeat(Math.max(4, (q.correctAnswer || '').length))}
                         </span>
                       )}
                     </span>
@@ -226,7 +244,7 @@ export function TestPhase({
                         className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 transition-colors hover:text-amber-400"
                       >
                         <Lightbulb className="h-4 w-4" />
-                        {revealedHint[index] ? `First letter: ${q.correctAnswer[0].toUpperCase()}` : 'Show hint'}
+                        {revealedHint[index] ? `First letter: ${(q.correctAnswer || '?')[0].toUpperCase()}` : 'Show hint'}
                       </button>
                     </div>
                   </>
@@ -234,7 +252,7 @@ export function TestPhase({
               </div>
             )}
 
-            {q.type === 'multiple-choice' && (
+            {safeType === 'multiple-choice' && (
               <div className="space-y-6">
                 <p className="text-center text-lg font-medium text-stone-100">{q.prompt}</p>
                 <div className="space-y-2.5">
@@ -295,7 +313,7 @@ export function TestPhase({
               </div>
             )}
 
-            {q.type === 'reverse-recall' && (
+            {safeType === 'reverse-recall' && (
               <div className="space-y-6">
                 <div className="rounded-xl border border-stone-700/50 bg-stone-800/30 p-6 text-center">
                   <p className="text-base italic leading-relaxed text-stone-300">{q.prompt}</p>
@@ -321,7 +339,7 @@ export function TestPhase({
                         className="inline-flex items-center gap-1.5 text-sm font-medium text-stone-500 transition-colors hover:text-amber-400"
                       >
                         <Lightbulb className="h-4 w-4" />
-                        {revealedHint[index] ? `First letter: ${q.correctAnswer[0].toUpperCase()}` : 'Show hint'}
+                        {revealedHint[index] ? `First letter: ${(q.correctAnswer || '?')[0].toUpperCase()}` : 'Show hint'}
                       </button>
                     </div>
                   </>
@@ -348,7 +366,7 @@ export function TestPhase({
                     <XCircle className="mt-0.5 h-5 w-5 shrink-0 text-rose-500" />
                     <div>
                       <p className="text-sm font-bold text-rose-400">
-                        Correct answer: <span className="font-black">{q.correctAnswer}</span>
+                        Correct answer: <span className="font-black">{q.correctAnswer || ''}</span>
                       </p>
                       {q.sentence && (
                         <p className="mt-1 text-sm text-stone-500">&ldquo;{q.sentence}&rdquo;</p>
@@ -361,7 +379,7 @@ export function TestPhase({
           </div>
 
           {/* ── Navigation ── */}
-          {q.type !== 'multiple-choice' && !showResult[index] && (
+          {safeType !== 'multiple-choice' && !showResult[index] && (
             <div className="mt-6 flex items-center justify-between">
               <button
                 onClick={() => {

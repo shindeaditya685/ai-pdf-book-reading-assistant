@@ -37,7 +37,7 @@ export function SettingsPanel() {
           className="h-8 w-8 rounded-xl border-border/60 bg-background/80 text-muted-foreground shadow-sm backdrop-blur-sm transition-all hover:text-foreground hover:shadow-md sm:h-9 sm:w-9"
           title="Settings"
         >
-          <Settings2 className="h-3.5 w-3.5" />
+          <Settings2 className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
       <PopoverContent align="end" sideOffset={8} className="w-72 rounded-xl border-emerald-500/10 bg-background/95 p-4 shadow-xl shadow-emerald-500/5 backdrop-blur-xl">

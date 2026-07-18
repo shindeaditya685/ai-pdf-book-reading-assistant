@@ -606,66 +606,66 @@ export default function DashboardPage() {
           <div className="hidden items-center gap-0.5 sm:flex sm:gap-1">
             <Link
               href="/review"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
               title="Flashcard Review"
             >
-              <BrainCircuit className="h-3 w-3" />
+              <BrainCircuit className="h-4 w-4" />
             </Link>
             <Link
               href="/vocabulary"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
               title="Vocabulary"
             >
-              <BookText className="h-3 w-3" />
+              <BookText className="h-4 w-4" />
             </Link>
             <Link
               href="/quotes"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-amber-600 hover:bg-muted/40"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-amber-600 hover:bg-muted/40"
               title="Passages"
             >
-              <QuoteIcon className="h-3 w-3" />
+              <QuoteIcon className="h-4 w-4" />
             </Link>
             <Link
               href="/collections"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-muted/40"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-muted/40"
               title="Collections"
             >
-              <Library className="h-3.5 w-3.5" />
+              <Library className="h-4 w-4" />
             </Link>
             <Link
               href="/lists"
-              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-muted/40"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-muted/40"
               title="Word Lists"
             >
-              <List className="h-3.5 w-3.5" />
+              <List className="h-4 w-4" />
             </Link>
             <Link
               href="/ielts"
-              className="inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-muted-foreground hover:text-emerald-600 hover:bg-muted/40 transition-colors"
+              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-muted-foreground hover:text-emerald-600 hover:bg-muted/40 transition-colors"
               title="IELTS Prep"
             >
-              <GraduationCap className="h-3.5 w-3.5 text-emerald-500" />
+              <GraduationCap className="h-4 w-4 text-emerald-500" />
               <span className="hidden lg:inline">IELTS Prep</span>
             </Link>
             <button
               onClick={toggleSharePanel}
-              className={`inline-flex h-7 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all ${
+              className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all ${
                 shareSession
                   ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
                   : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
               }`}
               title={shareSession ? `Session: ${shareSession.name}` : 'Collaborative Reading'}
             >
-              <Users className="h-3 w-3" />
+              <Users className="h-4 w-4" />
               <span className="hidden xl:inline">{shareSession ? shareSession.name : 'Collaborate'}</span>
             </button>
             {user?.isAdmin && (
               <Link
                 href="/admin"
-                className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
+                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
                 title="Admin Panel"
               >
-                <Shield className="h-3 w-3" />
+                <Shield className="h-4 w-4" />
               </Link>
             )}
             <div className="inline-flex">

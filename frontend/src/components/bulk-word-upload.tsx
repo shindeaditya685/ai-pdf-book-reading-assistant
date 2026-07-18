@@ -367,21 +367,14 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
             )}
             <Button
               size="sm"
-              disabled={!input.trim() || wordCount === 0 || wordCount > 100 || status === 'processing'}
+              disabled={!input.trim() || wordCount === 0 || wordCount > 100}
               onClick={handleSubmit}
               className="h-8 gap-1.5 bg-amber-500 text-xs font-semibold text-white shadow-sm shadow-amber-500/20 hover:bg-amber-600 disabled:opacity-40"
             >
-              {status === 'processing' ? (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Importing...
-                </>
-              ) : (
-                <>
-                  <Sparkles className="h-3 w-3" />
-                  Import Words
-                </>
-              )}
+              <>
+                <Sparkles className="h-3 w-3" />
+                Import Words
+              </>
             </Button>
           </div>
         )}
