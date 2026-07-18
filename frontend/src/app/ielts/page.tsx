@@ -7,97 +7,11 @@ import {
   ArrowLeft, BookOpen, Loader2, Timer, Clock, FileText, MessageSquare,
   Mic, BookText, ChevronRight, CheckCircle2, XCircle, AlertCircle,
   Play, RefreshCw, Sparkles, BarChart3, GraduationCap, PenLine,
-  Volume2, Brain, Star, Lightbulb, ListChecks, Target,
+  Volume2, Brain, Star, Lightbulb, ListChecks, Target, LayoutDashboard,
 } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
-
-// ── Band Score Ruler (signature element) ──
-
-const BAND_LABELS = ['', '', '', '', '', '', '', '', '', ''] as const
-
-function BandScoreRuler({ score, target = 7 }: { score: number | null; target?: number }) {
-  const bands = [1, 2, 3, 4, 5, 6, 7, 8, 9]
-
-  return (
-    <div className="rounded-xl border border-stone-200 bg-white px-5 py-4 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/40">
-      <div className="mb-2 flex items-center justify-between">
-        <span className="font-serif text-[11px] font-semibold uppercase tracking-[0.12em] text-stone-500 dark:text-stone-400">
-          Estimated Band Score
-        </span>
-        {score !== null && (
-          <span className="text-[11px] text-stone-400 dark:text-stone-500">
-            Target: <span className="font-semibold text-stone-600 dark:text-stone-300">{target}.0</span>
-          </span>
-        )}
-      </div>
-      <div className="relative">
-        <div className="flex h-8 items-center">
-          {bands.map((band, i) => {
-            const filled = score !== null && band <= score
-            const isMarker = score !== null && Math.round(score) === band
-            const segmentColor =
-              band <= 4 ? 'bg-rose-200 dark:bg-rose-900/40' :
-              band <= 6 ? 'bg-amber-200 dark:bg-amber-900/40' :
-              'bg-orange-200 dark:bg-orange-900/40'
-
-            return (
-              <div key={band} className="relative flex-1">
-                <div
-                  className={`h-2 rounded-full transition-all duration-700 ${
-                    i === 0 ? 'rounded-l-full' : i === bands.length - 1 ? 'rounded-r-full' : ''
-                  } ${filled ? 'bg-orange-500 dark:bg-orange-500' : segmentColor}`}
-                  style={{
-                    marginLeft: i === 0 ? 0 : '-1px',
-                    marginRight: i === bands.length - 1 ? 0 : '-1px',
-                  }}
-                />
-                {isMarker && (
-                  <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-                    <div className="flex h-5 w-5 items-center justify-center rounded-full bg-orange-500 shadow-[0_0_0_3px_rgba(234,88,12,0.2)] dark:shadow-[0_0_0_3px_rgba(234,88,12,0.35)]">
-                      <span className="text-[9px] font-bold text-white">{score}</span>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )
-          })}
-        </div>
-        <div className="mt-1.5 flex">
-          {bands.map((band) => (
-            <span
-              key={band}
-              className="flex-1 text-center text-[10px] font-medium text-stone-400 dark:text-stone-500"
-            >
-              {band}
-            </span>
-          ))}
-        </div>
-        {score === null && (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <span className="rounded-full bg-stone-100 px-4 py-1 text-[10px] font-semibold text-stone-400 dark:bg-stone-800 dark:text-stone-500">
-              Complete a practice to see your band
-            </span>
-          </div>
-        )}
-      </div>
-      <div className="mt-2 flex gap-3 text-[10px] text-stone-400 dark:text-stone-500">
-        <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-rose-300" />
-          Limited (1–4)
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-amber-300" />
-          Moderate (5–6)
-        </span>
-        <span className="flex items-center gap-1">
-          <span className="h-1.5 w-1.5 rounded-full bg-orange-300" />
-          Proficient (7–9)
-        </span>
-      </div>
-    </div>
-  )
-}
+import { DashboardView } from '@/components/ielts/dashboard-view'
 
 // ═══════════════════════════════════════════════════════════════
 // DATA
@@ -2558,19 +2472,19 @@ function VocabModule() {
 // MAIN PAGE
 // ═══════════════════════════════════════════════════════════════
 
-const TABS = [
-  { id: 'reading', label: 'Reading', icon: BookOpen, desc: 'Timed passages with IELTS questions' },
-  { id: 'writing', label: 'Writing', icon: PenLine, desc: 'Task 1 & 2 prompts with timer' },
-  { id: 'speaking', label: 'Speaking', icon: Mic, desc: 'Cue cards & discussion questions' },
-  { id: 'vocabulary', label: 'Vocabulary', icon: BookText, desc: 'Topic-based word lists & quizzes' },
-] as const
+type Phase = 'dashboard' | 'reading' | 'writing' | 'speaking' | 'vocab'
 
-type TabId = (typeof TABS)[number]['id']
+const MODULE_META: Record<Exclude<Phase, 'dashboard'>, { label: string; icon: typeof BookOpen }> = {
+  reading: { label: 'Reading', icon: BookOpen },
+  writing: { label: 'Writing', icon: PenLine },
+  speaking: { label: 'Speaking', icon: Mic },
+  vocab: { label: 'Vocabulary', icon: BookText },
+}
 
 export default function IELTSPage() {
   const { user, isLoading: authLoading } = useAuth()
   const router = useRouter()
-  const [activeTab, setActiveTab] = useState<TabId>('reading')
+  const [phase, setPhase] = useState<Phase>('dashboard')
   const [mounted, setMounted] = useState(false)
   const latestScoreRef = useRef<number | null>(null)
   const [, forceUpdate] = useState(0)
@@ -2596,57 +2510,63 @@ export default function IELTSPage() {
 
   if (!user) return null
 
+  const goToDashboard = () => setPhase('dashboard')
+
   return (
     <div className="min-h-screen bg-stone-50 dark:bg-stone-950">
       {/* HEADER */}
       <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-stone-200 bg-white/80 px-4 backdrop-blur-xl dark:border-stone-800 dark:bg-stone-900/80">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-stone-200 text-stone-400 transition-all hover:border-stone-300 hover:text-stone-600 dark:border-stone-700 dark:hover:border-stone-600 dark:hover:text-stone-300">
-            <ArrowLeft className="h-3.5 w-3.5" />
-          </Link>
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-stone-900 shadow-sm dark:bg-white">
-            <GraduationCap className="h-3.5 w-3.5 text-white dark:text-stone-900" />
-          </div>
-          <span className="font-serif text-sm font-bold tracking-tight text-stone-900 dark:text-white">IELTS Prep</span>
-          <span className="rounded-md border border-orange-200 bg-orange-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-orange-600 dark:border-orange-800/50 dark:bg-orange-950/30 dark:text-orange-400">
-            Free Practice
-          </span>
+          {phase === 'dashboard' ? (
+            <>
+              <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-stone-200 text-stone-400 transition-all hover:border-stone-300 hover:text-stone-600 dark:border-stone-700 dark:hover:border-stone-600 dark:hover:text-stone-300">
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </Link>
+              <div className="flex h-7 w-7 items-center justify-center rounded-md bg-blue-600 shadow-sm">
+                <GraduationCap className="h-3.5 w-3.5 text-white" />
+              </div>
+              <span className="font-serif text-sm font-bold tracking-tight text-stone-900 dark:text-white">IELTS Prep</span>
+              <span className="rounded-md border border-amber-200 bg-amber-50 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-widest text-amber-600 dark:border-amber-800/50 dark:bg-amber-950/30 dark:text-amber-400">
+                Free Practice
+              </span>
+            </>
+          ) : (
+            <>
+              <button onClick={goToDashboard} className="flex h-7 w-7 items-center justify-center rounded-lg border border-stone-200 text-stone-400 transition-all hover:border-stone-300 hover:text-stone-600 dark:border-stone-700 dark:hover:border-stone-600 dark:hover:text-stone-300">
+                <ArrowLeft className="h-3.5 w-3.5" />
+              </button>
+              <div className={`flex h-7 w-7 items-center justify-center rounded-md shadow-sm ${
+                phase === 'reading' ? 'bg-blue-600' :
+                phase === 'writing' ? 'bg-amber-600' :
+                phase === 'speaking' ? 'bg-rose-600' :
+                'bg-emerald-600'
+              }`}>
+                {(() => {
+                  const Icon = MODULE_META[phase].icon
+                  return <Icon className="h-3.5 w-3.5 text-white" />
+                })()}
+              </div>
+              <span className="font-serif text-sm font-bold tracking-tight text-stone-900 dark:text-white">{MODULE_META[phase].label}</span>
+              <button onClick={goToDashboard} className="ml-2 rounded-md border border-stone-200 px-2 py-0.5 text-[10px] font-semibold text-stone-400 transition-colors hover:border-stone-300 hover:text-stone-600 dark:border-stone-700 dark:text-stone-500 dark:hover:border-stone-600 dark:hover:text-stone-300">
+                <LayoutDashboard className="mr-1 inline h-3 w-3" />
+                Dashboard
+              </button>
+            </>
+          )}
         </div>
       </header>
 
       <main className="mx-auto max-w-5xl px-4 py-5 sm:px-6 lg:px-8">
-        {/* BAND SCORE RULER — signature element */}
-        <BandScoreRuler score={latestScoreRef.current} target={7} />
-
-        {/* TAB NAVIGATION */}
-        <div className="mt-4 mb-6 grid grid-cols-4 gap-1.5">
-          {TABS.map((tab) => {
-            const Icon = tab.icon
-            const isActive = activeTab === tab.id
-            return (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center justify-center gap-2 rounded-xl px-2 py-3 text-xs font-semibold transition-all ${
-                  isActive
-                    ? 'bg-white text-stone-900 shadow-sm ring-1 ring-stone-200 dark:bg-stone-800 dark:text-white dark:ring-stone-700'
-                    : 'text-stone-400 hover:bg-white/50 hover:text-stone-600 dark:text-stone-500 dark:hover:bg-stone-800/50 dark:hover:text-stone-300'
-                }`}
-              >
-                <Icon className="h-3.5 w-3.5 shrink-0" />
-                <span className="text-[11px]">{tab.label}</span>
-              </button>
-            )
-          })}
-        </div>
-
-        {/* TAB CONTENT */}
-        <div className="space-y-5">
-          {activeTab === 'reading' && <ReadingModule onScoreUpdate={onScoreUpdate} />}
-          {activeTab === 'writing' && <WritingModule />}
-          {activeTab === 'speaking' && <SpeakingModule />}
-          {activeTab === 'vocabulary' && <VocabModule />}
-        </div>
+        {phase === 'dashboard' ? (
+          <DashboardView score={latestScoreRef.current} onSelectModule={setPhase} />
+        ) : (
+          <div className="space-y-5">
+            {phase === 'reading' && <ReadingModule onScoreUpdate={onScoreUpdate} />}
+            {phase === 'writing' && <WritingModule />}
+            {phase === 'speaking' && <SpeakingModule />}
+            {phase === 'vocab' && <VocabModule />}
+          </div>
+        )}
       </main>
     </div>
   )

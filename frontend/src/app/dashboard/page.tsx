@@ -517,7 +517,7 @@ export default function DashboardPage() {
     const progress = pageCount > 0 ? Math.min(100, Math.round((lastPage / pageCount) * 100)) : 0
     const wordCount =
       pdf.wordCount ??
-      wordHistory.filter((w) => w.pdfFileName === pdf.fileName).length
+      bookmarks.filter((b) => b.pdfFileName === pdf.fileName).length
     const bookmarkCount =
       pdf.bookmarkCount ??
       bookmarks.filter((b) => b.pdfFileName === pdf.fileName).length

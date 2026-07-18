@@ -19,7 +19,7 @@ export async function GET(request: Request) {
     const books = await Promise.all(
       pdfs.map(async (pdf) => {
         const [wordCount, bookmarkCount, quoteCount, readingStats] = await Promise.all([
-          conn.db.collection('wordHistory').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
+          conn.db.collection('bookmarks').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
           conn.db.collection('bookmarks').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
           conn.db.collection('quotes').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
           conn.db

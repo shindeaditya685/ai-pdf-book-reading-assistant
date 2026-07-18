@@ -22,6 +22,7 @@ export async function GET(request: Request) {
 
     const pipeline: any[] = [
       { $match: match },
+      { $addFields: { word: { $toLower: '$word' } } },
       { $sort: { timestamp: -1 } },
       {
         $group: {
@@ -57,9 +58,9 @@ export async function GET(request: Request) {
     else if (sort === 'alpha') pipeline.push({ $sort: { word: sortDir } })
     else pipeline.push({ $sort: { lastSeen: sortDir, word: 1 } })
 
-    const words = await conn.db.collection('wordHistory').aggregate(pipeline).toArray()
+    const words = await conn.db.collection('bookmarks').aggregate(pipeline).toArray()
 
-    const pdfs = await conn.db.collection('wordHistory').distinct('pdfFileName', { username: user.username })
+    const pdfs = await conn.db.collection('bookmarks').distinct('pdfFileName', { username: user.username })
 
     return NextResponse.json({ words, totalWords: words.length, totalBooks: pdfs.length, pdfs })
   } catch {
@@ -79,7 +80,7 @@ export async function DELETE(request: Request) {
   if (!conn) return NextResponse.json({ success: false })
 
   try {
-    const result = await conn.db.collection('wordHistory').deleteMany({ username: user.username, word })
+    const result = await conn.db.collection('bookmarks').deleteMany({ username: user.username, word: { $regex: `^${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } })
     return NextResponse.json({ success: true, deletedCount: result.deletedCount })
   } catch {
     return NextResponse.json({ success: false })

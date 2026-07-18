@@ -219,7 +219,7 @@ async function processBatch(
   }
 
   if (historyDocs.length > 0) {
-    await conn!.db.collection('wordHistory').insertMany(historyDocs)
+    await conn!.db.collection('bookmarks').insertMany(historyDocs)
   }
   if (flashcardDocs.length > 0) {
     await conn!.db.collection('flashcards').insertMany(flashcardDocs)

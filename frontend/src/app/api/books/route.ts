@@ -10,7 +10,7 @@ export async function GET(request: Request) {
   if (!conn) return NextResponse.json({ books: [] })
 
   try {
-    const pdfs: string[] = await conn.db.collection('wordHistory').distinct('pdfFileName', {
+    const pdfs: string[] = await conn.db.collection('bookmarks').distinct('pdfFileName', {
       username: user.username,
       pdfFileName: { $ne: 'bulk-import' },
     })

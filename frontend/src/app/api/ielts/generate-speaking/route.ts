@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { aiClient, AIClientError } from '@/lib/ai-client'
+import { generateJSONWithFallback, FallbackError } from '@/lib/ai-fallback'
 import { gateAiRequest, refundIfFailed } from '@/lib/ai-gate'
 
 interface SpeakingCardData {
@@ -47,14 +47,14 @@ export async function POST(req: NextRequest) {
       }
 
       const prompt = buildPrompt(topic.trim())
-      const speakingCard = await aiClient.generateJSON<SpeakingCardData>(prompt)
+      const speakingCard = await generateJSONWithFallback<SpeakingCardData>(prompt)
 
       return NextResponse.json(speakingCard)
     } catch (error: unknown) {
       await refundIfFailed(gate.userId, 'ielts')
       console.error('IELTS speaking generation error:', error)
-      if (error instanceof AIClientError) {
-        return NextResponse.json({ error: error.message }, { status: error.status || 500 })
+      if (error instanceof FallbackError) {
+        return NextResponse.json({ error: error.message }, { status: 502 })
       }
       const message = error instanceof Error ? error.message : 'Failed to generate speaking card'
       return NextResponse.json({ error: message }, { status: 500 })

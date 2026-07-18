@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { aiClient, AIClientError } from '@/lib/ai-client'
+import { generateJSONWithFallback, FallbackError } from '@/lib/ai-fallback'
 import { gateAiRequest, refundIfFailed } from '@/lib/ai-gate'
 
 interface SpeakingEvaluationData {
@@ -77,14 +77,14 @@ export async function POST(req: NextRequest) {
       }
 
       const promptString = buildPrompt(question, transcript.trim())
-      const evaluation = await aiClient.generateJSON<SpeakingEvaluationData>(promptString)
+      const evaluation = await generateJSONWithFallback<SpeakingEvaluationData>(promptString)
 
       return NextResponse.json(evaluation)
     } catch (error: unknown) {
       await refundIfFailed(gate.userId, 'ielts')
       console.error('IELTS speaking evaluation error:', error)
-      if (error instanceof AIClientError) {
-        return NextResponse.json({ error: error.message }, { status: error.status || 500 })
+      if (error instanceof FallbackError) {
+        return NextResponse.json({ error: error.message }, { status: 502 })
       }
       const message = error instanceof Error ? error.message : 'Failed to evaluate IELTS speaking'
       return NextResponse.json({ error: message }, { status: 500 })

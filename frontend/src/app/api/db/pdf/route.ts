@@ -58,7 +58,7 @@ export async function GET(request: Request) {
     const pdfsWithStats = await Promise.all(
       pdfs.map(async (pdf) => {
         const [wordCount, bookmarkCount] = await Promise.all([
-          conn.db.collection('wordHistory').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
+          conn.db.collection('bookmarks').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
           conn.db.collection('bookmarks').countDocuments({ pdfFileName: pdf.fileName, username: user.username }),
         ])
 
@@ -245,37 +245,7 @@ export async function DELETE(request: Request) {
     }
 
     await conn.db.collection('pdfs').deleteOne({ _id: doc._id })
-    await conn.db.collection('bookmarks').deleteMany({ pdfFileName: fileName, username: user.username })
-    await conn.db.collection('wordHistory').deleteMany({ pdfFileName: fileName, username: user.username })
-    await conn.db.collection('history').deleteMany({ pdfFileName: fileName, username: user.username })
     await conn.db.collection('annotations').deleteMany({ pdfFileName: fileName, username: user.username })
-    await conn.db.collection('quotes').deleteMany({ pdfFileName: fileName, username: user.username })
-    // Conversations: detach quotes from this book and drop the conversation
-    // entirely if it ends up with no quotes (otherwise the chat is broken).
-    const droppedQuotes = await conn.db
-      .collection('quotes')
-      .find({ pdfFileName: fileName, username: user.username }, { projection: { _id: 1 } })
-      .toArray()
-    const droppedIds = droppedQuotes.map((q) => q._id.toString())
-    if (droppedIds.length > 0) {
-      const conversations = await conn.db
-        .collection('quoteConversations')
-        .find({ username: user.username, quoteIds: { $in: droppedIds } })
-        .toArray()
-      const now = new Date()
-      for (const conv of conversations) {
-        const remaining = (conv.quoteIds as string[]).filter((qid) => !droppedIds.includes(qid))
-        if (remaining.length === 0) {
-          await conn.db.collection('quoteConversations').deleteOne({ _id: conv._id, username: user.username })
-          await conn.db.collection('quoteMessages').deleteMany({ conversationId: conv._id.toString() })
-        } else {
-          await conn.db.collection('quoteConversations').updateOne(
-            { _id: conv._id, username: user.username },
-            { $set: { quoteIds: remaining, pdfFileNames: (conv.pdfFileNames as string[]).filter((p) => p !== fileName), updatedAt: now } }
-          )
-        }
-      }
-    }
 
     return NextResponse.json({ success: true })
   } catch {
