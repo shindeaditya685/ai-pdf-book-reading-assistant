@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2, Gift, GraduationCap, List, Library } from 'lucide-react'
+import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2, Gift, GraduationCap, List, Library, Quote as QuoteIcon } from 'lucide-react'
 import { motion } from 'framer-motion'
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
@@ -619,6 +619,13 @@ export default function DashboardPage() {
               <BookText className="h-3 w-3" />
             </Link>
             <Link
+              href="/quotes"
+              className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-amber-600 hover:bg-muted/40"
+              title="Passages"
+            >
+              <QuoteIcon className="h-3 w-3" />
+            </Link>
+            <Link
               href="/collections"
               className="inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-muted/40"
               title="Collections"
@@ -688,6 +695,11 @@ export default function DashboardPage() {
               <DropdownMenuItem asChild>
                 <Link href="/vocabulary" className="flex items-center gap-2">
                   <BookText className="h-3.5 w-3.5" /> Vocabulary
+                </Link>
+              </DropdownMenuItem>
+              <DropdownMenuItem asChild>
+                <Link href="/quotes" className="flex items-center gap-2">
+                  <QuoteIcon className="h-3.5 w-3.5" /> Passages
                 </Link>
               </DropdownMenuItem>
               <DropdownMenuItem asChild>

@@ -345,7 +345,7 @@ export default function ManageBooksPage() {
           <AlertDialogHeader>
             <AlertDialogTitle>Delete book?</AlertDialogTitle>
             <AlertDialogDescription>
-              This will permanently delete &ldquo;{deleteTarget ? titleOf(deleteTarget) : ''}&rdquo; and its annotations and notes. Words and flashcards for this book will be kept.
+              This will permanently delete &ldquo;{deleteTarget ? titleOf(deleteTarget) : ''}&rdquo; and its annotations and notes. Bookmarked words, flashcards, and passages for this book will be kept.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>

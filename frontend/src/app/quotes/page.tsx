@@ -3,10 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, BookOpen, Search, ChevronDown, ChevronUp, Loader2, Quote as QuoteIcon, Calendar, Hash, Trash2, MessageSquarePlus, Edit3, Save, X, Sparkles, Image as ImageIcon } from 'lucide-react'
+import { ArrowLeft, BookOpen, Search, ChevronDown, ChevronUp, Loader2, Quote as QuoteIcon, Calendar, Hash, Trash2, MessageSquarePlus, Edit3, Save, X, Sparkles, Image as ImageIcon, ChevronLeft, ChevronRight } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
-import { QUOTE_LIMITS, truncate } from '@/lib/quotes'
+import { QUOTE_LIMITS } from '@/lib/quotes'
 import type { Quote } from '@/lib/quotes'
 import { QuoteCardModal } from '@/components/quote-card-modal'
 
@@ -36,7 +36,6 @@ export default function QuotesPage() {
       return
     }
     loadQuotes()
-     
   }, [user, authLoading, router])
 
   const loadQuotes = useCallback(async () => {
@@ -142,10 +141,12 @@ export default function QuotesPage() {
   const paginated = filtered.slice((page - 1) * QUOTES_PER_PAGE, page * QUOTES_PER_PAGE)
   const paginatedIds = paginated.map((q) => q.id)
 
+  const bookTitle = (fileName: string) => fileName.split('/').pop() || fileName
+
   if (authLoading) {
     return (
       <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-yellow-500" />
+        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
       </div>
     )
   }
@@ -153,122 +154,106 @@ export default function QuotesPage() {
   return (
     <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
       {/* ── HEADER ── */}
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-yellow-500/10 bg-background/60 px-4 shadow-[0_1px_0_0_rgba(234,179,8,0.05)] backdrop-blur-xl">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-all hover:border-muted-foreground/20 hover:bg-muted/50 hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" />
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-amber-500/10 bg-background/70 px-4 shadow-[0_1px_0_0_rgba(212,163,115,0.06)] backdrop-blur-xl">
+        <div className="flex items-center gap-2.5">
+          <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-all hover:border-muted-foreground/20 hover:bg-muted/40 hover:text-foreground">
+            <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-yellow-500 to-yellow-600 shadow-md shadow-yellow-500/20 ring-1 ring-yellow-500/20">
-            <QuoteIcon className="h-4 w-4 text-white" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-amber-500 to-amber-600 shadow-sm shadow-amber-500/15">
+            <QuoteIcon className="h-3.5 w-3.5 text-white" />
           </div>
-          <span className="text-sm font-bold text-foreground">Saved Quotes</span>
-          <span className="rounded-full bg-yellow-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">
-            {filtered.length} quote{filtered.length === 1 ? '' : 's'}
+          <span className="text-sm font-semibold text-foreground">Passages</span>
+          <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 tabular-nums">
+            {filtered.length} passage{filtered.length !== 1 ? 's' : ''}
           </span>
         </div>
         <div className="flex items-center gap-2">
           <Link
             href="/quotes/chat"
-            className="hidden h-9 items-center gap-1.5 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 text-xs font-semibold text-yellow-700 transition-colors hover:bg-yellow-500/20 dark:text-yellow-300 sm:inline-flex"
+            className="hidden h-7 items-center gap-1.5 rounded-md border border-amber-400/30 bg-amber-50/50 px-2 text-[10px] font-semibold text-amber-700 transition-colors hover:bg-amber-100/50 dark:border-amber-700/30 dark:bg-amber-900/15 dark:text-amber-400 dark:hover:bg-amber-900/25 sm:inline-flex"
           >
-            <MessageSquarePlus className="h-3.5 w-3.5" />
+            <MessageSquarePlus className="h-3 w-3" />
             Chats
           </Link>
           <button
             onClick={() => handleStartChat(paginatedIds)}
             disabled={creating || paginated.length === 0}
-            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-yellow-500 px-3 text-xs font-semibold text-white shadow-sm transition-colors hover:bg-yellow-600 disabled:opacity-50"
-            title="Start a new AI chat with the quotes on this page"
+            className="inline-flex h-7 items-center gap-1.5 rounded-md bg-amber-500 px-2 text-[10px] font-semibold text-white shadow-sm shadow-amber-500/20 transition-colors hover:bg-amber-600 disabled:opacity-40"
           >
-            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
-            Chat with this page
+            {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
+            Chat with page
           </button>
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        {/* ── STATS BAR ── */}
-        {filtered.length > 0 && (
-          <div className="mb-6 grid gap-3 sm:grid-cols-3">
-            <div className="rounded-xl border bg-background/60 p-4 shadow-sm backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Total Quotes</p>
-              <p className="mt-1 text-2xl font-bold text-foreground tabular-nums">{filtered.length}</p>
-            </div>
-            <div className="rounded-xl border bg-background/60 p-4 shadow-sm backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Books Quoted</p>
-              <p className="mt-1 text-2xl font-bold text-foreground tabular-nums">{pdfs.length}</p>
-            </div>
-            <div className="rounded-xl border bg-background/60 p-4 shadow-sm backdrop-blur-sm">
-              <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Latest</p>
-              <p className="mt-1 text-sm font-medium text-foreground truncate">
-                {filtered[0]?.text ? `&ldquo;${truncate(filtered[0].text, 40)}&rdquo;` : '—'}
-              </p>
-              {filtered[0] && (
-                <p className="mt-0.5 text-[10px] text-muted-foreground/50">
-                  {new Date(filtered[0].timestamp).toLocaleDateString()} · {filtered[0].pdfFileName.split('/').pop()}
-                </p>
-              )}
-            </div>
-          </div>
-        )}
-
+      <main className="mx-auto max-w-3xl px-4 py-6 sm:px-6 lg:px-8">
         {/* ── FILTERS ── */}
-        <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="mb-5 flex flex-col gap-2.5 sm:flex-row sm:items-center">
           <div className="relative flex-1">
-            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/50" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40" />
             <input
               type="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search quotes, context, or notes..."
-              className="h-10 w-full rounded-lg border border-border/60 bg-background/80 pl-9 pr-3 text-base outline-none transition-all focus:border-yellow-400 focus:ring-2 focus:ring-yellow-500/15 sm:h-9 sm:text-sm"
+              placeholder="Search passages, context, or notes..."
+              className="h-9 w-full rounded-lg border border-border/50 bg-background/60 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/35 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-500/12"
             />
           </div>
           <select
             value={pdfFilter}
             onChange={(e) => setPdfFilter(e.target.value)}
-            className="h-10 w-full rounded-lg border border-border/60 bg-background/80 px-2.5 text-base outline-none transition-all focus:border-yellow-400 focus:ring-2 focus:ring-yellow-500/15 sm:h-9 sm:w-56 sm:text-sm"
+            className="h-9 rounded-lg border border-border/50 bg-background/60 px-2.5 text-sm text-foreground outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-500/12 sm:w-52"
           >
             <option value="">All Books</option>
             {pdfs.map((p) => (
-              <option key={p} value={p}>{p.split('/').pop() || p}</option>
+              <option key={p} value={p}>{bookTitle(p)}</option>
             ))}
           </select>
         </div>
 
         {/* ── QUOTE LIST ── */}
         {loading ? (
-          <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-yellow-500" />
+          <div className="flex items-center justify-center py-24">
+            <div className="flex flex-col items-center gap-3">
+              <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
+              <span className="text-xs text-muted-foreground/50">Loading your passages...</span>
+            </div>
           </div>
         ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center gap-3 py-20 text-center">
-            <QuoteIcon className="h-10 w-10 text-muted-foreground/20" />
-            <p className="text-sm font-semibold text-muted-foreground/50">
-              {search || pdfFilter ? 'No quotes match your filters' : 'No quotes saved yet'}
-            </p>
-            <p className="text-xs text-muted-foreground/40">
-              Open a quote in the word popup and tap the quote icon to save it
-            </p>
+          <div className="flex flex-col items-center gap-4 py-24 text-center">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100/50 dark:bg-amber-900/15">
+              <QuoteIcon className="h-6 w-6 text-amber-500/60" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-foreground">
+                {search || pdfFilter ? 'No passages match your filters' : 'No passages saved yet'}
+              </p>
+              <p className="mt-0.5 text-xs text-muted-foreground/50">
+                {search || pdfFilter
+                  ? 'Try adjusting your search or book filter above'
+                  : 'Select text while reading, then tap the quote icon to save it'}
+              </p>
+            </div>
             {!search && !pdfFilter && (
-              <Link href="/dashboard" className="mt-2 rounded-lg bg-yellow-500 px-4 py-2 text-xs font-semibold text-white hover:bg-yellow-600 transition-colors">
+              <Link href="/dashboard" className="mt-1 rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-amber-500/20 hover:bg-amber-600 transition-colors">
                 Start Reading
               </Link>
             )}
           </div>
         ) : (
-          <div className="space-y-3">
+          <div className="space-y-2">
             {paginated.map((q) => {
               const isExpanded = expanded === q.id
               const isEditing = editingId === q.id
               return (
                 <div
                   key={q.id}
-                  className="group rounded-xl border border-border/40 bg-background/60 shadow-sm transition-all hover:border-border/70 hover:shadow-md"
+                  className={`rounded-xl border bg-background/50 shadow-sm transition-all ${
+                    isExpanded
+                      ? 'border-amber-400/30 shadow-amber-500/5'
+                      : 'border-border/40 hover:border-border/70 hover:shadow-md'
+                  }`}
                 >
-                  {/* UI fix (U3): previously a <button> wrapping a <button> (the
-                      trash icon) — invalid HTML that breaks screen readers and
-                      can produce weird click behavior. Now a div[role=button]. */}
                   <div
                     role="button"
                     tabIndex={0}
@@ -279,101 +264,101 @@ export default function QuotesPage() {
                         setExpanded(isExpanded ? null : q.id)
                       }
                     }}
-                    className="flex w-full items-start gap-3 px-4 py-3.5 text-left cursor-pointer"
+                    className="flex w-full items-start gap-3 px-3.5 py-3 text-left cursor-pointer"
                   >
                     <div
-                      className="mt-1 h-8 w-1 shrink-0 rounded-full"
-                      style={{ background: q.color || 'rgba(253, 224, 71, 0.65)' }}
+                      className="mt-1 h-10 w-1 shrink-0 rounded-full"
+                      style={{ background: q.color || 'rgba(212, 163, 115, 0.5)' }}
                       aria-hidden
                     />
                     <div className="flex-1 min-w-0">
-                      <p className="text-sm leading-relaxed text-foreground line-clamp-3">
-                        &ldquo;{q.text}&rdquo;
-                      </p>
+                      <div className="flex items-baseline gap-1">
+                        <span className="font-serif text-2xl leading-none text-amber-400/50 dark:text-amber-500/40 select-none" aria-hidden>&ldquo;</span>
+                        <p className="font-serif text-sm leading-relaxed text-foreground line-clamp-2 -ml-1">
+                          {q.text}
+                        </p>
+                      </div>
                       {q.noteText && !isExpanded && (
-                        <p className="mt-1.5 text-xs italic text-yellow-700 dark:text-yellow-400 line-clamp-1">
+                        <p className="mt-1.5 text-xs italic text-amber-700/80 dark:text-amber-400/80 line-clamp-1">
                           — {q.noteText}
                         </p>
                       )}
-                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground/60">
+                      <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground/50">
                         <span className="flex items-center gap-1">
-                          <BookOpen className="h-3 w-3" />
-                          {q.pdfFileName.split('/').pop() || q.pdfFileName}
+                          <BookOpen className="h-2.5 w-2.5" />
+                          {bookTitle(q.pdfFileName)}
                         </span>
-                        <span>Page {q.pageNumber || '?'}</span>
+                        <span>p. {q.pageNumber || '?'}</span>
                         <span className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
+                          <Calendar className="h-2.5 w-2.5" />
                           {new Date(q.timestamp).toLocaleDateString()}
                         </span>
                       </div>
                     </div>
-                    {isExpanded ? (
-                      <ChevronUp className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground/30" />
-                    ) : (
-                      <ChevronDown className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground/30" />
-                    )}
+                    <ChevronDown className={`mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground/25 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                     <button
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        setDeleteConfirm(q.id)
-                      }}
-                      className="shrink-0 rounded p-1 text-muted-foreground/20 transition-colors hover:bg-red-50 hover:text-red-500"
-                      title="Delete quote"
-                      aria-label="Delete quote"
+                      onClick={(e) => { e.stopPropagation(); setDeleteConfirm(q.id) }}
+                      className="shrink-0 rounded p-0.5 text-muted-foreground/15 transition-colors hover:text-red-500 hover:bg-red-500/5"
+                      title="Delete passage"
+                      aria-label="Delete passage"
                     >
                       <Trash2 className="h-3 w-3" />
                     </button>
                   </div>
 
                   {isExpanded && (
-                    <div className="space-y-3 border-t border-border/30 px-4 py-3">
+                    <div className="border-t border-amber-400/15 px-3.5 py-3 space-y-3">
                       {q.context && q.context !== q.text && (
                         <div>
-                          <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Surrounding Context</p>
-                          <p className="mt-0.5 text-sm italic text-muted-foreground/80 border-l-2 border-muted-foreground/20 pl-2">
+                          <p className="text-[9px] font-semibold uppercase tracking-widest text-amber-600/60 dark:text-amber-400/60">Context</p>
+                          <p className="mt-0.5 text-xs italic leading-relaxed text-muted-foreground/70 border-l-2 border-amber-300/30 pl-3 dark:border-amber-600/20">
                             {q.context}
                           </p>
                         </div>
                       )}
 
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">Your Note</p>
+                        <p className="text-[9px] font-semibold uppercase tracking-widest text-amber-600/60 dark:text-amber-400/60">Your Note</p>
                         {isEditing ? (
                           <div className="mt-1.5 space-y-2">
                             <textarea
                               value={editingNote}
                               onChange={(e) => setEditingNote(e.target.value.slice(0, QUOTE_LIMITS.NOTE_MAX))}
-                              placeholder="Why does this quote matter to you?"
+                              placeholder="Why does this passage matter to you?"
                               rows={3}
-                              className="w-full rounded-lg border border-border/60 bg-background px-3 py-2 text-sm outline-none focus:border-yellow-400 focus:ring-2 focus:ring-yellow-500/15"
+                              className="w-full rounded-lg border border-border/50 bg-background/60 px-3 py-2 text-sm text-foreground placeholder:text-muted-foreground/30 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-500/10"
                             />
                             <div className="flex items-center justify-between">
-                              <span className="text-[10px] text-muted-foreground/50 tabular-nums">
+                              <span className="text-[10px] text-muted-foreground/40 tabular-nums">
                                 {editingNote.length}/{QUOTE_LIMITS.NOTE_MAX}
                               </span>
                               <div className="flex items-center gap-2">
-                                <Button2 onClick={handleCancelEdit} variant="ghost" icon={X}>
-                                  Cancel
-                                </Button2>
-                                <Button2
-                                  onClick={() => handleSaveNote(q.id)}
-                                  variant="primary"
-                                  icon={savingNote ? Loader2 : Save}
-                                  loading={savingNote}
+                                <button
+                                  onClick={handleCancelEdit}
+                                  className="inline-flex h-7 items-center gap-1 rounded-md px-2 text-[10px] font-semibold text-muted-foreground hover:bg-muted/50 hover:text-foreground transition-colors"
                                 >
+                                  <X className="h-3 w-3" />
+                                  Cancel
+                                </button>
+                                <button
+                                  onClick={() => handleSaveNote(q.id)}
+                                  disabled={savingNote}
+                                  className="inline-flex h-7 items-center gap-1 rounded-md bg-amber-500 px-2.5 text-[10px] font-semibold text-white shadow-sm shadow-amber-500/20 hover:bg-amber-600 disabled:opacity-50 transition-colors"
+                                >
+                                  {savingNote ? <Loader2 className="h-3 w-3 animate-spin" /> : <Save className="h-3 w-3" />}
                                   Save
-                                </Button2>
+                                </button>
                               </div>
                             </div>
                           </div>
                         ) : (
                           <div className="mt-1 flex items-start gap-2">
                             <p className="flex-1 text-sm text-foreground">
-                              {q.noteText || <span className="italic text-muted-foreground/40">No note yet — click the pencil to add one</span>}
+                              {q.noteText || <span className="text-xs italic text-muted-foreground/40">Add a note about this passage</span>}
                             </p>
                             <button
-                              onClick={() => handleStartEdit(q)}
-                              className="shrink-0 rounded p-1 text-muted-foreground/30 transition-colors hover:bg-muted hover:text-foreground"
+                              onClick={(e) => { e.stopPropagation(); handleStartEdit(q) }}
+                              className="shrink-0 rounded p-0.5 text-muted-foreground/20 transition-colors hover:text-amber-500 hover:bg-amber-500/10"
                               title="Edit note"
                               aria-label="Edit note"
                             >
@@ -386,25 +371,22 @@ export default function QuotesPage() {
                       <div className="flex items-center justify-between pt-1">
                         <div className="flex items-center gap-2">
                           <button
-                            onClick={() => handleStartChat([q.id])}
+                            onClick={(e) => { e.stopPropagation(); handleStartChat([q.id]) }}
                             disabled={creating}
-                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-yellow-500/40 bg-yellow-500/10 px-3 text-xs font-semibold text-yellow-700 transition-colors hover:bg-yellow-500/20 disabled:opacity-50 dark:text-yellow-300"
+                            className="inline-flex h-7 items-center gap-1 rounded-md bg-amber-50/60 px-2 text-[10px] font-semibold text-amber-700 transition-colors hover:bg-amber-100/50 disabled:opacity-50 dark:bg-amber-900/15 dark:text-amber-400 dark:hover:bg-amber-900/25"
                           >
-                            {creating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                            {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Sparkles className="h-3 w-3" />}
                             Chat
                           </button>
                           <button
-                            onClick={() => setCardQuote(q)}
-                            className="inline-flex h-8 items-center gap-1.5 rounded-lg border px-3 text-xs font-semibold transition-colors hover:opacity-80"
-                            style={{ borderColor: 'var(--paper-border)', color: 'var(--ink)' }}
+                            onClick={(e) => { e.stopPropagation(); setCardQuote(q) }}
+                            className="inline-flex h-7 items-center gap-1 rounded-md border border-border/50 px-2 text-[10px] font-semibold text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
                           >
-                            <ImageIcon className="h-3.5 w-3.5" />
+                            <ImageIcon className="h-3 w-3" />
                             Card
                           </button>
                         </div>
-                        <span className="text-[10px] text-muted-foreground/40 tabular-nums">
-                          <Hash className="inline h-2.5 w-2.5" /> {q.id.slice(-6)}
-                        </span>
+                        <Hash className="h-2.5 w-2.5 text-muted-foreground/20" />
                       </div>
                     </div>
                   )}
@@ -416,26 +398,55 @@ export default function QuotesPage() {
 
         {/* ── PAGINATION ── */}
         {totalPages > 1 && (
-          <div className="mt-6 flex items-center justify-center gap-2">
-            <button
-              onClick={() => setPage((p) => Math.max(1, p - 1))}
-              disabled={page === 1}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition-all hover:bg-muted/50 disabled:opacity-30"
-              aria-label="Previous page"
-            >
-              <ChevronUp className="h-4 w-4 rotate-90" />
-            </button>
-            <span className="text-xs font-semibold tabular-nums text-muted-foreground">
-              {page} / {totalPages}
-            </span>
-            <button
-              onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              disabled={page === totalPages}
-              className="flex h-9 w-9 items-center justify-center rounded-lg border border-border/60 text-muted-foreground transition-all hover:bg-muted/50 disabled:opacity-30"
-              aria-label="Next page"
-            >
-              <ChevronDown className="h-4 w-4 rotate-90" />
-            </button>
+          <div className="mt-8 flex items-center justify-between border-t border-border/30 pt-4">
+            <p className="text-[11px] text-muted-foreground/50 tabular-nums">
+              Page {page} of {totalPages}
+            </p>
+            <div className="flex items-center gap-1">
+              <button
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+                disabled={page <= 1}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/50 transition-all hover:bg-amber-50/50 hover:text-amber-700 dark:hover:bg-amber-900/15 dark:hover:text-amber-400 disabled:pointer-events-none disabled:opacity-25"
+              >
+                <ChevronLeft className="h-3.5 w-3.5" />
+              </button>
+              {(() => {
+                const pages: (number | string)[] = []
+                if (totalPages <= 7) {
+                  for (let i = 1; i <= totalPages; i++) pages.push(i)
+                } else {
+                  pages.push(1)
+                  if (page > 3) pages.push('...')
+                  for (let i = Math.max(2, page - 1); i <= Math.min(totalPages - 1, page + 1); i++) pages.push(i)
+                  if (page < totalPages - 2) pages.push('...')
+                  pages.push(totalPages)
+                }
+                return pages.map((p, i) =>
+                  p === '...' ? (
+                    <span key={`ellipsis-${i}`} className="flex h-7 w-5 items-center justify-center text-[10px] text-muted-foreground/25">···</span>
+                  ) : (
+                    <button
+                      key={p}
+                      onClick={() => setPage(p as number)}
+                      className={`flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-[11px] font-semibold transition-all ${
+                        p === page
+                          ? 'bg-amber-100/80 text-amber-800 shadow-sm dark:bg-amber-900/25 dark:text-amber-300'
+                          : 'text-muted-foreground/60 hover:bg-amber-50/50 hover:text-amber-700 dark:hover:bg-amber-900/15 dark:hover:text-amber-400'
+                      }`}
+                    >
+                      {p}
+                    </button>
+                  )
+                )
+              })()}
+              <button
+                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                disabled={page >= totalPages}
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/50 transition-all hover:bg-amber-50/50 hover:text-amber-700 dark:hover:bg-amber-900/15 dark:hover:text-amber-400 disabled:pointer-events-none disabled:opacity-25"
+              >
+                <ChevronRight className="h-3.5 w-3.5" />
+              </button>
+            </div>
           </div>
         )}
       </main>
@@ -443,21 +454,26 @@ export default function QuotesPage() {
       {/* ── DELETE CONFIRMATION ── */}
       {deleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-sm rounded-xl border bg-background p-6 shadow-2xl">
-            <h3 className="text-sm font-bold text-foreground">Delete this quote?</h3>
-            <p className="mt-1 text-xs text-muted-foreground">
-              This will remove the quote and detach it from any quote chats that reference it. This action cannot be undone.
-            </p>
-            <div className="mt-4 flex justify-end gap-2">
+          <div className="mx-4 w-full max-w-sm rounded-xl border border-border/60 bg-background p-6 shadow-2xl">
+            <div className="flex items-center gap-3 mb-4">
+              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
+                <Trash2 className="h-4 w-4 text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-sm font-bold text-foreground">Delete this passage?</h3>
+                <p className="text-xs text-muted-foreground/60">This will remove it from any quote chats that reference it. This cannot be undone.</p>
+              </div>
+            </div>
+            <div className="flex justify-end gap-2">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="rounded-lg border border-border/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                className="rounded-lg border border-border/60 px-3.5 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDelete(deleteConfirm)}
-                className="rounded-lg bg-red-500 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-600 transition-colors"
+                className="rounded-lg bg-red-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-red-500/20 hover:bg-red-600 transition-colors"
               >
                 Delete
               </button>
@@ -480,36 +496,5 @@ export default function QuotesPage() {
         />
       )}
     </div>
-  )
-}
-
-// Small inline button helper used in the note editor — kept local to avoid
-// pulling in a heavier shared Button (with all its variants) for two buttons.
-function Button2({
-  onClick,
-  variant,
-  icon: Icon,
-  children,
-  loading,
-}: {
-  onClick: () => void
-  variant: 'primary' | 'ghost'
-  icon: React.ComponentType<{ className?: string }>
-  children: React.ReactNode
-  loading?: boolean
-}) {
-  return (
-    <button
-      onClick={onClick}
-      disabled={loading}
-      className={
-        variant === 'primary'
-          ? 'inline-flex h-7 items-center gap-1.5 rounded-md bg-yellow-500 px-2.5 text-[11px] font-semibold text-white hover:bg-yellow-600 disabled:opacity-50'
-          : 'inline-flex h-7 items-center gap-1.5 rounded-md px-2.5 text-[11px] font-semibold text-muted-foreground hover:bg-muted/50 hover:text-foreground'
-      }
-    >
-      <Icon className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
-      {children}
-    </button>
   )
 }
