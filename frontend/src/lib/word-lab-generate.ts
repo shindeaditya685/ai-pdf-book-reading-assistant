@@ -22,20 +22,58 @@ function parseJSON(content: string) {
   }
 }
 
-export async function generateWords(count: number, existingWords: string[] = []): Promise<Array<{
+const LANGUAGE_NAMES: Record<string, string> = {
+  hi: 'Hindi (Devanagari script)',
+  mr: 'Marathi (Devanagari script)',
+  bn: 'Bengali (Bangla script)',
+  or: 'Odia (Odia script)',
+  kn: 'Kannada (Kannada script)',
+  te: 'Telugu (Telugu script)',
+  ta: 'Tamil (Tamil script)',
+  pa: 'Punjabi (Gurmukhi script)',
+  ml: 'Malayalam (Malayalam script)',
+  ur: 'Urdu (Nastaliq script)',
+  gu: 'Gujarati (Gujarati script)',
+  ne: 'Nepali (Devanagari script)',
+  id: 'Indonesian (Latin script)',
+  es: 'Spanish',
+  fr: 'French',
+  de: 'German',
+  pt: 'Portuguese',
+  nl: 'Dutch',
+  ja: 'Japanese',
+  zh: 'Chinese (Simplified)',
+  ko: 'Korean',
+  ar: 'Arabic',
+  ru: 'Russian',
+  tr: 'Turkish',
+  ku: 'Kurdish (Kurmanji)',
+  am: 'Amharic (Geʻez script)',
+  uz: 'Uzbek (Latin script)',
+  vi: 'Vietnamese (Latin script)',
+  ps: 'Pashto (Naskh script)',
+  fa: 'Farsi (Perso-Arabic script)',
+}
+
+export async function generateWords(count: number, existingWords: string[] = [], translationLanguage = 'hi'): Promise<Array<{
   word: string
   pronunciation: string
   meaning: string
   translation: string
   example: string
 }>> {
+  const langName = LANGUAGE_NAMES[translationLanguage]
+  const translationInstruction = translationLanguage && translationLanguage !== 'none' && langName
+    ? `translation: ${langName} translation`
+    : 'translation: (do not provide a translation)'
+
   const prompt = `You are an IELTS vocabulary assistant. Generate ${count} advanced English vocabulary words suitable for IELTS preparation. Each word should be academic and useful for the exam.
 
 For each word, provide:
 - word: the vocabulary word
 - pronunciation: IPA pronunciation
 - meaning: clear definition (1 sentence)
-- translation: Hindi translation
+- ${translationInstruction}
 - example: example sentence using the word in an academic context
 
 Return ONLY valid JSON in this format, no other text:

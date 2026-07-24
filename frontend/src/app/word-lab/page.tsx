@@ -45,7 +45,10 @@ export default function WordLabPage() {
     setLoading(true)
     setError('')
     try {
-      const res = await authFetch('/api/word-lab/today')
+      const lang = typeof window !== 'undefined'
+        ? localStorage.getItem('pdf-reader-ai-translation-language') || 'hi'
+        : 'hi'
+      const res = await authFetch(`/api/word-lab/today?lang=${encodeURIComponent(lang)}`)
       if (res.ok) {
         const data = await res.json()
         setWords(data.words || [])

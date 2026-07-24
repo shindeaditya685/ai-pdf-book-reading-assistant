@@ -59,6 +59,9 @@ export async function GET(request: Request) {
       }
     }
 
+    const url = new URL(request.url)
+    const lang = url.searchParams.get('lang') || 'hi'
+
     // Priority 1: bookmarks not yet used
     const bookmarks = await conn.db.collection('bookmarks')
       .find({ username: user.username })
@@ -78,7 +81,7 @@ export async function GET(request: Request) {
         pronunciation: b.pronunciation || '',
         meaning: b.meaning || '',
         translation: b.translation || '',
-        example: b.sentence || '',
+        example: b.example || b.sentence || '',
         source: 'bookmark' as const,
       })
     }
@@ -102,7 +105,7 @@ export async function GET(request: Request) {
           pronunciation: h.pronunciation || '',
           meaning: h.meaning || '',
           translation: h.translation || '',
-          example: h.sentence || '',
+          example: h.example || h.sentence || '',
           source: 'history' as const,
         })
       }
@@ -111,7 +114,7 @@ export async function GET(request: Request) {
     // Priority 3: AI-generated words
     if (candidates.length < 10) {
       try {
-        const aiWords = await generateWords(10 - candidates.length, candidates.map((c) => c.word))
+        const aiWords = await generateWords(10 - candidates.length, candidates.map((c) => c.word), lang)
         for (const w of aiWords) {
           if (candidates.length >= 10) break
           if (!isSingleWord(w.word || '')) continue
