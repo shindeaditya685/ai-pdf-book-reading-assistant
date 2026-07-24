@@ -144,8 +144,11 @@ export function ShareSessionPanel() {
   }
 
   useEffect(() => {
-    if (showSharePanel) loadSessions()
-  }, [showSharePanel, loadSessions])
+    if (showSharePanel) {
+      loadSessions()
+      if (!shareSession) setTab('sessions')
+    }
+  }, [showSharePanel, loadSessions, shareSession])
 
   const handleCreate = async () => {
     if (!sessionName.trim()) {
@@ -432,7 +435,7 @@ export function ShareSessionPanel() {
       }
     >
       <div className="flex-1 overflow-auto">
-        {tab === 'sessions' ? (
+        {tab === 'sessions' || !shareSession ? (
           <div className="p-4 space-y-4">
             {/* Create Session */}
             <div className="rounded-xl border border-border/60 p-3 space-y-2">
@@ -513,7 +516,7 @@ export function ShareSessionPanel() {
               )}
             </div>
           </div>
-        ) : shareSession ? (
+        ) : (
             <div className="p-4 space-y-4">
             {/* Session Header */}
             <div className="rounded-xl border border-border/60 p-3 space-y-2">
@@ -1065,7 +1068,7 @@ export function ShareSessionPanel() {
               )}
             </div>
           </div>
-        ) : null}
+        )}
       </div>
     </ResponsivePanel>
   )
