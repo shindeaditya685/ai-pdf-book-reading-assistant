@@ -105,6 +105,12 @@ export async function DELETE(request: Request) {
     }
 
     await conn.db.collection('sharedAnnotations').deleteOne({ annotationId: id, sessionId })
+    await conn.db.collection('sessionEvents').insertOne({
+      sessionId,
+      type: 'annotation-deleted',
+      annotationId: id,
+      createdAt: new Date().toISOString(),
+    })
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('[API Shared Annotations Delete] Error:', error)

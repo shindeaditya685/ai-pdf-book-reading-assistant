@@ -19,6 +19,7 @@ export function useShareSSE() {
   const removeSharedBookmark = usePDFStore((s) => s.removeSharedBookmark)
   const removeSharedFlashcard = usePDFStore((s) => s.removeSharedFlashcard)
   const removeSharedQuote = usePDFStore((s) => s.removeSharedQuote)
+  const removeSharedAnnotation = usePDFStore((s) => s.removeSharedAnnotation)
   const addRemoteCursor = usePDFStore((s) => s.addRemoteCursor)
   const setRemotePage = usePDFStore((s) => s.setRemotePage)
   const setFollowMode = usePDFStore((s) => s.setFollowMode)
@@ -86,15 +87,57 @@ export function useShareSSE() {
 
     const attach = (es: EventSource) => {
       es.addEventListener('session-updated', (e) => handleSessionUpdated((e as MessageEvent).data))
+
+      es.addEventListener('open', () => {
+        console.log('[SSE] connected to session stream')
+      })
+
+      es.addEventListener('error', () => {
+        console.warn('[SSE] connection error — will retry')
+      })
+
       es.addEventListener('annotation', (e) => handleAnnotation((e as MessageEvent).data))
       es.addEventListener('bookmarks', (e) => {
-        try { setSharedBookmarks(JSON.parse((e as MessageEvent).data)) } catch {}
+        try {
+          const arr: any[] = JSON.parse((e as MessageEvent).data) ?? []
+          if (arr.length === 0) return
+          const state = usePDFStore.getState()
+          const merged = [...state.sharedBookmarks]
+          for (const item of arr) {
+            const idx = merged.findIndex((b) => b.bookmarkId === item.bookmarkId)
+            if (idx >= 0) merged[idx] = item
+            else merged.unshift(item)
+          }
+          setSharedBookmarks(merged)
+        } catch {}
       })
       es.addEventListener('flashcards', (e) => {
-        try { setSharedFlashcards(JSON.parse((e as MessageEvent).data)) } catch {}
+        try {
+          const arr: any[] = JSON.parse((e as MessageEvent).data) ?? []
+          if (arr.length === 0) return
+          const state = usePDFStore.getState()
+          const merged = [...state.sharedFlashcards]
+          for (const item of arr) {
+            const idx = merged.findIndex((f) => f.flashcardId === item.flashcardId)
+            if (idx >= 0) merged[idx] = item
+            else merged.unshift(item)
+          }
+          setSharedFlashcards(merged)
+        } catch {}
       })
       es.addEventListener('quotes', (e) => {
-        try { setSharedQuotes(JSON.parse((e as MessageEvent).data)) } catch {}
+        try {
+          const arr: any[] = JSON.parse((e as MessageEvent).data) ?? []
+          if (arr.length === 0) return
+          const state = usePDFStore.getState()
+          const merged = [...state.sharedQuotes]
+          for (const item of arr) {
+            const idx = merged.findIndex((q) => q.quoteId === item.quoteId)
+            if (idx >= 0) merged[idx] = item
+            else merged.unshift(item)
+          }
+          setSharedQuotes(merged)
+        } catch {}
       })
       es.addEventListener('bookmark-deleted', (e) => {
         try {
@@ -112,6 +155,12 @@ export function useShareSSE() {
         try {
           const d = JSON.parse((e as MessageEvent).data)
           if (d?.quoteId) removeSharedQuote(d.quoteId)
+        } catch {}
+      })
+      es.addEventListener('annotation-deleted', (e) => {
+        try {
+          const d = JSON.parse((e as MessageEvent).data)
+          if (d?.annotationId) removeSharedAnnotation(d.annotationId)
         } catch {}
       })
       es.addEventListener('chat-message', (e) => handleChatMessage((e as MessageEvent).data))
@@ -209,7 +258,7 @@ export function useShareSSE() {
       esRef.current = null
       if (cursorTimerRef.current) { clearInterval(cursorTimerRef.current); cursorTimerRef.current = null }
     }
-  }, [sessionId, user?.username, setShareSession, setSharedAnnotations, addSharedComment, setSharedBookmarks, setSharedFlashcards, setSharedQuotes, removeSharedBookmark, removeSharedFlashcard, removeSharedQuote, addRemoteCursor, setRemotePage, setFollowMode, setSharedTimer, setSharedTts, addSessionChatMessage])
+  }, [sessionId, user?.username, setShareSession, setSharedAnnotations, addSharedComment, setSharedBookmarks, setSharedFlashcards, setSharedQuotes, removeSharedBookmark, removeSharedFlashcard, removeSharedQuote, removeSharedAnnotation, addRemoteCursor, setRemotePage, setFollowMode, setSharedTimer, setSharedTts, addSessionChatMessage])
 
   const currentPage = usePDFStore((s) => s.currentPage)
   const prevPageRef = useRef(currentPage)
