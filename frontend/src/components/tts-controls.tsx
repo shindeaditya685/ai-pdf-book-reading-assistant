@@ -80,6 +80,12 @@ export function TtsControls() {
   const wordsRef = useRef<string[]>([])
   const pauseOnNextRef = useRef(false)
   const cancelledRef = useRef(false)
+  const currentChunkIdxRef = useRef<number>(0)
+  const charOffsetRef = useRef<number>(0)
+  const originalTextRef = useRef<string>('')
+  const lastHighlightedIdxRef = useRef<number>(-1)
+  const isRestartingRef = useRef<boolean>(false)
+  const speakChunkRef = useRef<() => void>(() => {})
 
   // Load available voices
   useEffect(() => {
@@ -116,7 +122,9 @@ export function TtsControls() {
   const highlightWord = useCallback((wordIndex: number) => {
     document.querySelectorAll('.tts-highlight-overlay').forEach((el) => el.remove())
 
-    const textLayer = document.querySelector('.pdf-text-layer')
+    const livePage = usePDFStore.getState().currentPage
+    const currentPageDiv = document.querySelector(`[data-page="${livePage}"]`)
+    const textLayer = currentPageDiv?.querySelector('.pdf-text-layer')
     if (!textLayer) return
 
     const spans = textLayer.querySelectorAll('span')
@@ -185,7 +193,9 @@ export function TtsControls() {
 
   // Build word offsets from the text layer content
   const buildWordIndex = useCallback(() => {
-    const textLayer = document.querySelector('.pdf-text-layer')
+    const livePage = usePDFStore.getState().currentPage
+    const currentPageDiv = document.querySelector(`[data-page="${livePage}"]`)
+    const textLayer = currentPageDiv?.querySelector('.pdf-text-layer')
     if (!textLayer) return { words: [], offsets: [] }
 
     const spans = textLayer.querySelectorAll('span')
@@ -224,6 +234,7 @@ export function TtsControls() {
   const startTts = useCallback((text: string) => {
     speechSynthesis.cancel()
     cancelledRef.current = false
+    isRestartingRef.current = false
 
     const { words, offsets } = buildWordIndex()
     wordsRef.current = words
@@ -231,24 +242,21 @@ export function TtsControls() {
     setTtsTotalWords(words.length)
     clearHighlights()
 
-    // iOS Safari silently stops speechSynthesis after ~15s on long utterances.
-    // Chunk the text into sentences and chain utterances via onend so the
-    // full text plays through reliably on mobile.
+    originalTextRef.current = text
+    currentChunkIdxRef.current = 0
+    charOffsetRef.current = 0
+    lastHighlightedIdxRef.current = -1
+
     const chunks = text
       .split(/(?<=[.!?])\s+|\n+/)
       .map((c) => c.trim())
       .filter(Boolean)
     if (chunks.length === 0) return
 
-    let chunkIdx = 0
-    let lastHighlightedIdx = -1
-    // Track character offset across chunks so onboundary word indices map
-    // back into the original text.
-    let charOffset = 0
-
     const speakChunk = () => {
+      const chunkIdx = currentChunkIdxRef.current
       if (cancelledRef.current || chunkIdx >= chunks.length) {
-        if (!cancelledRef.current) {
+        if (!cancelledRef.current && !isRestartingRef.current) {
           clearHighlights()
           setTtsPlaying(false)
           setTtsPaused(false)
@@ -269,32 +277,30 @@ export function TtsControls() {
       if (liveVoice) utterance.voice = liveVoice
 
       utterance.onboundary = (e) => {
-        if (cancelledRef.current) return
+        if (cancelledRef.current || isRestartingRef.current) return
         if (e.name !== 'word') return
-        const globalCharIndex = charOffset + (e.charIndex ?? 0)
-        const preceding = text.slice(0, globalCharIndex)
+        const globalCharIndex = charOffsetRef.current + (e.charIndex ?? 0)
+        const preceding = originalTextRef.current.slice(0, globalCharIndex)
         const wordIdx = preceding.split(/\s+/).filter(Boolean).length - 1
-        if (wordIdx >= 0 && wordIdx !== lastHighlightedIdx && wordIdx < words.length) {
-          lastHighlightedIdx = wordIdx
+        if (wordIdx >= 0 && wordIdx !== lastHighlightedIdxRef.current && wordIdx < wordsRef.current.length) {
+          lastHighlightedIdxRef.current = wordIdx
           highlightWord(wordOffsetsRef.current[wordIdx] ?? wordIdx)
         }
       }
 
       utterance.onend = () => {
-        if (cancelledRef.current) return
-        charOffset += chunk.length + 1 // +1 for the separator
-        chunkIdx++
+        if (cancelledRef.current || isRestartingRef.current) return
+        charOffsetRef.current += chunk.length + 1 // +1 for the separator
+        currentChunkIdxRef.current++
         speakChunk()
       }
 
       utterance.onerror = (e) => {
-        // "interrupted" / "canceled" is expected when we call .cancel()
+        if (cancelledRef.current || isRestartingRef.current) return
         if (e.error && e.error !== 'interrupted' && e.error !== 'canceled') {
-          if (!cancelledRef.current) {
-            clearHighlights()
-            setTtsPlaying(false)
-            setTtsPaused(false)
-          }
+          clearHighlights()
+          setTtsPlaying(false)
+          setTtsPaused(false)
         }
       }
 
@@ -302,10 +308,25 @@ export function TtsControls() {
       speechSynthesis.speak(utterance)
     }
 
+    speakChunkRef.current = speakChunk
     speakChunk()
     setTtsPlaying(true)
     setTtsPaused(false)
   }, [voices, buildWordIndex, setTtsPlaying, setTtsPaused, setTtsTotalWords, clearHighlights, highlightWord])
+
+  // Handle immediate voice changes
+  useEffect(() => {
+    if (!ttsPlaying) return
+    isRestartingRef.current = true
+    speechSynthesis.cancel()
+    isRestartingRef.current = false
+    
+    // Resume playback with the new voice from the current chunk
+    speakChunkRef.current()
+    if (ttsPaused) {
+      speechSynthesis.pause()
+    }
+  }, [ttsVoiceURI])
 
   const pauseTts = useCallback(() => {
     speechSynthesis.pause()

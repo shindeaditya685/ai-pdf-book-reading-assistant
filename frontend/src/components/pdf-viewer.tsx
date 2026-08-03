@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react'
+import { motion, AnimatePresence } from 'framer-motion'
 import * as pdfjsLib from 'pdfjs-dist'
 import { useAuth } from '@/context/auth-context'
 import { setActiveBook, setStoredBookPage, getStoredBookPage, getActiveBook } from '@/lib/reading-progress'
@@ -22,8 +23,9 @@ import {
 } from '@/components/ui/alert-dialog'
 import { useAIQuota, remainingFor } from '@/hooks/use-ai-quota'
 import {
-  ChevronLeft,
-  ChevronRight,
+  X,
+  ChevronUp,
+  ChevronDown,
   ZoomIn,
   ZoomOut,
   Search,
@@ -36,67 +38,34 @@ import {
   Volume2,
   AlignJustify,
   BookOpen,
-  MoreHorizontal,
   Quote as QuoteIcon,
+  MoreVertical,
+  Menu,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
-import { SearchBar } from '@/components/search-bar'
 import { AnnotationToolbar } from '@/components/annotation-toolbar'
+import { SettingsPanel } from '@/components/settings-panel'
+import { useIsMobile } from '@/hooks/use-mobile'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 
 import { WordConfirmTooltip } from '@/components/word-confirm-tooltip'
 import { SelectionContextMenu } from '@/components/selection-context-menu'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 
 // Set worker source
 if (typeof window !== 'undefined') {
   pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.min.mjs'
 }
 
-function ToolButton({
-  icon: Icon,
-  active,
-  onClick,
-  title,
-  disabled,
-  className,
-}: {
-  icon: React.ComponentType<{ className?: string }>
-  active: boolean
-  onClick: () => void
-  title: string
-  disabled?: boolean
-  className?: string
-}) {
-  return (
-    <button
-      type="button"
-      disabled={disabled}
-      onClick={onClick}
-      title={title}
-      aria-label={title}
-      className={`inline-flex h-7 w-7 items-center justify-center rounded-lg transition-all sm:h-8 sm:w-8 ${
-        disabled
-          ? 'cursor-not-allowed opacity-30 text-muted-foreground'
-          : active
-            ? 'text-emerald-600 bg-emerald-50/80 dark:text-emerald-400 dark:bg-emerald-950/15'
-            : 'text-muted-foreground hover:text-foreground hover:bg-muted/50'
-      } ${className ?? ''}`}
-    >
-      <Icon className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-    </button>
-  )
-}
-
 export function PDFViewer() {
   const containerRef = useRef<HTMLDivElement>(null)
+  const isMobile = useIsMobile()
   const pageTextCacheRef = useRef<Map<number, string>>(new Map())
   // Performance/race fix (P8): previously a single boolean `ocrCancelledRef`
   // was shared across OCR runs. Toggling OCR off→on quickly caused the old
@@ -121,35 +90,15 @@ export function PDFViewer() {
   const lastSavedPageRef = useRef<{ page: number; fileName: string | null }>({ page: 0, fileName: null })
 
   // Mobile reading improvements
-  const [mobileToolbarVisible, setMobileToolbarVisible] = useState(true)
-  const autoHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const [showToolbar, setShowToolbar] = useState(true)
   const touchStartXRef = useRef(0)
   const touchStartYRef = useRef(0)
   const touchStartTimeRef = useRef(0)
   const SWIPE_THRESHOLD = 40
   const SWIPE_TIME_MAX = 300
-  const AUTO_HIDE_DELAY = 3000
-  const [isMobile, setIsMobile] = useState(false)
-
-  useEffect(() => {
-    const check = () => setIsMobile(window.innerWidth < 640)
-    check()
-    window.addEventListener('resize', check)
-    return () => {
-      window.removeEventListener('resize', check)
-      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current)
-    }
-  }, [])
-
   const showToolbarTemp = useCallback(() => {
-    setMobileToolbarVisible(true)
-    if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current)
-    if (isMobile) {
-      autoHideTimerRef.current = setTimeout(() => {
-        setMobileToolbarVisible(false)
-      }, AUTO_HIDE_DELAY)
-    }
-  }, [isMobile])
+    setShowToolbar(true)
+  }, [])
   const quotaReady = !quota.loading && !quota.error
   const questionQuotaBlocked = quotaReady && !quota.isUnlimited && remainingFor(quota, 'question') === 0
   const summaryQuotaBlocked = quotaReady && !quota.isUnlimited && remainingFor(quota, 'summary') === 0
@@ -224,23 +173,12 @@ export function PDFViewer() {
     setMousePosition,
     followMode,
     remotePages,
+    focusMode,
+    setFocusMode,
+    setPdfDataUrl,
   } = usePDFStore()
 
   if (prevScaleRef.current === 0) prevScaleRef.current = scale
-
-  // Auto-hide toolbar on mobile after inactivity
-  useEffect(() => {
-    if (!isMobile) {
-      setMobileToolbarVisible(true)
-      return
-    }
-    autoHideTimerRef.current = setTimeout(() => {
-      setMobileToolbarVisible(false)
-    }, AUTO_HIDE_DELAY)
-    return () => {
-      if (autoHideTimerRef.current) clearTimeout(autoHideTimerRef.current)
-    }
-  }, [isMobile, currentPage])
 
   // Pending word confirmation state
   const [pendingWord, setPendingWord] = useState<{
@@ -1200,14 +1138,14 @@ export function PDFViewer() {
 
     // Top zone tap (top 12% of screen) → always reveal toolbar, even on text
     if (e.changedTouches[0].clientY < vh * 0.12) {
-      setMobileToolbarVisible(true)
+      setShowToolbar(true)
       showToolbarTemp()
       return
     }
 
     // Center tap → toggle toolbar (only on empty space)
     if (x > vw * 0.3 && x < vw * 0.7 && !isOnText) {
-      setMobileToolbarVisible(v => !v)
+      setShowToolbar(v => !v)
       return
     }
 
@@ -1268,179 +1206,207 @@ export function PDFViewer() {
   }, [])
 
   return (
-    <div className="flex h-full flex-col bg-gradient-to-b from-background to-muted/10">
+    <div className="relative h-full flex flex-col bg-muted/20">
       {/* ── TOOLBAR ── */}
-      <div className={`flex items-center justify-between gap-1 border-b border-border/15 bg-background/50 px-2 py-1.5 backdrop-blur-xl transition-all duration-300 sm:px-4 sm:py-2 ${
-        isMobile && !mobileToolbarVisible ? '-translate-y-full -mb-12 opacity-0 pointer-events-none' : 'translate-y-0 opacity-100'
-      }`}>
-        <div className="flex items-center gap-1 sm:gap-1.5">
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 sm:h-8 sm:w-8" onClick={goToPrevPage} disabled={currentPage <= 1} aria-label="Previous page">
-            <ChevronLeft className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </Button>
-          <div className="flex items-center gap-1 rounded-lg border border-border/30 bg-background/50 px-1.5 py-0.5">
-            <input
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={String(totalPages).length}
-              value={pageInput}
-              onChange={(e) => setPageInput(e.target.value.replace(/\D/g, '').slice(0, String(totalPages).length))}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur() }
-                else if (e.key === 'Escape') { e.preventDefault(); setPageInput(String(currentPage)); (e.target as HTMLInputElement).blur() }
-              }}
-              onFocus={(e) => e.target.select()}
-              onBlur={commitPageInput}
-              className="w-10 rounded-md bg-transparent px-1 py-0.5 text-center text-xs font-semibold tabular-nums outline-none sm:w-12"
-              aria-label="Page number"
-            />
-            <span className="text-[11px] text-muted-foreground/45">/ {totalPages}</span>
-          </div>
-          <Button variant="ghost" size="icon" className="h-7 w-7 rounded-lg text-muted-foreground hover:text-foreground hover:bg-muted/50 sm:h-8 sm:w-8" onClick={goToNextPage} disabled={currentPage >= totalPages} aria-label="Next page">
-            <ChevronRight className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-          </Button>
-        </div>
+      <AnimatePresence>
+        {showToolbar && !focusMode && (
+          <motion.header
+            initial={{ y: -60, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            exit={{ y: -60, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-0 inset-x-0 z-50 glass-strong border-b border-border"
+          >
+            <div className="flex items-center justify-between gap-1.5 px-3 py-2">
+              {/* LEFT GROUP: Close, Divider, Title */}
+              <div className="flex items-center gap-1.5 min-w-0">
+                <Button variant="ghost" size="sm" onClick={() => setPdfDataUrl(null)} className="h-8 gap-1.5 text-muted-foreground hover:text-foreground shrink-0">
+                  <X className="h-4 w-4" />
+                  <span className="hidden sm:inline">Close</span>
+                </Button>
 
-        <div className="flex items-center gap-0.5 sm:gap-1">
-          {showSearch && <SearchBar />}
-          <ToolButton icon={Search} active={showSearch} onClick={toggleSearch} title="Search in PDF (/)" />
-          <ToolButton icon={Bookmark} active={false} onClick={toggleBookmarks} title="Bookmarks (B)" className="hidden sm:inline-flex" />
-          <ToolButton icon={Clock} active={false} onClick={toggleHistory} title="Word History (H)" className="hidden sm:inline-flex" />
-          <ToolButton icon={QuoteIcon} active={false} onClick={toggleQuotes} title="Saved Quotes" className="hidden sm:inline-flex" />
-          <ToolButton icon={Brain} active={false} onClick={toggleFlashcards} title="Flashcards (G)" className="hidden sm:inline-flex" />
+                <div className="h-4 w-px bg-border mx-1 shrink-0" />
 
-          <div className="mx-1 hidden h-4 w-px bg-border/25 sm:block" />
-
-          <div className="hidden items-center gap-0.5 sm:flex sm:gap-1">
-            <ToolButton
-              icon={HelpCircle}
-              active={showQuestionGenerator}
-              disabled={questionQuotaBlocked}
-              onClick={() => { if (questionQuotaBlocked) setQuotaModalOpen(true); else toggleQuestionGenerator() }}
-              title={questionQuotaBlocked ? 'Daily question limit reached' : 'AI Questions'}
-            />
-            <ToolButton
-              icon={Sparkles}
-              active={showSummarizer}
-              disabled={summaryQuotaBlocked}
-              onClick={() => { if (summaryQuotaBlocked) setQuotaModalOpen(true); else toggleSummarizer() }}
-              title={summaryQuotaBlocked ? 'Daily summary limit reached' : 'AI Summarizer'}
-            />
-            <AIQuotaBadge state={quota} onClick={() => setQuotaModalOpen(true)} />
-          </div>
-
-          <div className="mx-1 hidden h-4 w-px bg-border/25 sm:block" />
-
-          <div className="hidden items-center gap-0.5 sm:flex sm:gap-1">
-            <ToolButton icon={Volume2} active={false} onClick={handleReadAloud} title="Read Aloud" />
-            <ToolButton
-              icon={scrollMode ? AlignJustify : BookOpen}
-              active={scrollMode}
-              onClick={() => {
-                const next = !scrollMode
-                setScrollMode(next)
-                if (next && containerRef.current) {
-                  requestAnimationFrame(() => {
-                    const target = containerRef.current?.querySelector(`[data-page="${currentPage}"]`)
-                    ;(target as HTMLElement)?.scrollIntoView({ behavior: 'auto', block: 'start' })
-                  })
-                } else {
-                  containerRef.current?.scrollTo({ top: 0, behavior: 'auto' })
-                }
-              }}
-              title={scrollMode ? 'Continuous scroll' : 'Single page'}
-            />
-            <ToolButton icon={Users} active={!!shareSession} onClick={toggleSharePanel} title={shareSession ? `Session: ${shareSession.name}` : 'Collaborate'} />
-          </div>
-
-          <div className="mx-1 hidden h-4 w-px bg-border/25 sm:block" />
-
-          <div className="hidden items-center gap-0.5 sm:flex">
-            <ToolButton icon={ZoomOut} active={false} onClick={zoomOut} disabled={scale <= 0.5} title="Zoom out" />
-            <div className="flex items-center">
-              <input
-                type="text"
-                inputMode="numeric"
-                pattern="[0-9]*"
-                maxLength={3}
-                value={zoomInput}
-                onChange={(e) => setZoomInput(e.target.value.replace(/\D/g, '').slice(0, 3))}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') { e.preventDefault(); (e.target as HTMLInputElement).blur() }
-                  else if (e.key === 'Escape') { e.preventDefault(); setZoomInput(String(Math.round(scale * 100))); (e.target as HTMLInputElement).blur() }
-                }}
-                onFocus={(e) => e.target.select()}
-                onBlur={commitZoomInput}
-                className="w-9 rounded-md bg-transparent px-1 py-0.5 text-center text-[11px] font-semibold tabular-nums outline-none"
-                title="Zoom percentage"
-              />
-              <span className="text-[10px] font-medium text-muted-foreground/45">%</span>
-            </div>
-            <ToolButton icon={ZoomIn} active={false} onClick={zoomIn} disabled={scale >= 3} title="Zoom in" />
-          </div>
-
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted/50 hover:text-foreground sm:hidden" aria-label="More tools">
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" sideOffset={6} className="w-52">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Reading Tools</DropdownMenuLabel>
-              <DropdownMenuItem onSelect={() => toggleBookmarks()}>
-                <Bookmark className="h-3.5 w-3.5" /> Bookmarks <span className="ml-auto text-[10px] text-muted-foreground/60">B</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toggleHistory()}>
-                <Clock className="h-3.5 w-3.5" /> Word History <span className="ml-auto text-[10px] text-muted-foreground/60">H</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toggleQuotes()}>
-                <QuoteIcon className="h-3.5 w-3.5" /> Saved Quotes
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toggleFlashcards()}>
-                <Brain className="h-3.5 w-3.5" /> Flashcards <span className="ml-auto text-[10px] text-muted-foreground/60">G</span>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => { if (questionQuotaBlocked) setQuotaModalOpen(true); else toggleQuestionGenerator() }} disabled={questionQuotaBlocked}>
-                <HelpCircle className="h-3.5 w-3.5" /> AI Questions
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => { if (summaryQuotaBlocked) setQuotaModalOpen(true); else toggleSummarizer() }} disabled={summaryQuotaBlocked}>
-                <Sparkles className="h-3.5 w-3.5" /> AI Summarizer
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => setQuotaModalOpen(true)}>
-                <Sparkles className="h-3.5 w-3.5" /> AI Quota
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => handleReadAloud()}>
-                <Volume2 className="h-3.5 w-3.5" /> Read Aloud
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toggleSharePanel()}>
-                <Users className="h-3.5 w-3.5" /> {shareSession ? shareSession.name : 'Collaborate'}
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className="text-xs text-muted-foreground">Zoom</DropdownMenuLabel>
-              <div className="flex items-center gap-1 px-2 py-1">
-                <DropdownMenuItem className="flex-1 justify-center" onSelect={() => zoomOut()}>
-                  <ZoomOut className="h-3.5 w-3.5" />
-                </DropdownMenuItem>
-                <span className="min-w-[40px] text-center text-[11px] font-semibold tabular-nums text-muted-foreground">
-                  {Math.round(scale * 100)}%
-                </span>
-                <DropdownMenuItem className="flex-1 justify-center" onSelect={() => zoomIn()}>
-                  <ZoomIn className="h-3.5 w-3.5" />
-                </DropdownMenuItem>
+                {/* PDF Title */}
+                <div className="flex items-center gap-2 min-w-0 max-w-[120px] sm:max-w-[200px] md:max-w-[300px]">
+                  <div className="hidden min-[400px]:flex h-7 w-7 items-center justify-center rounded-lg bg-brand-soft text-brand shrink-0">
+                    <BookOpen className="h-3.5 w-3.5" />
+                  </div>
+                  <span className="text-xs sm:text-sm font-semibold text-foreground truncate" title={pdfFileName || "Untitled PDF"}>
+                    {pdfFileName || "Untitled PDF"}
+                  </span>
+                </div>
               </div>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </div>
-      </div>
 
-      {/* Floating pill to re-show toolbar on mobile */}
-      {isMobile && !mobileToolbarVisible && (
-        /* UI fix (U5): the visible pill is 6px tall (h-1.5) — below the
-           44px tap-target minimum. We wrap it in a 44px-tall transparent
-           button so the hit area is accessible without changing the visual. */
+              {/* CENTER GROUP: Page Nav & Zoom */}
+              <div className="flex items-center gap-1 sm:gap-2">
+                {/* Page Nav */}
+                <div className="flex items-center gap-0.5">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToPrevPage} disabled={currentPage <= 1} title="Previous Page">
+                    <ChevronUp className="h-4 w-4" />
+                  </Button>
+                  <div className="flex items-center gap-1 text-xs sm:text-sm tabular-nums">
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      maxLength={String(totalPages).length}
+                      value={pageInput}
+                      onChange={(e) => setPageInput(e.target.value.replace(/\D/g, '').slice(0, String(totalPages).length))}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') { e.preventDefault(); commitPageInput() }
+                        else if (e.key === 'Escape') { e.preventDefault(); setPageInput(String(currentPage)) }
+                      }}
+                      onFocus={(e) => e.target.select()}
+                      onBlur={commitPageInput}
+                      className="w-10 sm:w-12 h-8 rounded border border-border bg-background text-center text-xs sm:text-sm focus-visible:ring-1 focus-visible:ring-brand focus-visible:outline-none"
+                      aria-label="Page number"
+                    />
+                    <span className="text-muted-foreground">/ {totalPages}</span>
+                  </div>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={goToNextPage} disabled={currentPage >= totalPages} title="Next Page">
+                    <ChevronDown className="h-4 w-4" />
+                  </Button>
+                </div>
+
+                <div className="hidden sm:block h-4 w-px bg-border mx-1 shrink-0" />
+
+                {/* Zoom - Hidden on Mobile */}
+                <div className="hidden sm:flex items-center gap-0.5">
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={zoomOut} disabled={scale <= 0.5} title="Zoom Out">
+                    <ZoomOut className="h-4 w-4" />
+                  </Button>
+                  <span className="text-xs sm:text-sm tabular-nums w-10 text-center">{Math.round(scale * 100)}%</span>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={zoomIn} disabled={scale >= 3} title="Zoom In">
+                    <ZoomIn className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+
+              {/* RIGHT GROUP: View Toggles & Actions */}
+              <div className="flex items-center gap-1 shrink-0">
+                {/* Desktop View & Sidebar Toggles */}
+                <div className="flex items-center gap-1">
+                  {/* View Toggles */}
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleSearch} title="Search">
+                    <Search className="h-4 w-4" />
+                  </Button>
+                  <Button variant={scrollMode ? "secondary" : "ghost"} size="icon" className="h-8 w-8" onClick={() => setScrollMode(!scrollMode)} title={scrollMode ? "Continuous scroll" : "Single page"}>
+                    {scrollMode ? <AlignJustify className="h-4 w-4" /> : <BookOpen className="h-4 w-4" />}
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleReadAloud} title="Read Aloud">
+                    <Volume2 className="h-4 w-4" />
+                  </Button>
+                  <Button variant={!!shareSession ? "secondary" : "ghost"} size="icon" className="h-8 w-8" onClick={toggleSharePanel} title={shareSession ? `Session: ${shareSession.name}` : "Collaborate"}>
+                    <Users className="h-4 w-4" />
+                  </Button>
+
+                  <div className="hidden lg:flex items-center gap-1">
+
+                  <div className="h-4 w-px bg-border mx-1" />
+
+                  {/* Sidebar Toggles */}
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleBookmarks} title="Bookmarks (B)">
+                    <Bookmark className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleHistory} title="History (H)">
+                    <Clock className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleQuotes} title="Quotes">
+                    <QuoteIcon className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleFlashcards} title="Flashcards (G)">
+                    <Brain className="h-4 w-4" />
+                  </Button>
+
+                  <div className="h-4 w-px bg-border mx-1" />
+
+                  {/* AI Tools */}
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (questionQuotaBlocked) setQuotaModalOpen(true); else toggleQuestionGenerator() }} disabled={questionQuotaBlocked} title={questionQuotaBlocked ? "Daily question limit reached" : "AI Questions"}>
+                    <HelpCircle className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => { if (summaryQuotaBlocked) setQuotaModalOpen(true); else toggleSummarizer() }} disabled={summaryQuotaBlocked} title={summaryQuotaBlocked ? "Daily summary limit reached" : "AI Summarizer"}>
+                    <Sparkles className="h-4 w-4" />
+                  </Button>
+                  
+                  <div className="h-4 w-px bg-border mx-1" />
+                  <SettingsPanel />
+                  </div>
+                </div>
+
+                {/* Mobile Dropdown Menu */}
+                <div className="lg:hidden flex items-center gap-1.5">
+                  <SettingsPanel />
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="icon" className="h-8 w-8" title="More Tools">
+                        <MoreVertical className="h-4 w-4" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56 z-[60]">
+                      <DropdownMenuItem onClick={toggleSearch}>
+                        <Search className="mr-2 h-4 w-4" />
+                        <span>Search</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => setScrollMode(!scrollMode)}>
+                        {scrollMode ? <BookOpen className="mr-2 h-4 w-4" /> : <AlignJustify className="mr-2 h-4 w-4" />}
+                        <span>{scrollMode ? "Single Page" : "Continuous Scroll"}</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={handleReadAloud}>
+                        <Volume2 className="mr-2 h-4 w-4" />
+                        <span>Read Aloud</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={toggleSharePanel}>
+                        <Users className="mr-2 h-4 w-4" />
+                        <span>Collaborate</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem onClick={toggleBookmarks}>
+                        <Bookmark className="mr-2 h-4 w-4" />
+                        <span>Bookmarks</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={toggleHistory}>
+                        <Clock className="mr-2 h-4 w-4" />
+                        <span>History</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={toggleQuotes}>
+                        <QuoteIcon className="mr-2 h-4 w-4" />
+                        <span>Quotes</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={toggleFlashcards}>
+                        <Brain className="mr-2 h-4 w-4" />
+                        <span>Flashcards</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem 
+                        onClick={() => { if (questionQuotaBlocked) setQuotaModalOpen(true); else toggleQuestionGenerator() }}
+                        disabled={questionQuotaBlocked}
+                      >
+                        <HelpCircle className="mr-2 h-4 w-4" />
+                        <span>AI Questions</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem 
+                        onClick={() => { if (summaryQuotaBlocked) setQuotaModalOpen(true); else toggleSummarizer() }}
+                        disabled={summaryQuotaBlocked}
+                      >
+                        <Sparkles className="mr-2 h-4 w-4" />
+                        <span>AI Summarizer</span>
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </div>
+
+                <AIQuotaBadge state={quota} onClick={() => setQuotaModalOpen(true)} />
+              </div>
+            </div>
+          </motion.header>
+        )}
+      </AnimatePresence>
+
+      {/* Floating pill to re-show toolbar */}
+      {!showToolbar && !focusMode && (
         <button
-          onClick={() => { setMobileToolbarVisible(true); showToolbarTemp() }}
+          onClick={() => { setShowToolbar(true); showToolbarTemp() }}
           className="fixed left-1/2 top-1 z-50 flex h-11 w-20 -translate-x-1/2 items-start justify-center pt-2"
           aria-label="Show toolbar"
         >
@@ -1450,25 +1416,25 @@ export function PDFViewer() {
 
       {(isOcrProcessing || (ocrProgress > 0 && ocrProgress < 100)) && (
         <div className="flex items-center justify-center gap-2.5 border-b bg-card/40 px-4 py-1.5">
-          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-emerald-100/70 dark:bg-emerald-900/20">
-            <svg className="h-3 w-3 animate-pulse text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <div className="flex h-5 w-5 items-center justify-center rounded-full bg-brand/10">
+            <svg className="h-3 w-3 animate-pulse text-brand" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v6h6M21 17a9 9 0 11-18 0 9 9 0 0118 0z" />
             </svg>
           </div>
           <span className="text-[11px] font-medium text-muted-foreground">OCR in progress...</span>
           <Progress value={ocrProgress} className="h-1.5 w-24" />
-          <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 tabular-nums">{ocrProgress}%</span>
+          <span className="text-[11px] font-semibold text-brand tabular-nums">{ocrProgress}%</span>
         </div>
       )}
 
-      <div className="relative flex-1 overflow-hidden">
+      <div className={`relative flex-1 overflow-hidden transition-all duration-200 ${showToolbar && !focusMode ? 'pt-14' : 'pt-0'}`}>
         <AnnotationToolbar onClearAll={handleClearAllPageAnnotations} />
 
         <div
           ref={containerRef}
           className="pdf-scroll-container h-full overflow-auto bg-card/30"
           onClick={handleContainerClick}
-          onMouseMove={handleThrottledMouseMove}
+          onMouseMove={(e) => { handleThrottledMouseMove(e); showToolbarTemp() }}
           onContextMenu={(e) => e.preventDefault()}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -1495,7 +1461,7 @@ export function PDFViewer() {
           {isLoading && (
             <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/60 backdrop-blur-sm pointer-events-none">
               <div className="flex flex-col items-center gap-3">
-                <svg className="h-8 w-8 animate-spin text-emerald-500/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg className="h-8 w-8 animate-spin text-brand/80" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <circle cx="12" cy="12" r="10" strokeWidth="3" strokeDasharray="40 60" />
                 </svg>
                 <p className="text-xs text-muted-foreground/50">Loading PDF...</p>

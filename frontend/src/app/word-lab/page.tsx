@@ -3,9 +3,17 @@
 import { useEffect, useState, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeft, GraduationCap, Flame, Loader2, BookOpen, Sparkles, History, Ear, Brain, ListChecks } from 'lucide-react'
+import { ArrowLeft, GraduationCap, Flame, Loader2, BookOpen, Sparkles, History, Ear, Brain, ListChecks, ChevronDown } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
+import { Button } from '@/components/ui/button'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu'
 import { DailyRing } from '@/components/word-lab/daily-ring'
 import { StudyPhase } from '@/components/word-lab/study-phase'
 import { TestPhase } from '@/components/word-lab/test-phase'
@@ -266,6 +274,48 @@ export default function WordLabPage() {
           )}
         </div>
         <div className="flex items-center gap-1.5">
+          {/* Mobile phase switching dropdown */}
+          <div className="sm:hidden">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm" className="h-8 gap-1 rounded-lg border-paper-border bg-card text-[11px] font-bold tracking-wider uppercase text-muted-foreground hover:text-foreground">
+                  <span className="truncate max-w-[80px]">
+                    {phase === 'study' ? 'Study' :
+                     phase === 'test' ? 'Test' :
+                     phase === 'results' ? 'Results' :
+                     phase === 'flashcard' ? 'Cards' :
+                     phase === 'review' ? 'Review' :
+                     phase === 'pronunciation' ? 'Speak' :
+                     phase.includes('custom') ? 'Custom' :
+                     phase === 'history' ? 'History' : phase}
+                  </span>
+                  <ChevronDown className="h-3 w-3 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-40 z-50">
+                <DropdownMenuItem className="text-xs font-semibold" onClick={() => setPhase('study')}>
+                  Study
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-xs font-semibold" onClick={() => setPhase('flashcard')}>
+                  Cards
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-xs font-semibold" onClick={() => setPhase('review')}>
+                  Review
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-xs font-semibold" onClick={() => setPhase('pronunciation')}>
+                  Speak
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem className="text-xs font-semibold" onClick={() => setPhase('custom-setup')}>
+                  Custom
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-xs font-semibold" onClick={() => setPhase('history')}>
+                  History
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
+
           <div className="hidden sm:flex items-center gap-1">
             {[
               { key: 'flashcard', label: 'Cards', phaseCheck: 'flashcard' },

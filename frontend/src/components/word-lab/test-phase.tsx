@@ -230,7 +230,7 @@ export function TestPhase({
       )}
 
       {/* ── Main area: content (left) + nav (right) ── */}
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 flex-col sm:flex-row overflow-hidden">
         {/* ── Question content ── */}
         <div className="test-scrollbar flex flex-1 flex-col overflow-y-auto px-4 py-6 sm:px-8">
           <div className="mx-auto w-full max-w-2xl flex-1 flex flex-col justify-center">
@@ -501,7 +501,7 @@ export function TestPhase({
         {/* ── Question navigation panel ── */}
         <div className={`${
           showNav ? 'flex' : 'hidden'
-        } w-48 shrink-0 flex-col border-l border-stone-800 bg-stone-900/50 sm:flex`}>
+        } w-full h-48 border-t sm:h-full sm:w-48 shrink-0 flex-col border-l-0 sm:border-l border-stone-800 bg-stone-900/50 sm:flex`}>
           <div className="border-b border-stone-800 px-4 py-3">
             <p className="text-[10px] font-semibold uppercase tracking-widest text-stone-500">
               Questions

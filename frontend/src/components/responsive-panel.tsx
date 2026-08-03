@@ -115,7 +115,7 @@ export function ResponsivePanel({
           exit={{ x: 320 }}
           transition={{ type: 'spring', damping: 25, stiffness: 200 }}
           className={cn(
-            'fixed right-0 top-0 z-40 flex h-full w-80 flex-col border-l bg-background shadow-2xl',
+            'fixed right-0 top-0 z-50 flex h-full w-80 flex-col border-l bg-background shadow-2xl',
             className
           )}
           role="dialog"

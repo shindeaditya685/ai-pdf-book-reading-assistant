@@ -36,7 +36,7 @@ export function StudyPhase({
   return (
     <div className="space-y-6">
       {/* ── Progress meter ── */}
-      <div className="flex items-center justify-center gap-2">
+      <div className="flex flex-wrap items-center justify-center gap-2">
         {words.map((w, i) => {
           const s = studiedIds.includes(w.id)
           const active = i === index

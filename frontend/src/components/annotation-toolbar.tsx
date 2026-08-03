@@ -109,7 +109,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
           Desktop only. On mobile the toolbar is a persistent bottom bar
           (always reachable with the thumb, doesn't block reading). */}
       {!isMobile && (
-        <div className="fixed left-2 top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none sm:left-3">
+        <div className="absolute left-2 top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none sm:left-3">
           <Button
             variant="outline"
             size="icon"
@@ -144,7 +144,7 @@ export function AnnotationToolbar({ onClearAll }: { onClearAll: () => void }) {
             className={
               isMobile
                 ? "fixed inset-x-2 bottom-2 z-40 pointer-events-auto select-none flex items-center justify-center gap-0.5 overflow-x-auto rounded-2xl border border-border/30 bg-background/90 p-1 shadow-lg backdrop-blur-xl pb-[max(0.375rem,env(safe-area-inset-bottom))]"
-                : "fixed left-[calc(0.75rem+28px+4px)] top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none flex flex-col gap-1.5 rounded-2xl border border-border/30 bg-background/90 p-1.5 shadow-lg backdrop-blur-xl"
+                : "absolute left-12 top-1/2 z-40 -translate-y-1/2 pointer-events-auto select-none flex flex-col gap-1.5 rounded-2xl border border-border/30 bg-background/90 p-1.5 shadow-lg backdrop-blur-xl"
             }
           >
             {/* ── 1. SELECT ── */}

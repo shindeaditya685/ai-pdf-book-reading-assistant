@@ -3,6 +3,7 @@
 import { useEffect } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { AuthProvider, useAuth } from '@/context/auth-context'
+import { AppShell } from '@/components/layout/app-shell'
 
 function AuthGuard({ children }: { children: React.ReactNode }) {
   const { user, isLoading } = useAuth()
@@ -26,6 +27,10 @@ function AuthGuard({ children }: { children: React.ReactNode }) {
   }
 
   if (!user && !isAuthPage && !isPublicPage) return null
+
+  if (user && !isAuthPage && !isPublicPage) {
+    return <AppShell>{children}</AppShell>
+  }
 
   return <>{children}</>
 }

@@ -71,7 +71,8 @@ export function DailyRing({
         y={cy}
         textAnchor="middle"
         dominantBaseline="central"
-        className={`fill-current text-xs font-bold transition-all duration-700 ${
+        style={{ fontSize: `${Math.max(8, size * 0.28)}px` }}
+        className={`fill-current font-bold transition-all duration-700 ${
           studied === total ? 'text-brand' : 'text-muted-foreground'
         }`}
       >

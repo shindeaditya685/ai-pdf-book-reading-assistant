@@ -3,12 +3,11 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
 import dynamic from 'next/dynamic'
-import { ArrowRight, Bookmark, BookOpen, BookText, Brain, BrainCircuit, Clock, Sparkles, FileText, LogOut, Loader2, Flame, Maximize2, Minimize2, Users, Shield, X, Crown, Rocket, FlaskConical, MoreHorizontal, Settings2, Gift, GraduationCap, List, Library, Quote as QuoteIcon } from 'lucide-react'
-import { motion } from 'framer-motion'
+import { ArrowRight, BookOpen, Loader2, Gift, X, Library } from 'lucide-react'
+
 import { useAuth } from '@/context/auth-context'
 import { UploadZone } from '@/components/upload-zone'
 import { WordPopup } from '@/components/word-popup'
-import { SettingsPanel } from '@/components/settings-panel'
 import { HistoryPanel } from '@/components/history-panel'
 import { QuotesPanel } from '@/components/quotes-panel'
 import { TtsControls } from '@/components/tts-controls'
@@ -16,29 +15,18 @@ import { ReadingTimer } from '@/components/reading-timer'
 import { BookmarksPanel } from '@/components/bookmarks-panel'
 import { FlashcardReview } from '@/components/flashcard-review'
 import { ReadingAnalytics } from '@/components/reading-analytics'
-import { ShareSessionPanel } from '@/components/share-session-panel'
-
 import { RecentBookshelf } from '@/components/recent-bookshelf'
-import { StarsBackground } from '@/components/stars-background'
 import { ReadingStatsRow } from '@/components/reading-stats-row'
 import { ReadingChallenge } from '@/components/reading-challenge'
 import { QuestionGeneratorPanel } from '@/components/question-generator-panel'
 import { SummarizerPanel } from '@/components/summarizer-panel'
 import { ErrorBoundary } from '@/components/error-boundary'
 import { WordLabPreview } from '@/components/word-lab/word-lab-preview'
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu'
 import { usePDFStore } from '@/store/use-pdf-store'
+import { SettingsPanel } from '@/components/settings-panel'
 import { useShareSSE } from '@/hooks/useShareSSE'
 import { authFetch } from '@/lib/api'
 import { getActiveBook, getStoredBookPage, setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
-import { PLAN_LABELS, type AIPlan } from '@/lib/ai-plan'
 import { useIsMobile } from '@/hooks/use-mobile'
 import {
   Dialog,
@@ -115,8 +103,6 @@ export default function DashboardPage() {
     focusMode,
     toggleFocusMode,
     setFocusMode,
-    shareSession,
-    toggleSharePanel,
     setOcrText,
     clearOcrText,
     setStreakCount,
@@ -126,21 +112,9 @@ export default function DashboardPage() {
     setDashboardCache,
   } = usePDFStore()
 
-  const { user, logout } = useAuth()
+  const { user } = useAuth()
   const isMobile = useIsMobile()
-  const userPlan = user?.plan
-  const userIsAdmin = user?.isAdmin
   const username = user?.username
-
-  const plan: AIPlan = userPlan || (userIsAdmin ? 'admin' : 'free')
-  const planBadgeClass = (() => {
-    if (plan === 'admin') return 'bg-rose-100 text-rose-700 dark:bg-rose-900/30 dark:text-rose-400'
-    if (plan === 'founder') return 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
-    if (plan === 'pro') return 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-400'
-    if (plan === 'beta') return 'bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'
-    return 'bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400'
-  })()
-  const PlanIcon = plan === 'founder' ? Crown : plan === 'pro' ? Rocket : plan === 'beta' ? FlaskConical : Sparkles
   const [recentLoading, setRecentLoading] = useState<string | null>(null)
   const [recentPdfsLoading, setRecentPdfsLoading] = useState(true)
   const [resumeBook, setResumeBook] = useState<{
@@ -161,6 +135,39 @@ export default function DashboardPage() {
       return new Set()
     }
   })
+
+  function greeting(): string {
+    const h = new Date().getHours()
+    if (h < 12) return 'Good morning'
+    if (h < 18) return 'Good afternoon'
+    return 'Good evening'
+  }
+
+  const handleUpload = async (files: FileList) => {
+    const file = files[0]
+    if (!file) return
+    if (file.size > 50 * 1024 * 1024) { alert('File too large (max 50MB)'); return }
+    if (file.type !== 'application/pdf') { alert('Please upload a PDF file'); return }
+
+    try {
+      const reader = new FileReader()
+      reader.onload = async () => {
+        const dataUrl = reader.result as string
+        const res = await authFetch('/api/db/pdf', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ fileName: file.name, content: dataUrl, size: file.size }),
+        })
+        if (!res.ok) { alert('Upload failed'); return }
+        const data = await res.json()
+        sessionStorage.setItem('pdfmindai-pdf-data-' + data.pdf._id, dataUrl)
+        setPdfDataUrl(dataUrl)
+        setPdfFileName(data.pdf.fileName)
+        window.history.replaceState({}, '', '/dashboard?open=' + encodeURIComponent(data.pdf.fileName))
+      }
+      reader.readAsDataURL(file)
+    } catch { alert('Upload failed') }
+  }
 
   const dismissAnnouncement = (id: string) => {
     setDismissedAnnouncements((prev) => {
@@ -534,7 +541,7 @@ export default function DashboardPage() {
   })
 
   return (
-    <div className="flex h-screen flex-col bg-background">
+    <>
       {focusMode && <div className="fixed inset-0 z-30 bg-background" />}
       {focusMode && (
         <button
@@ -545,228 +552,6 @@ export default function DashboardPage() {
           <kbd className="rounded-md border border-violet-200/50 bg-white/60 px-1.5 py-0.5 text-[10px] font-mono font-bold dark:border-violet-800/30 dark:bg-violet-950/50">Esc</kbd>
         </button>
       )}
-      <header className={`flex h-14 items-center justify-between gap-2 border-b border-border/15 bg-background/50 px-3 backdrop-blur-xl transition-all duration-300 sm:h-16 sm:px-4 ${
-        focusMode ? 'pointer-events-none opacity-0 -translate-y-2' : ''
-      }`}>
-        {/* Left: Brand + PDF File Name */}
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <Link href="/dashboard" className="flex shrink-0 items-center gap-2 sm:gap-3">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white shadow-sm sm:h-9 sm:w-9">
-              <BookOpen className="h-3.5 w-3.5 sm:h-4 sm:w-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="truncate text-sm font-bold text-foreground">
-                PDFMind<span className="text-emerald-500">AI</span>
-              </p>
-              {pdfFileName ? (
-                <p className="max-w-[120px] truncate text-[10px] text-muted-foreground sm:max-w-[200px] sm:text-xs">
-                  <span className="text-emerald-500/70 mr-1">&#9654;</span>
-                  {pdfFileName.replace(/\.pdf$/i, '')}
-                </p>
-              ) : (
-                <p className="hidden text-[10px] text-muted-foreground/50 sm:block sm:text-xs">
-                  Reading workspace
-                </p>
-              )}
-            </div>
-          </Link>
-          {pdfDataUrl && (
-            <button
-              onClick={() => setPdfDataUrl(null)}
-              className="flex h-6 w-6 items-center justify-center rounded-md text-muted-foreground/50 transition-all hover:bg-muted/50 hover:text-foreground sm:h-7 sm:w-7"
-              title="Close PDF"
-              aria-label="Close PDF"
-            >
-              <svg className="h-3.5 w-3.5 sm:h-4 sm:w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          )}
-        </div>
-
-        {/* Right: Actions */}
-        <div className="flex min-w-0 flex-1 items-center justify-end gap-1 sm:gap-1.5">
-          {pdfFileName && (
-            <div className="hidden md:block">
-              <UploadZone />
-            </div>
-          )}
-          {streakCount > 0 && (
-            <Link
-              href="/profile"
-              className="flex h-8 items-center gap-1.5 rounded-lg border border-orange-200/20 bg-orange-50/50 px-2 text-xs font-semibold text-orange-600 transition-all hover:bg-orange-100/50 sm:h-9 sm:rounded-xl sm:px-3 dark:border-orange-800/15 dark:bg-orange-950/10 dark:text-orange-400 dark:hover:bg-orange-950/20"
-              title={`${streakCount}-day streak!`}
-            >
-              <Flame className="h-3 w-3 sm:h-3.5 sm:w-3.5" />
-              <span className="hidden sm:inline">{streakCount}</span>
-            </Link>
-          )}
-
-          {/* Desktop action links */}
-          <div className="hidden items-center gap-0.5 sm:flex sm:gap-1">
-            <Link
-              href="/review"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
-              title="Flashcard Review"
-            >
-              <BrainCircuit className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/vocabulary"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
-              title="Vocabulary"
-            >
-              <BookText className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/quotes"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-amber-600 hover:bg-muted/40"
-              title="Passages"
-            >
-              <QuoteIcon className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/collections"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-muted/40"
-              title="Collections"
-            >
-              <Library className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/lists"
-              className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-emerald-600 hover:bg-muted/40"
-              title="Word Lists"
-            >
-              <List className="h-4 w-4" />
-            </Link>
-            <Link
-              href="/ielts"
-              className="inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-semibold text-muted-foreground hover:text-emerald-600 hover:bg-muted/40 transition-colors"
-              title="IELTS Prep"
-            >
-              <GraduationCap className="h-4 w-4 text-emerald-500" />
-              <span className="hidden lg:inline">IELTS Prep</span>
-            </Link>
-            <button
-              onClick={toggleSharePanel}
-              className={`inline-flex h-8 items-center gap-1.5 rounded-lg px-2 text-xs font-medium transition-all ${
-                shareSession
-                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/20 dark:text-emerald-400'
-                  : 'text-muted-foreground hover:text-foreground hover:bg-muted/40'
-              }`}
-              title={shareSession ? `Session: ${shareSession.name}` : 'Collaborative Reading'}
-            >
-              <Users className="h-4 w-4" />
-              <span className="hidden xl:inline">{shareSession ? shareSession.name : 'Collaborate'}</span>
-            </button>
-            {user?.isAdmin && (
-              <Link
-                href="/admin"
-                className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground hover:text-violet-600 hover:bg-muted/40"
-                title="Admin Panel"
-              >
-                <Shield className="h-4 w-4" />
-              </Link>
-            )}
-            <div className="inline-flex">
-              <SettingsPanel />
-            </div>
-          </div>
-
-          {/* Mobile overflow */}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <button
-                className="flex h-8 w-8 items-center justify-center rounded-lg border border-border/50 bg-background/80 text-muted-foreground shadow-sm transition-all hover:border-muted-foreground/20 hover:text-foreground sm:hidden"
-                aria-label="More menu"
-              >
-                <MoreHorizontal className="h-3.5 w-3.5" />
-              </button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" sideOffset={6} className="w-56">
-              <DropdownMenuLabel className="text-xs text-muted-foreground">
-                Signed in as <span className="font-semibold text-foreground">{user?.username}</span>
-              </DropdownMenuLabel>
-              <DropdownMenuItem asChild>
-                <Link href="/review" className="flex items-center gap-2">
-                  <BrainCircuit className="h-3.5 w-3.5" /> Flashcard Review
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/vocabulary" className="flex items-center gap-2">
-                  <BookText className="h-3.5 w-3.5" /> Vocabulary
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/quotes" className="flex items-center gap-2">
-                  <QuoteIcon className="h-3.5 w-3.5" /> Passages
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/collections" className="flex items-center gap-2">
-                  <Library className="h-3.5 w-3.5" /> Collections
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/lists" className="flex items-center gap-2">
-                  <List className="h-3.5 w-3.5" /> Word Lists
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/ielts" className="flex items-center gap-2">
-                  <GraduationCap className="h-3.5 w-3.5 text-emerald-500" /> IELTS Prep
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem onSelect={() => toggleSharePanel()}>
-                <Users className="h-3.5 w-3.5" />
-                {shareSession ? shareSession.name : 'Collaborate'}
-              </DropdownMenuItem>
-              {user?.isAdmin && (
-                <DropdownMenuItem asChild>
-                  <Link href="/admin" className="flex items-center gap-2">
-                    <Shield className="h-3.5 w-3.5" /> Admin Panel
-                  </Link>
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onSelect={(e) => {
-                e.preventDefault()
-                const btn = document.querySelector<HTMLButtonElement>('[aria-label="Settings"]')
-                btn?.click()
-              }}>
-                <Settings2 className="h-3.5 w-3.5" /> Settings
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={() => logout()} className="text-red-600 focus:text-red-600">
-                <LogOut className="h-3.5 w-3.5" /> Sign out
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-
-          {/* Profile pill */}
-          {user && (
-            <Link
-              href="/profile"
-              className="flex h-8 shrink-0 items-center gap-1.5 rounded-lg border border-border/30 bg-background/70 px-1.5 transition-all hover:bg-muted/50 sm:h-9 sm:rounded-xl sm:px-2"
-            >
-              <div className="flex h-5 w-5 items-center justify-center rounded-md bg-emerald-500 text-white sm:h-6 sm:w-6">
-                <span className="text-[9px] font-bold sm:text-[10px]">
-                  {user.username.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <span className="hidden max-w-[80px] truncate text-xs font-medium text-foreground sm:inline sm:max-w-[100px]">
-                {user.username}
-              </span>
-              <span
-                className={`hidden md:inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[9px] font-semibold ${planBadgeClass}`}
-                title={`Plan: ${PLAN_LABELS[plan as AIPlan]}`}
-              >
-                <PlanIcon className="h-2 w-2" />
-                {PLAN_LABELS[plan as AIPlan]}
-              </span>
-            </Link>
-          )}
-        </div>
-      </header>
 
       {pdfDataUrl ? (
         <main id="main-content" className={`relative flex-1 overflow-hidden ${focusMode ? 'fixed inset-0 z-40' : ''}`}>
@@ -787,58 +572,53 @@ export default function DashboardPage() {
           </div>
         </main>
       ) : (
-        <main className="flex-1 overflow-auto relative">
-          <StarsBackground />
-          <div className="absolute inset-0 bg-[linear-gradient(180deg,hsl(var(--emerald-500)/0.05)_0%,transparent_40%,hsl(var(--background))_100%)]" />
-          <div className="relative mx-auto flex min-h-full w-full max-w-6xl flex-col gap-6 px-4 py-8 sm:gap-8 sm:px-6 sm:py-10 lg:px-8">
-            <section className="grid items-start gap-6 sm:gap-8 lg:grid-cols-[minmax(0,1fr)_380px]">
-              <div className="min-w-0 pt-2 space-y-3">
-                <div className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/15 bg-emerald-500/5 px-3 py-1 text-[10px] font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                  <BookOpen className="h-3 w-3" /> Reading Desk
+        <main className="flex-1 overflow-auto relative bg-dots">
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
+            {/* Greeting */}
+            <div className="mb-10">
+              <div className="flex items-start justify-between gap-4 flex-wrap">
+                <div>
+                  <p className="text-sm text-muted-foreground mb-1">
+                    {new Date().toLocaleDateString(undefined, { weekday: "long", month: "long", day: "numeric" })}
+                  </p>
+                  <h1 className="font-serif text-3xl sm:text-4xl font-bold tracking-tight">
+                    {greeting()}, {username}.
+                  </h1>
+                  <p className="text-muted-foreground mt-1">
+                    Pick up your next page.
+                  </p>
                 </div>
-                <h1 className="text-4xl font-extrabold tracking-tight md:text-5xl text-foreground">
-                  Pick up your <span className="text-emerald-500">next page</span>
-                </h1>
-                <p className="max-w-xl text-sm leading-6 text-muted-foreground/70">
-                  Recent books, saved words, bookmarks, and reading progress in one calm, AI-powered workspace.
-                </p>
+              <div className="flex items-center gap-2 shrink-0">
+                <button
+                  onClick={() => setShortcutsOpen(true)}
+                  className="inline-flex h-8 items-center gap-1.5 rounded-lg border border-border bg-background px-3 text-xs font-medium text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <kbd className="hidden sm:inline-flex h-5 items-center rounded border border-border bg-muted px-1.5 text-[10px] font-mono">?</kbd>
+                  Shortcuts
+                </button>
+                <SettingsPanel />
               </div>
+              </div>
+            </div>
 
-              <aside className="rounded-2xl border border-border/30 bg-card/50 p-5 transition-all hover:border-border/50 duration-300">
-                <div className="mb-4 flex items-center justify-between gap-3">
-                  <div>
-                    <p className="text-xs font-bold uppercase tracking-widest text-emerald-600 dark:text-emerald-400">
-                      Start Reading
-                    </p>
-                    <p className="mt-1 text-xs text-muted-foreground/70">Upload a PDF to open the interactive reader.</p>
-                  </div>
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-emerald-500 text-white shadow-sm">
-                    <Sparkles className="h-4 w-4" />
-                  </div>
-                </div>
-                <UploadZone variant="panel" />
-              </aside>
-            </section>
-
-            <WordLabPreview />
-
+            {/* Reward notification */}
             {rewardNotification && (
-              <div className="relative rounded-xl border border-emerald-500/15 bg-emerald-50/50 px-5 py-4 pr-12 dark:border-emerald-800/15 dark:bg-emerald-950/10">
+              <div className="relative rounded-xl border border-brand/30 bg-brand/5 px-5 py-4 pr-12 mb-4">
                 <button
                   onClick={() => setDashboardCache({ rewardNotification: null })}
-                  className="absolute right-3 top-3 rounded-md p-1 text-emerald-400 transition-colors hover:bg-emerald-100 hover:text-emerald-600 dark:hover:bg-emerald-800/30"
+                  className="absolute right-3 top-3 rounded-md p-1 text-brand/60 transition-colors hover:text-brand"
                 >
                   <X className="h-4 w-4" />
                 </button>
                 <div className="flex items-start gap-3">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-emerald-100 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-brand/15 text-brand">
                     <Gift className="h-5 w-5" />
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-emerald-800 dark:text-emerald-300">
+                    <p className="text-sm font-bold text-foreground">
                       Streak Reward Unlocked!
                     </p>
-                    <p className="mt-1 text-xs text-emerald-700/80 dark:text-emerald-400/80">
+                    <p className="mt-1 text-xs text-muted-foreground">
                       You reached a {rewardNotification.days}-day streak and earned <strong>{rewardNotification.rewardDays} days of Pro</strong> access!
                     </p>
                   </div>
@@ -846,8 +626,9 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* Announcements */}
             {announcements.filter((a) => !dismissedAnnouncements.has(a._id)).map((a) => (
-              <div key={a._id} className="relative rounded-xl border border-border/20 bg-card/40 px-5 py-4 pr-12">
+              <div key={a._id} className="relative rounded-xl border border-border/20 bg-card/40 px-5 py-4 pr-12 mb-4">
                 <button
                   onClick={() => dismissAnnouncement(a._id)}
                   className="absolute right-3 top-3 rounded-md p-1 text-muted-foreground/40 transition-colors hover:text-foreground"
@@ -860,68 +641,56 @@ export default function DashboardPage() {
               </div>
             ))}
 
+            {/* Resume reading */}
             {resumeBook && !dismissedResume && (
-              <div className="group relative rounded-2xl border border-border/20 bg-card/40 p-6 transition-all hover:border-border/40 duration-300">
-                <div className="relative flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                  <div className="flex min-w-0 items-start gap-4">
-                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-emerald-500 text-white shadow-sm">
-                      <BookOpen className="h-5 w-5" />
-                    </div>
-                    <div className="min-w-0">
-                      <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
-                        Resume Reading
-                      </p>
-                      <p className="mt-2 text-base font-extrabold truncate sm:text-lg text-foreground">
-                        {resumeBook.fileName}
-                      </p>
-                      <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted-foreground/70">
-                        <span className="inline-flex items-center gap-1.5">
-                          Page {resumeBook.lastPage}{resumeBook.pageCount > 0 ? ` of ${resumeBook.pageCount}` : ''}
-                        </span>
-                        {resumeBook.timestamp && (
-                          <span className="inline-flex items-center gap-1.5">
-                            {timeAgo(Number(resumeBook.timestamp))}
-                          </span>
-                        )}
-                        {resumeBook.pageCount > 0 && (
-                          <span className="font-medium text-emerald-600 dark:text-emerald-400">
-                            {Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}% complete
-                          </span>
-                        )}
-                      </div>
+              <div className="group relative rounded-2xl border border-brand/30 bg-card/50 p-6 lg:p-8 mb-8 overflow-hidden">
+                <div className="absolute -top-20 -right-20 h-60 w-60 rounded-full bg-brand/10 blur-3xl" aria-hidden />
+                <div className="relative flex flex-col lg:flex-row items-start lg:items-center gap-6">
+                  <div className="flex h-16 w-12 items-center justify-center rounded-xl bg-gradient-to-br from-brand/20 to-brand/5 border border-brand/20 shrink-0">
+                    <BookOpen className="h-7 w-7 text-brand" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <span className="inline-block text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-1.5">Resume reading</span>
+                    <h2 className="font-serif text-xl font-semibold truncate">{resumeBook.fileName}</h2>
+                    <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
+                      <span>Page {resumeBook.lastPage}{resumeBook.pageCount > 0 ? ` of ${resumeBook.pageCount}` : ''}</span>
+                      {resumeBook.timestamp && (
+                        <span className="text-muted-foreground/60">· {timeAgo(Number(resumeBook.timestamp))}</span>
+                      )}
                       {resumeBook.pageCount > 0 && (
-                        <div className="mt-3 h-1.5 w-full max-w-xs rounded-full bg-muted/50 overflow-hidden">
-                          <div
-                            className="h-full rounded-full bg-emerald-500/80 transition-all duration-500"
-                            style={{ width: `${Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}%` }}
-                          />
-                        </div>
+                        <span className="font-medium text-brand">{Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}% complete</span>
                       )}
                     </div>
+                    {resumeBook.pageCount > 0 && (
+                      <div className="mt-3 h-1.5 w-full max-w-md rounded-full bg-muted/50 overflow-hidden">
+                        <div
+                          className="h-full rounded-full bg-brand transition-all duration-500"
+                          style={{ width: `${Math.min(100, Math.round((resumeBook.lastPage / resumeBook.pageCount) * 100))}%` }}
+                        />
+                      </div>
+                    )}
                   </div>
-                  <div className="flex shrink-0 items-center gap-2 sm:items-start">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       onClick={() => handleLoadRecentPdf(resumeBook.fileName, resumeBook.lastPage)}
                       disabled={recentLoading === resumeBook.fileName}
-                      className="inline-flex flex-1 items-center justify-center gap-2 rounded-xl bg-emerald-500 px-5 py-2.5 text-xs font-extrabold uppercase tracking-wider text-white shadow-sm transition-all hover:bg-emerald-600 active:scale-[0.97] disabled:cursor-wait disabled:opacity-40 sm:flex-none"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand px-5 py-2.5 text-sm font-semibold text-white shadow-lg shadow-brand/20 transition-all hover:brightness-110 active:scale-[0.97] disabled:cursor-wait disabled:opacity-40"
                     >
                       {recentLoading === resumeBook.fileName ? (
                         <Loader2 className="h-4 w-4 animate-spin" />
                       ) : (
                         <>
-                          Continue
                           <ArrowRight className="h-4 w-4" />
+                          Continue
                         </>
                       )}
                     </button>
                     <button
                       onClick={() => {
-                        if (typeof window !== 'undefined') {
-                          window.localStorage.setItem(RESUME_DISMISS_KEY, resumeBook.fileName)
-                        }
+                        window.localStorage.setItem(RESUME_DISMISS_KEY, resumeBook.fileName)
                         setDismissedResume(true)
                       }}
-                      className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/40 text-muted-foreground/50 transition-all hover:bg-muted hover:text-foreground"
+                      className="flex h-9 w-9 items-center justify-center rounded-xl border border-border/40 text-muted-foreground/50 transition-all hover:bg-muted hover:text-foreground"
                       title="Dismiss"
                     >
                       <X className="h-3.5 w-3.5" />
@@ -931,29 +700,86 @@ export default function DashboardPage() {
               </div>
             )}
 
+            {/* Stats row */}
             <ReadingStatsRow />
 
-            <div className="max-w-3xl">
-              <ReadingChallenge />
-            </div>
+            {/* 2-column grid: main (upload + library) | sidebar (wordlab + challenge) */}
+            <div className="grid lg:grid-cols-3 gap-6 mt-8">
+              <div className="lg:col-span-2 space-y-6">
+                {/* Upload zone */}
+                <div 
+                  className="group relative overflow-hidden rounded-2xl border border-dashed border-border/60 bg-gradient-to-br from-card/60 via-card/40 to-brand/5 p-8 lg:p-12 text-center hover:border-brand/40 hover:bg-muted/10 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
+                  onClick={() => {
+                    const input = document.createElement('input')
+                    input.type = 'file'
+                    input.accept = 'application/pdf'
+                    input.onchange = (e) => {
+                      const files = (e.target as HTMLInputElement).files
+                      if (files && files.length > 0) handleUpload(files)
+                    }
+                    input.click()
+                  }}
+                  role="button"
+                  tabIndex={0}
+                  onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLElement).click()}
+                >
+                  {/* Subtle hover gradient background */}
+                  <div className="absolute inset-0 bg-gradient-to-tr from-brand/0 to-brand/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+                  
+                  <div className="relative flex flex-col items-center">
+                    <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-soft text-brand mb-4 group-hover:scale-105 group-hover:rotate-2 transition-transform duration-300 shadow-sm border border-brand/10">
+                      <BookOpen className="h-7 w-7" />
+                    </div>
+                    <h3 className="font-serif text-xl font-bold tracking-tight text-foreground">Drop your PDF here</h3>
+                    <p className="text-sm text-muted-foreground mt-1.5">or click to browse from device</p>
+                    <div className="h-px w-24 bg-border/60 my-4" />
+                    <p className="text-xs text-muted-foreground/60">Supports documents up to 50MB</p>
+                    
+                    {/* Visual Feature Tags */}
+                    <div className="flex flex-wrap items-center justify-center gap-2 mt-6 max-w-md">
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-background/50 px-2.5 py-1 text-[10px] font-medium text-muted-foreground shadow-xs">
+                        ⚡ Context Dictionary
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-background/50 px-2.5 py-1 text-[10px] font-medium text-muted-foreground shadow-xs">
+                        🤖 AI Summaries
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-background/50 px-2.5 py-1 text-[10px] font-medium text-muted-foreground shadow-xs">
+                        ✍️ PDF Annotations
+                      </span>
+                      <span className="inline-flex items-center gap-1 rounded-full border border-border/40 bg-background/50 px-2.5 py-1 text-[10px] font-medium text-muted-foreground shadow-xs">
+                        👥 Shared Reading
+                      </span>
+                    </div>
+                  </div>
+                </div>
 
-            <section>
-              <div className="mb-6">
-                <p className="text-[10px] uppercase tracking-widest text-muted-foreground/60">
-                  Your Library
-                </p>
-                <p className="mt-1 text-lg italic text-foreground/70">
-                  All your books
-                </p>
+                {/* Library */}
+                <section className="pt-4">
+                  <div className="flex items-center justify-between mb-4 border-b border-border/40 pb-2">
+                    <div className="flex items-center gap-2">
+                      <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                        <Library className="h-4 w-4" />
+                      </div>
+                      <h2 className="font-serif text-xl font-bold tracking-tight text-foreground">Your library</h2>
+                    </div>
+                    {recentPdfs.length > 0 && (
+                      <Link href="/library" className="text-xs text-brand hover:underline font-semibold flex items-center gap-1 transition-all hover:translate-x-0.5 animate-pulse">
+                        View all library &rarr;
+                      </Link>
+                    )}
+                  </div>
+                  <RecentBookshelf onOpen={(fileName) => handleLoadRecentPdf(fileName)} loadingFileName={recentLoading} />
+                </section>
               </div>
-              <div className="max-w-3xl">
-                <RecentBookshelf onOpen={(fileName) => handleLoadRecentPdf(fileName)} loadingFileName={recentLoading} />
+
+              <div className="space-y-6">
+                <WordLabPreview />
+                <ReadingChallenge />
               </div>
-            </section>
+            </div>
           </div>
         </main>
       )}
-      <ShareSessionPanel />
 
       {/* UX fix (U11): keyboard shortcuts cheatsheet. Triggered by `?`. */}
       <Dialog open={shortcutsOpen} onOpenChange={setShortcutsOpen}>
@@ -983,6 +809,6 @@ export default function DashboardPage() {
           </div>
         </DialogContent>
       </Dialog>
-    </div>
+    </>
   )
 }

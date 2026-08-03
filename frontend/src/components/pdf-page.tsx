@@ -92,6 +92,9 @@ export function PdfPage({
   const pageAnnotations = usePDFStore(
     useShallow((s) => s.annotations.filter((a) => a.pageNumber === pageNumber)),
   )
+  const pageBookmarks = usePDFStore(
+    useShallow((s) => s.bookmarks.filter((b) => b.pageNumber === pageNumber && b.pdfFileName === pdfFileName)),
+  )
   // Shared annotations for this page (only when in a session).
   const sharedAnnotations = usePDFStore(
     useShallow((s) => {
@@ -176,6 +179,43 @@ export function PdfPage({
     },
     [pdfDocRef, pageTextCacheRef]
   )
+
+  const applyBookmarkHighlights = useCallback((bookmarksList: typeof pageBookmarks) => {
+    const textLayer = textLayerRef.current
+    if (!textLayer) return
+
+    const spans = textLayer.querySelectorAll('span')
+    
+    // Clear previous highlights
+    spans.forEach((span) => {
+      if (span.dataset.isBookmarked) {
+        delete span.dataset.isBookmarked
+        span.style.backgroundColor = ''
+        span.style.boxShadow = ''
+        span.style.borderRadius = ''
+      }
+    })
+
+    if (bookmarksList.length === 0) return
+
+    spans.forEach((span) => {
+      const spanText = (span.textContent || '').trim().toLowerCase()
+      if (!spanText) return
+
+      const isMatch = bookmarksList.some((b) => {
+        const cleanWord = b.word.trim().toLowerCase()
+        if (cleanWord.length < 2) return false
+        return spanText.includes(cleanWord)
+      })
+
+      if (isMatch) {
+        span.dataset.isBookmarked = 'true'
+        span.style.backgroundColor = 'var(--brand-soft)'
+        span.style.borderRadius = '2px'
+        span.style.boxShadow = '0 0 0 1px var(--brand-soft)'
+      }
+    })
+  }, [])
 
   // Render the page
   const renderPageCanvas = useCallback(async () => {
@@ -332,6 +372,8 @@ export function PdfPage({
               textLayer.appendChild(span)
             })
           }
+          // Apply bookmark highlights after text layer elements are appended
+          applyBookmarkHighlights(pageBookmarks)
         }
       } catch (err: any) {
         if (err?.name !== 'RenderingCancelledException') {
@@ -350,11 +392,15 @@ export function PdfPage({
     })()
 
     renderChainRef.current = promise
-  }, [pageNumber, scale, searchQuery, searchResults, currentSearchIndex, pageOcr, pdfDocRef, pageTextCacheRef])
+  }, [pageNumber, scale, searchQuery, searchResults, currentSearchIndex, pageOcr, pdfDocRef, pageTextCacheRef, pageBookmarks, applyBookmarkHighlights])
 
   useEffect(() => {
     if (pdfDocRef.current && pdfReady && isVisible) renderPageCanvas()
   }, [renderPageCanvas, pdfReady, isVisible])
+
+  useEffect(() => {
+    applyBookmarkHighlights(pageBookmarks)
+  }, [pageBookmarks, applyBookmarkHighlights])
 
   // Sync drawing canvas size when scale/page changes.
   // Drawing canvas backing is sized to match the PDF canvas's *display* size
