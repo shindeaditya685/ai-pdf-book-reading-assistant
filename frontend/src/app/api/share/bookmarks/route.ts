@@ -42,11 +42,23 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'sessionId and word required' }, { status: 400 })
     }
 
+    const normalizedWord = word.trim().toLowerCase()
+
+    // Check for duplicate in this session
+    const existing = await conn.db.collection('sharedBookmarks').findOne({
+      sessionId,
+      word: normalizedWord
+    })
+
+    if (existing) {
+      return NextResponse.json(existing)
+    }
+
     const now = new Date().toISOString()
     const doc = {
       bookmarkId: id || `bm-${Date.now()}`,
       sessionId,
-      word,
+      word: normalizedWord,
       meaning: meaning || '',
       pronunciation: pronunciation || '',
       translation: translation || '',

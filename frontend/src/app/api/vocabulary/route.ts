@@ -80,9 +80,54 @@ export async function DELETE(request: Request) {
   if (!conn) return NextResponse.json({ success: false })
 
   try {
-    const result = await conn.db.collection('bookmarks').deleteMany({ username: user.username, word: { $regex: `^${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' } })
+    const deleteWord = word.trim()
+    const wordRegex = { $regex: `^${deleteWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, $options: 'i' }
+    
+    // Delete from everywhere else that matches this word for this user
+    // 1. bookmarks
+    const result = await conn.db.collection('bookmarks').deleteMany({ word: wordRegex, username: user.username })
+    
+    // 2. flashcards
+    await conn.db.collection('flashcards').deleteMany({ word: wordRegex, username: user.username })
+    
+    // 3. wordHistory
+    await conn.db.collection('wordHistory').deleteMany({ word: wordRegex, username: user.username })
+    
+    // 4. word-lists
+    await conn.db.collection('word-lists').updateMany(
+      { username: user.username },
+      { $pull: { words: { word: wordRegex } } as any, $set: { updatedAt: new Date() } }
+    )
+    
+    // 5. collections (need to update words and decrement wordCount correctly)
+    const matchingCollections = await conn.db.collection('collections').find({
+      username: user.username,
+      "words.word": wordRegex
+    }).toArray()
+    
+    for (const coll of matchingCollections) {
+      const regexObj = new RegExp('^' + deleteWord.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '$', 'i')
+      const beforeCount = coll.words?.length || 0
+      const newWords = (coll.words || []).filter((w: any) => !regexObj.test(w.word))
+      const afterCount = newWords.length
+      const removedCount = beforeCount - afterCount
+      if (removedCount > 0) {
+        await conn.db.collection('collections').updateOne(
+          { _id: coll._id },
+          {
+            $set: { words: newWords, updatedAt: new Date() },
+            $inc: { wordCount: -removedCount }
+          }
+        )
+      }
+    }
+
+    // 6. sharedBookmarks
+    await conn.db.collection('sharedBookmarks').deleteMany({ word: wordRegex, author: user.username })
+
     return NextResponse.json({ success: true, deletedCount: result.deletedCount })
-  } catch {
+  } catch (err) {
+    console.error('Error deleting vocabulary word:', err)
     return NextResponse.json({ success: false })
   }
 }

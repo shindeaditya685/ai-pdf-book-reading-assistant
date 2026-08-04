@@ -1,6 +1,6 @@
 'use client'
 
-import { Globe, Volume2, Sun, Moon, Settings2, Palette, Bookmark, Brain, List } from 'lucide-react'
+import { Globe, Volume2, Sun, Moon, Settings2, Palette, Bookmark, Brain, List, Clock, Timer, Check } from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -11,6 +11,7 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { usePDFStore, LANGUAGE_LABELS, ACCENT_LABELS, type TranslationLanguage, type PronunciationAccent } from '@/store/use-pdf-store'
 import { Button } from '@/components/ui/button'
+import { motion } from 'framer-motion'
 
 const ACCENT_OPTIONS = [
   { value: 'emerald' as const, label: 'Emerald', className: 'bg-emerald-500' },
@@ -25,7 +26,23 @@ const ACCENT_OPTIONS = [
 ]
 
 export function SettingsPanel() {
-  const { translationLanguage, setTranslationLanguage, accent, setAccent, theme, toggleTheme, themeAccent, setThemeAccent, autoFlashcard, setAutoFlashcard, autoAddToList, setAutoAddToList, defaultListId, wordLists } = usePDFStore()
+  const {
+    translationLanguage,
+    setTranslationLanguage,
+    accent,
+    setAccent,
+    theme,
+    toggleTheme,
+    themeAccent,
+    setThemeAccent,
+    autoFlashcard,
+    setAutoFlashcard,
+    autoAddToList,
+    setAutoAddToList,
+    defaultListId,
+    showReadingTimer,
+    setShowReadingTimer
+  } = usePDFStore()
 
   return (
     <Popover>
@@ -40,149 +57,225 @@ export function SettingsPanel() {
           <Settings2 className="h-4 w-4" />
         </Button>
       </PopoverTrigger>
-      <PopoverContent align="end" sideOffset={8} className="w-72 rounded-xl border-emerald-500/10 bg-background/95 p-4 shadow-xl shadow-emerald-500/5 backdrop-blur-xl">
+      <PopoverContent
+        align="end"
+        sideOffset={8}
+        className="w-80 rounded-2xl border-border/50 bg-background/80 p-4 shadow-2xl backdrop-blur-xl focus-visible:outline-none"
+      >
         <div className="space-y-4">
-          <div className="flex items-center gap-2 pb-2 border-b border-border/40">
-            <div className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-sm">
-              <Settings2 className="h-3 w-3 text-white" />
+          {/* Header */}
+          <div className="flex items-center gap-2 pb-3 border-b border-border/40">
+            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md">
+              <Settings2 className="h-4 w-4 text-white" />
             </div>
-            <span className="text-xs font-bold text-foreground">Settings</span>
+            <div>
+              <span className="text-sm font-bold text-foreground block leading-none">Settings</span>
+              <span className="text-[10px] text-muted-foreground/80 mt-0.5 block">Customize your workspace</span>
+            </div>
           </div>
 
-          {/* Language */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
+          {/* Section: Language & Accent */}
+          <div className="rounded-xl border border-border/40 bg-muted/30 p-3 space-y-3">
+            <div className="flex items-center gap-1.5 border-b border-border/20 pb-1.5">
               <Globe className="h-3.5 w-3.5 text-emerald-500" />
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                Translation Language
-              </label>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">Language & Accent</span>
             </div>
-            <Select
-              value={translationLanguage}
-              onValueChange={(val) => setTranslationLanguage(val as TranslationLanguage)}
-            >
-              <SelectTrigger className="h-8 w-full rounded-lg border-border/60 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(LANGUAGE_LABELS).map(([code, label]) => (
-                  <SelectItem key={code} value={code} className="text-xs">
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+
+            {/* Translation Language */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-muted-foreground/80">Translation Language</label>
+              <Select
+                value={translationLanguage}
+                onValueChange={(val) => setTranslationLanguage(val as TranslationLanguage)}
+              >
+                <SelectTrigger className="h-8 w-full rounded-lg border-border/60 text-xs bg-background/50 hover:bg-background/80 transition-colors">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(LANGUAGE_LABELS).map(([code, label]) => (
+                    <SelectItem key={code} value={code} className="text-xs">
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Pronunciation Accent */}
+            <div className="space-y-1">
+              <label className="text-[10px] font-medium text-muted-foreground/80">Pronunciation Accent</label>
+              <Select
+                value={accent}
+                onValueChange={(val) => setAccent(val as PronunciationAccent)}
+              >
+                <SelectTrigger className="h-8 w-full rounded-lg border-border/60 text-xs bg-background/50 hover:bg-background/80 transition-colors">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {Object.entries(ACCENT_LABELS).map(([code, label]) => (
+                    <SelectItem key={code} value={code} className="text-xs">
+                      {label}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
 
-          {/* Accent */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <Volume2 className="h-3.5 w-3.5 text-emerald-500" />
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                Pronunciation Accent
-              </label>
+          {/* Section: Reading Tools */}
+          <div className="rounded-xl border border-border/40 bg-muted/30 p-3 space-y-3">
+            <div className="flex items-center gap-1.5 border-b border-border/20 pb-1.5">
+              <Clock className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">Reading Tools</span>
             </div>
-            <Select
-              value={accent}
-              onValueChange={(val) => setAccent(val as PronunciationAccent)}
-            >
-              <SelectTrigger className="h-8 w-full rounded-lg border-border/60 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(ACCENT_LABELS).map(([code, label]) => (
-                  <SelectItem key={code} value={code} className="text-xs">
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
 
-          {/* Theme accent — color picker */}
-          <div className="space-y-1.5">
-            <div className="flex items-center gap-1.5">
-              <Palette className="h-3.5 w-3.5 text-emerald-500" />
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                Theme Color
-              </label>
-            </div>
-            <div className="flex flex-wrap gap-2">
-              {ACCENT_OPTIONS.map((opt) => (
-                <button
-                  key={opt.value}
-                  onClick={() => setThemeAccent(opt.value)}
-                  className={`h-7 w-7 rounded-full ${opt.className} transition-all hover:scale-110 hover:shadow-md ${
-                    themeAccent === opt.value ? 'ring-2 ring-offset-2 ring-offset-background ring-foreground/30 scale-110' : 'ring-1 ring-border/40'
+            <div className="flex items-center justify-between rounded-lg bg-background/40 border border-border/30 px-3 py-2 text-xs text-muted-foreground transition-all hover:bg-background/60 shadow-sm">
+              <div className="flex items-center gap-2">
+                <Timer className="h-3.5 w-3.5 text-muted-foreground/60" />
+                <span>Show Reading Timer</span>
+              </div>
+              <motion.button
+                whileTap={{ scale: 0.9 }}
+                role="switch"
+                aria-checked={showReadingTimer}
+                onClick={() => setShowReadingTimer(!showReadingTimer)}
+                className={`relative h-5 w-9 rounded-full transition-colors duration-200 ease-in-out shadow-inner ${
+                  showReadingTimer ? 'bg-emerald-500' : 'bg-muted-foreground/20'
+                }`}
+              >
+                <span
+                  className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out ${
+                    showReadingTimer ? 'translate-x-4' : ''
                   }`}
-                  title={opt.label}
                 />
-              ))}
+              </motion.button>
             </div>
           </div>
 
-          {/* Vocabulary Workflow */}
-          <div className="border-t border-border/40 pt-3 space-y-3">
-            <div className="flex items-center gap-1.5">
+          {/* Section: Vocabulary Workflow */}
+          <div className="rounded-xl border border-border/40 bg-muted/30 p-3 space-y-3">
+            <div className="flex items-center gap-1.5 border-b border-border/20 pb-1.5">
               <Bookmark className="h-3.5 w-3.5 text-emerald-500" />
-              <label className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/70">
-                When I Bookmark a Word
-              </label>
+              <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">Vocabulary Workflow</span>
             </div>
-            <label className="flex items-center justify-between rounded-lg px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/30">
-              <div className="flex items-center gap-2">
-                <Brain className="h-3.5 w-3.5 text-muted-foreground/60" />
-                <span>Auto-create flashcard</span>
+
+            <p className="text-[10px] text-muted-foreground/75 px-1 leading-normal">
+              When I bookmark a word on the page:
+            </p>
+
+            <div className="space-y-2">
+              {/* Toggle: Auto Flashcard */}
+              <div className="flex items-center justify-between rounded-lg bg-background/40 border border-border/30 px-3 py-2 text-xs text-muted-foreground transition-all hover:bg-background/60 shadow-sm">
+                <div className="flex items-center gap-2">
+                  <Brain className="h-3.5 w-3.5 text-muted-foreground/60" />
+                  <span>Auto-create flashcard</span>
+                </div>
+                <motion.button
+                  whileTap={{ scale: 0.9 }}
+                  role="switch"
+                  aria-checked={autoFlashcard}
+                  onClick={() => setAutoFlashcard(!autoFlashcard)}
+                  className={`relative h-5 w-9 rounded-full transition-colors duration-200 ease-in-out shadow-inner ${
+                    autoFlashcard ? 'bg-emerald-500' : 'bg-muted-foreground/20'
+                  }`}
+                >
+                  <span
+                    className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out ${
+                      autoFlashcard ? 'translate-x-4' : ''
+                    }`}
+                  />
+                </motion.button>
               </div>
-              <button
-                role="switch"
-                aria-checked={autoFlashcard}
-                onClick={() => setAutoFlashcard(!autoFlashcard)}
-                className={`relative h-4.5 w-8 rounded-full transition-colors ${autoFlashcard ? 'bg-emerald-500' : 'bg-muted-foreground/20'}`}
-              >
-                <span className={`absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${autoFlashcard ? 'translate-x-3.5' : ''}`} />
-              </button>
-            </label>
-            <label className="flex items-center justify-between rounded-lg px-3 py-2 text-xs text-muted-foreground transition-colors hover:bg-muted/30">
-              <div className="flex items-center gap-2">
-                <List className="h-3.5 w-3.5 text-muted-foreground/60" />
-                <span>Add to default list</span>
+
+              {/* Toggle: Auto Add List */}
+              <div className={`flex items-center justify-between rounded-lg bg-background/40 border border-border/30 px-3 py-2 text-xs text-muted-foreground transition-all hover:bg-background/60 shadow-sm ${
+                !defaultListId ? 'opacity-50' : ''
+              }`}>
+                <div className="flex items-center gap-2">
+                  <List className="h-3.5 w-3.5 text-muted-foreground/60" />
+                  <span>Add to default list</span>
+                </div>
+                <motion.button
+                  whileTap={defaultListId ? { scale: 0.9 } : undefined}
+                  role="switch"
+                  aria-checked={autoAddToList && !!defaultListId}
+                  onClick={() => setAutoAddToList(!autoAddToList)}
+                  disabled={!defaultListId}
+                  className={`relative h-5 w-9 rounded-full transition-colors duration-200 ease-in-out shadow-inner ${
+                    autoAddToList && defaultListId ? 'bg-emerald-500' : 'bg-muted-foreground/20'
+                  } ${!defaultListId ? 'cursor-not-allowed' : ''}`}
+                >
+                  <span
+                    className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out ${
+                      autoAddToList && defaultListId ? 'translate-x-4' : ''
+                    }`}
+                  />
+                </motion.button>
               </div>
-              <button
-                role="switch"
-                aria-checked={autoAddToList}
-                onClick={() => setAutoAddToList(!autoAddToList)}
-                disabled={!defaultListId}
-                className={`relative h-4.5 w-8 rounded-full transition-colors ${autoAddToList && defaultListId ? 'bg-emerald-500' : 'bg-muted-foreground/20'} ${!defaultListId ? 'opacity-40 cursor-not-allowed' : ''}`}
-              >
-                <span className={`absolute left-0.5 top-0.5 h-3.5 w-3.5 rounded-full bg-white shadow-sm transition-transform ${autoAddToList && defaultListId ? 'translate-x-3.5' : ''}`} />
-              </button>
-            </label>
-            {!defaultListId && (
-              <p className="px-3 text-[10px] text-muted-foreground/50">
-                Open Word Lists and star one as default to enable this
-              </p>
-            )}
+
+              {!defaultListId && (
+                <p className="px-1 text-[9px] text-muted-foreground/60 italic leading-snug">
+                  * Star a word list under Word Lists to auto-add.
+                </p>
+              )}
+            </div>
           </div>
 
-          {/* Theme toggle */}
-          <div className="border-t border-border/40 pt-3">
-            <button
-              onClick={toggleTheme}
-              className="flex w-full items-center justify-between rounded-lg px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:bg-muted/50 hover:text-foreground"
-            >
-              <div className="flex items-center gap-2">
-                {theme === 'dark' ? (
-                  <Sun className="h-4 w-4 text-amber-500" />
-                ) : (
-                  <Moon className="h-4 w-4 text-indigo-500" />
-                )}
-                <span>Appearance</span>
+          {/* Section: Theme & Accent */}
+          <div className="rounded-xl border border-border/40 bg-muted/30 p-3 space-y-3">
+            <div className="flex items-center gap-1.5 border-b border-border/20 pb-1.5">
+              <Palette className="h-3.5 w-3.5 text-emerald-500" />
+              <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">Theme & Accent</span>
+            </div>
+
+            <div className="space-y-1.5">
+              <label className="text-[10px] font-medium text-muted-foreground/80 block">Theme Color</label>
+              <div className="grid grid-cols-5 gap-2">
+                {ACCENT_OPTIONS.map((opt) => {
+                  const isSelected = themeAccent === opt.value
+                  return (
+                    <motion.button
+                      key={opt.value}
+                      whileHover={{ scale: 1.15 }}
+                      whileTap={{ scale: 0.95 }}
+                      onClick={() => setThemeAccent(opt.value)}
+                      className={`relative flex h-8 items-center justify-center rounded-xl ${opt.className} transition-all shadow-sm ${
+                        isSelected
+                          ? 'ring-2 ring-offset-2 ring-offset-background ring-foreground scale-110 shadow-md'
+                          : 'opacity-80 hover:opacity-100'
+                      }`}
+                      title={opt.label}
+                    >
+                      {isSelected && (
+                        <Check className="h-4 w-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
+                      )}
+                    </motion.button>
+                  )
+                })}
               </div>
-              <span className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground/50">
-                {theme === 'dark' ? 'Dark' : 'Light'}
-              </span>
-            </button>
+            </div>
+
+            {/* Appearance Toggle */}
+            <div className="pt-1.5">
+              <motion.button
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                onClick={toggleTheme}
+                className="flex w-full items-center justify-between rounded-lg bg-background/50 border border-border/40 px-3 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-background hover:text-foreground shadow-sm"
+              >
+                <div className="flex items-center gap-2">
+                  {theme === 'dark' ? (
+                    <Sun className="h-4 w-4 text-amber-500" />
+                  ) : (
+                    <Moon className="h-4 w-4 text-indigo-500" />
+                  )}
+                  <span>Appearance</span>
+                </div>
+                <span className="text-[10px] font-bold uppercase tracking-wider bg-muted/80 px-2 py-0.5 rounded-md text-foreground">
+                  {theme === 'dark' ? 'Dark' : 'Light'}
+                </span>
+              </motion.button>
+            </div>
           </div>
         </div>
       </PopoverContent>

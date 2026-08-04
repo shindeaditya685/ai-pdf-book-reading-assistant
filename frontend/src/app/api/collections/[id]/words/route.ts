@@ -35,6 +35,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
 
     const now = new Date()
     const lastOrder = collection.words?.length || 0
+    const existingWordSet = new Set((collection.words || []).map((w: any) => w.word.toLowerCase()))
 
     const newWords = words.map((w: any, i: number) => ({
       word: String(w.word || '').trim().toLowerCase(),
@@ -45,7 +46,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       example: w.example || '',
       order: lastOrder + i,
       createdAt: now,
-    })).filter((w: { word: string }) => w.word)
+    })).filter((w: { word: string }) => w.word && !existingWordSet.has(w.word))
 
     if (newWords.length === 0) {
       return NextResponse.json({ error: 'No valid words provided' }, { status: 400 })

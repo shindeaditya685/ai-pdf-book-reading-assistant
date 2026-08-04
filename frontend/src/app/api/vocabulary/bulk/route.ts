@@ -173,10 +173,27 @@ async function processBatch(
   const flashcardDocs: any[] = []
   const now = new Date()
 
+  // Fetch existing bookmarks for the user to prevent duplicates
+  const parsedWords = parsed
+    .filter(item => item && item.word)
+    .map(item => String(item.word).trim().toLowerCase())
+    .filter(Boolean)
+
+  const existingBookmarks = await conn!.db
+    .collection('bookmarks')
+    .find({ username, word: { $in: parsedWords } })
+    .toArray()
+  const existingWordSet = new Set(existingBookmarks.map(b => b.word.toLowerCase()))
+
   for (const item of parsed) {
     if (!item || !item.word) continue
     const w = String(item.word).trim().toLowerCase()
     if (!w) continue
+
+    if (existingWordSet.has(w)) {
+      continue
+    }
+    existingWordSet.add(w)
 
     historyDocs.push({
       word: w,

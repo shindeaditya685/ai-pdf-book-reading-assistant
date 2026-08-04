@@ -50,6 +50,26 @@ function shortVoiceName(name: string): string {
   return tokens[0] || 'Voice'
 }
 
+function findStartWordIndex(fullWords: string[], selectedText: string): number {
+  if (!selectedText) return 0
+  const cleanSel = selectedText.toLowerCase().replace(/[^\w\s]/g, '').split(/\s+/).filter(Boolean)
+  if (cleanSel.length === 0) return 0
+
+  const cleanFull = fullWords.map(w => w.toLowerCase().replace(/[^\w\s]/g, ''))
+  
+  for (let i = 0; i <= cleanFull.length - cleanSel.length; i++) {
+    let match = true
+    for (let j = 0; j < cleanSel.length; j++) {
+      if (cleanFull[i + j] !== cleanSel[j] && !cleanFull[i + j].includes(cleanSel[j]) && !cleanSel[j].includes(cleanFull[i + j])) {
+        match = false
+        break
+      }
+    }
+    if (match) return i
+  }
+  return 0
+}
+
 export function TtsControls() {
   const {
     ttsPlaying,
@@ -78,6 +98,8 @@ export function TtsControls() {
   const utteranceRef = useRef<SpeechSynthesisUtterance | null>(null)
   const wordOffsetsRef = useRef<number[]>([])
   const wordsRef = useRef<string[]>([])
+  const wordStartsRef = useRef<number[]>([])
+  const hasDomWordsRef = useRef<boolean>(false)
   const pauseOnNextRef = useRef(false)
   const cancelledRef = useRef(false)
   const currentChunkIdxRef = useRef<number>(0)
@@ -86,6 +108,12 @@ export function TtsControls() {
   const lastHighlightedIdxRef = useRef<number>(-1)
   const isRestartingRef = useRef<boolean>(false)
   const speakChunkRef = useRef<() => void>(() => {})
+  // Word-highlight fallback: drives the highlight from wall-clock time when the
+  // browser never fires `onboundary` events (common on some voices/platforms).
+  const estimateTimerRef = useRef<number | null>(null)
+  const chunkStartRef = useRef<number>(0)
+  const lastBoundaryAtRef = useRef<number>(-1)
+  const lastBoundaryWordRef = useRef<number>(-1)
 
   // Load available voices
   useEffect(() => {
@@ -108,6 +136,7 @@ export function TtsControls() {
   useEffect(() => {
     return () => {
       cancelledRef.current = true
+      if (estimateTimerRef.current !== null) window.clearInterval(estimateTimerRef.current)
       speechSynthesis.cancel()
     }
   }, [])
@@ -191,26 +220,88 @@ export function TtsControls() {
     setTtsHighlightIndex(wordIndex)
   }, [setTtsHighlightIndex])
 
-  // Build word offsets from the text layer content
+  // Build word offsets + per-word char starts from the SAME text layer that is
+  // displayed. The returned `text` is the single source of truth for BOTH the
+  // spoken content and the highlight mapping, so a char index maps to exactly
+  // the word the user sees (no drift from re-parsing a different text).
   const buildWordIndex = useCallback(() => {
     const livePage = usePDFStore.getState().currentPage
     const currentPageDiv = document.querySelector(`[data-page="${livePage}"]`)
     const textLayer = currentPageDiv?.querySelector('.pdf-text-layer')
-    if (!textLayer) return { words: [], offsets: [] }
+    if (!textLayer) return { words: [], offsets: [], starts: [], text: '', hasDom: false }
 
     const spans = textLayer.querySelectorAll('span')
     const words: string[] = []
-    const offsets: number[] = []
-
+    const starts: number[] = []
+    let charPos = 0
     spans.forEach((span) => {
-      const text = span.textContent || ''
-      const parts = text.match(/\S+/g) || []
-      parts.forEach((part) => {
-        offsets.push(words.length)
+      const parts = (span.textContent || '').match(/\S+/g) || []
+      for (const part of parts) {
         words.push(part)
-      })
+        starts.push(charPos)
+        // +1 to account for the single inter-word space in `text`
+        charPos += part.length + 1
+      }
     })
-    return { words, offsets }
+    const offsets = words.map((_, i) => i)
+    const text = words.join(' ')
+    return { words, offsets, starts, text, hasDom: text.length > 0 }
+  }, [])
+
+  // Start a low-frequency timer that estimates the currently-spoken word from
+  // elapsed time. It only advances when the browser hasn't delivered a
+  // `boundary` event recently, so accurate browsers drive the highlight
+  // precisely and uncooperative ones still get a moving highlight.
+  const ensureEstimator = useCallback(() => {
+    if (estimateTimerRef.current !== null) return
+    lastBoundaryAtRef.current = -1
+    const speed = usePDFStore.getState().ttsSpeed
+    const baselineMs =
+      lastHighlightedIdxRef.current > 0 ? (lastHighlightedIdxRef.current / (2.8 * speed)) * 1000 : 0
+    chunkStartRef.current = performance.now() - baselineMs
+    estimateTimerRef.current = window.setInterval(() => {
+      const state = usePDFStore.getState()
+      const now = performance.now()
+      if (
+        cancelledRef.current ||
+        isRestartingRef.current ||
+        state.ttsPaused ||
+        !state.ttsPlaying
+      ) {
+        return
+      }
+      // Only ever fill long silent gaps. Words are normally spoken faster than
+      // this, so while real `boundary` events keep arriving the estimator never
+      // fires — which is what prevents the highlight from jumping ahead and then
+      // snapping back (correct → wrong → correct).
+      if (lastBoundaryWordRef.current >= 0) {
+        if (now - lastBoundaryAtRef.current < 1500) return
+      } else if (now - lastBoundaryAtRef.current < 350) {
+        return
+      }
+      const wordsPerSec = 2.8 * state.ttsSpeed // ~measured average across voices
+      let estIdx: number
+      if (lastBoundaryWordRef.current >= 0) {
+        // Resume from the LAST real boundary word instead of guessing from the
+        // start, so recovery from a gap lands on the word nearest reality.
+        const advance = Math.floor(((now - lastBoundaryAtRef.current) / 1000) * wordsPerSec)
+        estIdx = lastBoundaryWordRef.current + advance
+      } else {
+        const elapsedSec = (now - chunkStartRef.current) / 1000
+        estIdx = Math.floor(elapsedSec * wordsPerSec)
+      }
+      if (estIdx > lastHighlightedIdxRef.current && estIdx < wordsRef.current.length) {
+        lastHighlightedIdxRef.current = estIdx
+        highlightWord(wordOffsetsRef.current[estIdx] ?? estIdx)
+      }
+    }, 120)
+  }, [highlightWord])
+
+  const stopEstimator = useCallback(() => {
+    if (estimateTimerRef.current !== null) {
+      window.clearInterval(estimateTimerRef.current)
+      estimateTimerRef.current = null
+    }
   }, [])
 
   // Stop TTS when page changes or PDF is unloaded
@@ -231,31 +322,82 @@ export function TtsControls() {
     prevFileNameRef.current = pdfFileName
   }, [currentPage, pdfFileName, ttsPlaying, ttsPaused, clearHighlights, setTtsPlaying, setTtsPaused, setTtsHighlightIndex])
 
-  const startTts = useCallback((text: string) => {
+  const startTts = useCallback((text: string, fromWordIndex: number = 0) => {
     speechSynthesis.cancel()
     cancelledRef.current = false
     isRestartingRef.current = false
 
-    const { words, offsets } = buildWordIndex()
-    wordsRef.current = words
+    // Prefer the DOM text layer (guarantees speech stays aligned with what's
+    // highlighted). Fall back to the passed `text` when the layer isn't ready.
+    const { words, offsets, starts, text: domText, hasDom } = buildWordIndex()
+    const speechText = (hasDom ? domText : (text || originalTextRef.current)).trim()
+    const domWords = hasDom ? words : (speechText.match(/\S+/g) || [])
+
+    wordsRef.current = domWords
     wordOffsetsRef.current = offsets
-    setTtsTotalWords(words.length)
+    wordStartsRef.current = starts
+    hasDomWordsRef.current = hasDom && words.length > 0
+    setTtsTotalWords(domWords.length)
     clearHighlights()
 
-    originalTextRef.current = text
-    currentChunkIdxRef.current = 0
-    charOffsetRef.current = 0
-    lastHighlightedIdxRef.current = -1
+    originalTextRef.current = speechText
 
-    const chunks = text
-      .split(/(?<=[.!?])\s+|\n+/)
-      .map((c) => c.trim())
-      .filter(Boolean)
+    // If text was passed and fromWordIndex is 0, let's see if it's a selection
+    let actualStartWordIdx = fromWordIndex
+    if (text && fromWordIndex === 0) {
+      actualStartWordIdx = findStartWordIndex(domWords, text)
+    }
+
+    lastHighlightedIdxRef.current = actualStartWordIdx - 1
+    lastBoundaryWordRef.current = -1
+
+    // Split speechText into chunks and keep track of their start indices
+    const chunks: { text: string; start: number }[] = []
+    const regex = /(?<=[.?!])\s+|\n+/g
+    let lastIndex = 0
+    let match
+    while ((match = regex.exec(speechText)) !== null) {
+      const chunkText = speechText.slice(lastIndex, match.index).trim()
+      if (chunkText) {
+        const actualStart = speechText.indexOf(chunkText, lastIndex)
+        if (actualStart !== -1) {
+          chunks.push({ text: chunkText, start: actualStart })
+        }
+      }
+      lastIndex = regex.lastIndex
+    }
+    const lastChunkText = speechText.slice(lastIndex).trim()
+    if (lastChunkText) {
+      const actualStart = speechText.indexOf(lastChunkText, lastIndex)
+      if (actualStart !== -1) {
+        chunks.push({ text: lastChunkText, start: actualStart })
+      }
+    }
+
     if (chunks.length === 0) return
 
+    // Now find the chunk that contains the starting word character position
+    const charPos = actualStartWordIdx < starts.length ? starts[actualStartWordIdx] : 0
+
+    let chunkIdx = 0
+    let relativeOffset = 0
+    for (let i = 0; i < chunks.length; i++) {
+      const c = chunks[i]
+      const nextC = chunks[i + 1]
+      const endPos = nextC ? nextC.start : speechText.length
+      if (charPos >= c.start && charPos < endPos) {
+        chunkIdx = i
+        relativeOffset = charPos - c.start
+        break
+      }
+    }
+
+    currentChunkIdxRef.current = chunkIdx
+    charOffsetRef.current = charPos
+
     const speakChunk = () => {
-      const chunkIdx = currentChunkIdxRef.current
-      if (cancelledRef.current || chunkIdx >= chunks.length) {
+      const currentIdx = currentChunkIdxRef.current
+      if (cancelledRef.current || currentIdx >= chunks.length) {
         if (!cancelledRef.current && !isRestartingRef.current) {
           clearHighlights()
           setTtsPlaying(false)
@@ -263,7 +405,12 @@ export function TtsControls() {
         }
         return
       }
-      const chunk = chunks[chunkIdx]
+      const fullChunk = chunks[currentIdx]
+      let chunkTextToSpeak = fullChunk.text
+      if (currentIdx === chunkIdx && relativeOffset > 0) {
+        chunkTextToSpeak = fullChunk.text.slice(relativeOffset)
+      }
+      ensureEstimator()
       // Read the LATEST speed / voice from the store on every chunk so that
       // mid-playback changes (speed slider, voice dropdown) take effect on
       // the next sentence instead of requiring a stop + restart.
@@ -272,16 +419,31 @@ export function TtsControls() {
         ? voices.find((v) => v.voiceURI === liveState.ttsVoiceURI) ?? null
         : null
 
-      const utterance = new SpeechSynthesisUtterance(chunk)
+      const utterance = new SpeechSynthesisUtterance(chunkTextToSpeak)
       utterance.rate = liveState.ttsSpeed
       if (liveVoice) utterance.voice = liveVoice
 
       utterance.onboundary = (e) => {
         if (cancelledRef.current || isRestartingRef.current) return
-        if (e.name !== 'word') return
+        if (e.name && e.name !== 'word') return
+        lastBoundaryAtRef.current = performance.now()
         const globalCharIndex = charOffsetRef.current + (e.charIndex ?? 0)
-        const preceding = originalTextRef.current.slice(0, globalCharIndex)
-        const wordIdx = preceding.split(/\s+/).filter(Boolean).length - 1
+        let wordIdx = -1
+        if (hasDomWordsRef.current && wordStartsRef.current.length > 0) {
+          // Exact mapping: pick the last word whose char start is <= the index.
+          const starts = wordStartsRef.current
+          for (let i = 0; i < starts.length; i++) {
+            if (starts[i] <= globalCharIndex) wordIdx = i
+            else break
+          }
+        } else {
+          // Fallback when the text layer isn't available.
+          const preceding = originalTextRef.current.slice(0, globalCharIndex)
+          wordIdx = preceding.split(/\s+/).filter(Boolean).length - 1
+        }
+        // Remember the anchor position so the fallback estimator, if it ever
+        // needs to fill a gap, advances from HERE instead of from the start.
+        lastBoundaryWordRef.current = wordIdx
         if (wordIdx >= 0 && wordIdx !== lastHighlightedIdxRef.current && wordIdx < wordsRef.current.length) {
           lastHighlightedIdxRef.current = wordIdx
           highlightWord(wordOffsetsRef.current[wordIdx] ?? wordIdx)
@@ -290,8 +452,14 @@ export function TtsControls() {
 
       utterance.onend = () => {
         if (cancelledRef.current || isRestartingRef.current) return
-        charOffsetRef.current += chunk.length + 1 // +1 for the separator
-        currentChunkIdxRef.current++
+        const nextIdx = currentChunkIdxRef.current + 1
+        if (nextIdx < chunks.length) {
+          charOffsetRef.current = chunks[nextIdx].start
+        } else {
+          charOffsetRef.current = fullChunk.start + fullChunk.text.length
+        }
+        relativeOffset = 0
+        currentChunkIdxRef.current = nextIdx
         speakChunk()
       }
 
@@ -312,40 +480,65 @@ export function TtsControls() {
     speakChunk()
     setTtsPlaying(true)
     setTtsPaused(false)
-  }, [voices, buildWordIndex, setTtsPlaying, setTtsPaused, setTtsTotalWords, clearHighlights, highlightWord])
+  }, [voices, buildWordIndex, setTtsPlaying, setTtsPaused, setTtsTotalWords, clearHighlights, highlightWord, ensureEstimator])
 
   // Handle immediate voice changes
   useEffect(() => {
     if (!ttsPlaying) return
+    const currentIdx = Math.max(0, lastHighlightedIdxRef.current)
+    stopEstimator()
     isRestartingRef.current = true
     speechSynthesis.cancel()
     isRestartingRef.current = false
     
-    // Resume playback with the new voice from the current chunk
-    speakChunkRef.current()
+    startTts('', currentIdx)
     if (ttsPaused) {
       speechSynthesis.pause()
     }
-  }, [ttsVoiceURI])
+  }, [ttsVoiceURI, stopEstimator])
+
+  // Handle speed changes during playback
+  useEffect(() => {
+    if (!ttsPlaying) return
+
+    // Debounce the restart to prevent stuttering while dragging the slider
+    const timer = setTimeout(() => {
+      const currentIdx = Math.max(0, lastHighlightedIdxRef.current)
+      stopEstimator()
+      isRestartingRef.current = true
+      speechSynthesis.cancel()
+      isRestartingRef.current = false
+      
+      startTts('', currentIdx)
+      if (ttsPaused) {
+        speechSynthesis.pause()
+      }
+    }, 200)
+
+    return () => clearTimeout(timer)
+  }, [ttsSpeed, stopEstimator])
 
   const pauseTts = useCallback(() => {
+    stopEstimator()
     speechSynthesis.pause()
     setTtsPaused(true)
-  }, [setTtsPaused])
+  }, [stopEstimator, setTtsPaused])
 
   const resumeTts = useCallback(() => {
     speechSynthesis.resume()
     setTtsPaused(false)
-  }, [setTtsPaused])
+    ensureEstimator()
+  }, [ensureEstimator, setTtsPaused])
 
   const stopTts = useCallback(() => {
     cancelledRef.current = true
+    stopEstimator()
     speechSynthesis.cancel()
     clearHighlights()
     setTtsPlaying(false)
     setTtsPaused(false)
     setTtsHighlightIndex(null)
-  }, [clearHighlights, setTtsPlaying, setTtsPaused, setTtsHighlightIndex])
+  }, [stopEstimator, clearHighlights, setTtsPlaying, setTtsPaused, setTtsHighlightIndex])
 
   // Expose functions via window for the PDF viewer to call
   useEffect(() => {

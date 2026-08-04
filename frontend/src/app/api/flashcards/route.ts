@@ -49,10 +49,11 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: false, error: 'Missing required fields' })
       }
 
+      const normalizedWord = word.trim().toLowerCase()
+
       const existing = await conn.db.collection('flashcards').findOne({
         username: user.username,
-        pdfFileName,
-        word,
+        word: normalizedWord,
       })
       if (existing) {
         return NextResponse.json({ success: false, error: 'Flashcard already exists' })
@@ -62,7 +63,7 @@ export async function POST(request: Request) {
       const defaults = newCardDefaults()
       const doc = {
         bookmarkId: bookmarkId || '',
-        word,
+        word: normalizedWord,
         meaning: meaning || '',
         pronunciation: pronunciation || '',
         translation: translation || '',

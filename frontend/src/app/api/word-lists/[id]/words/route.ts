@@ -23,8 +23,15 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: 'Word is required' }, { status: 400 })
     }
 
+    const normalizedWord = word.trim().toLowerCase()
+
+    const wordExists = (existing.words || []).some((w: any) => w.word.toLowerCase() === normalizedWord)
+    if (wordExists) {
+      return NextResponse.json({ error: 'Word already exists in this list' }, { status: 400 })
+    }
+
     const entry = {
-      word: word.trim(),
+      word: normalizedWord,
       meaning: meaning?.trim() || '',
       pronunciation: pronunciation?.trim() || '',
       translation: translation?.trim() || '',

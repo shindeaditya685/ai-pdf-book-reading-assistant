@@ -31,7 +31,7 @@ function playBeep() {
 }
 
 export function ReadingTimer() {
-  const { pdfDataUrl, focusMode, toggleFocusMode } = usePDFStore()
+  const { pdfDataUrl, focusMode, toggleFocusMode, showReadingTimer } = usePDFStore()
 
   const [phase, setPhase] = useState<Phase>('focus')
   const [focusMinutes, setFocusMinutes] = useState(25)
@@ -132,7 +132,7 @@ export function ReadingTimer() {
     return () => clearTimer()
   }, [clearTimer])
 
-  if (!pdfDataUrl) return null
+  if (!pdfDataUrl || !showReadingTimer) return null
 
   const isFocus = phase === 'focus'
   const totalSeconds = isFocus ? focusMinutes * 60 : breakMinutes * 60

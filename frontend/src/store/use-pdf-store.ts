@@ -105,6 +105,19 @@ export function detectBrowserLanguage(): TranslationLanguage {
 
 const STORAGE_KEY_LANG = "pdf-reader-ai-translation-language";
 const STORAGE_KEY_ACCENT = "pdf-reader-ai-accent";
+const STORAGE_KEY_SCALE = "pdf-reader-ai-scale";
+
+function loadInitialScale(): number {
+  if (typeof window === "undefined") return 1;
+  try {
+    const stored = parseFloat(localStorage.getItem(STORAGE_KEY_SCALE) ?? "");
+    if (!Number.isFinite(stored)) return 1;
+    // Clamp to the same bounds the zoom controls enforce (0.5x - 3x)
+    return Math.min(3, Math.max(0.5, stored));
+  } catch {
+    return 1;
+  }
+}
 
 function loadInitialLanguage(): TranslationLanguage {
   if (typeof window === "undefined") return "none";
@@ -694,6 +707,7 @@ interface PDFState {
   defaultListId: string | null
   autoFlashcard: boolean
   autoAddToList: boolean
+  showReadingTimer: boolean
 
   // Word List actions
   setWordLists: (lists: WordList[]) => void
@@ -705,6 +719,7 @@ interface PDFState {
   setDefaultListId: (id: string | null) => void
   setAutoFlashcard: (on: boolean) => void
   setAutoAddToList: (on: boolean) => void
+  setShowReadingTimer: (show: boolean) => void
 
   // Flashcard actions
   setFlashcards: (flashcards: Flashcard[]) => void;
@@ -827,7 +842,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   pdfFileName: null,
   totalPages: 0,
   currentPage: 1,
-  scale: 1,
+  scale: loadInitialScale(),
   uploadProgress: 0,
 
   selectedWord: null,
@@ -885,6 +900,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   defaultListId: typeof window !== 'undefined' ? localStorage.getItem('word-list-default') : null,
   autoFlashcard: typeof window !== 'undefined' ? localStorage.getItem('word-list-auto-flashcard') !== 'false' : true,
   autoAddToList: typeof window !== 'undefined' ? localStorage.getItem('word-list-auto-add') === 'true' : false,
+  showReadingTimer: typeof window !== 'undefined' ? localStorage.getItem('show-reading-timer') !== 'false' : true,
 
   flashcards: [],
   showFlashcards: false,
@@ -956,7 +972,12 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   setPdfDataUrl: (url) => set({ pdfDataUrl: url }),
   setTotalPages: (pages) => set({ totalPages: pages }),
   setCurrentPage: (page) => set({ currentPage: page }),
-  setScale: (scale) => set({ scale }),
+  setScale: (scale) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(STORAGE_KEY_SCALE, String(scale));
+    }
+    set({ scale });
+  },
   setUploadProgress: (progress) => set({ uploadProgress: progress }),
 
   setSelectedWord: (word) => set({ selectedWord: word }),
@@ -1023,7 +1044,6 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       pdfFileName: null,
       totalPages: 0,
       currentPage: 1,
-      scale: 1,
       uploadProgress: 0,
       selectedWord: null,
       selectedSentence: null,
@@ -1310,6 +1330,10 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   setAutoAddToList: (on) => {
     if (typeof window !== 'undefined') localStorage.setItem('word-list-auto-add', String(on))
     set({ autoAddToList: on })
+  },
+  setShowReadingTimer: (show) => {
+    if (typeof window !== 'undefined') localStorage.setItem('show-reading-timer', String(show))
+    set({ showReadingTimer: show })
   },
 
   setFlashcards: (flashcards) => set({ flashcards }),
