@@ -135,6 +135,8 @@ interface PanelHeaderProps {
   icon?: React.ComponentType<{ className?: string }>
   iconClassName?: string
   title: ReactNode
+  /** Optional muted eyebrow above the title (e.g. "From the page"). */
+  eyebrow?: ReactNode
   badge?: ReactNode
   actions?: ReactNode
   onClose: () => void
@@ -145,16 +147,30 @@ export function PanelHeader({
   icon: Icon,
   iconClassName,
   title,
+  eyebrow,
   badge,
   actions,
   onClose,
   closeLabel = 'Close',
 }: PanelHeaderProps) {
   return (
-    <div className="flex items-center justify-between border-b px-4 py-3">
+    <div className="flex items-center justify-between gap-2 border-b border-border/40 bg-background/80 px-4 py-3 backdrop-blur-sm">
       <div className="flex min-w-0 items-center gap-2">
-        {Icon && <Icon className={cn('h-4 w-4 shrink-0', iconClassName ?? 'text-brand')} />}
-        <h2 className="truncate text-sm font-semibold text-foreground">{title}</h2>
+        {Icon && (
+          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl bg-brand-soft text-brand">
+            <Icon className={cn('h-4 w-4', iconClassName ?? 'text-brand')} />
+          </span>
+        )}
+        <div className="min-w-0">
+          {eyebrow && (
+            <p className="truncate text-[9px] font-semibold uppercase tracking-[0.16em] text-muted-foreground/70">
+              {eyebrow}
+            </p>
+          )}
+          <h2 className="truncate font-serif text-[15px] font-semibold leading-tight tracking-tight text-foreground">
+            {title}
+          </h2>
+        </div>
         {badge}
       </div>
       <div className="flex shrink-0 items-center gap-1">

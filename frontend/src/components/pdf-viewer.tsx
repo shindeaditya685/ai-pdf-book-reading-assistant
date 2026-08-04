@@ -858,15 +858,17 @@ export function PDFViewer() {
   const scrollToPage = useCallback(
     (page: number) => {
       clearSelection()
-      setCurrentPage(page)
-      if (scrollMode && containerRef.current) {
-        const target = containerRef.current.querySelector(`[data-page="${page}"]`)
-        if (target) {
-          ;(target as HTMLElement).scrollIntoView({ behavior: 'smooth', block: 'start' })
-        }
+      if (scrollMode && page !== currentPage) {
+        // Mute the IntersectionObserver during programmatic navigation. Without
+        // this, the observer snaps `currentPage` back to whatever intermediate
+        // page is most visible mid-scroll, so typing a page number only lands
+        // on the exact page the second time (once the target content is loaded).
+        // The `resumeScrollPageRef` layout effect below performs the exact scroll.
+        resumeScrollPageRef.current = page
       }
+      setCurrentPage(page)
     },
-    [scrollMode, setCurrentPage, clearSelection]
+    [scrollMode, setCurrentPage, clearSelection, currentPage]
   )
 
   // Local buffer for the page number input so the user can type freely

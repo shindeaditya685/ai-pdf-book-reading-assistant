@@ -5,8 +5,10 @@ import { motion, AnimatePresence } from 'framer-motion'
 import { Sparkles, AlertCircle, RefreshCw, FileText, Download, Check, Play, ChevronRight } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
+import { SectionLabel } from '@/components/panel-primitives'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
+import { cn } from '@/lib/utils'
 
 // Performance fix (P13): previously `import * as pdfjsLib from 'pdfjs-dist'`
 // was at module top level, pulling the entire pdfjs library into the
@@ -228,7 +230,8 @@ export function SummarizerPanel() {
       header={
         <PanelHeader
           icon={Sparkles}
-          title="AI Summarizer"
+          eyebrow="Reading aid"
+          title="Summarizer"
           onClose={() => setShowSummarizer(false)}
         />
       }
@@ -268,39 +271,38 @@ export function SummarizerPanel() {
             /* LOADING STATE */
             <div className="flex h-full flex-col items-center justify-center py-20 text-center space-y-4">
               <div className="relative">
-                <div className="h-12 w-12 rounded-full border-4 border-muted border-t-emerald-500 animate-spin" />
-                <Sparkles className="absolute inset-0 m-auto h-5 w-5 text-emerald-500 animate-pulse" />
+                <div className="h-12 w-12 rounded-full border-4 border-muted border-t-brand animate-spin" />
+                <Sparkles className="absolute inset-0 m-auto h-5 w-5 text-brand animate-pulse" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">AI Summary Active</h3>
+                <h3 className="font-serif text-sm font-semibold text-foreground">Reading the page</h3>
                 <p className="text-xs text-muted-foreground/75 mt-1 font-medium">{loadingStep}</p>
               </div>
             </div>
           ) : !summary && keyTakeaways.length === 0 ? (
             /* SETUP CONFIG SCREEN */
             <div className="space-y-4">
-              <div className="rounded-xl border border-border bg-muted/20 p-3.5 space-y-3.5">
-                {/* 1. Scope selection */}
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Select Scope</label>
-                  <div className="flex gap-1.5 mt-1.5">
-                    <button
-                      onClick={() => setScope('current')}
-                      className={`flex-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold border transition-colors ${
-                        scope === 'current' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      Current Page ({currentPage})
-                    </button>
-                    <button
-                      onClick={() => setScope('range')}
-                      className={`flex-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold border transition-colors ${
-                        scope === 'range' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      Custom Range
-                    </button>
-                  </div>
+              <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 space-y-3.5">
+                <SectionLabel>Select scope</SectionLabel>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setScope('current')}
+                    className={cn(
+                      'flex-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold border transition-colors',
+                      scope === 'current' ? 'bg-brand-soft border-brand/30 text-brand' : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    Current page ({currentPage})
+                  </button>
+                  <button
+                    onClick={() => setScope('range')}
+                    className={cn(
+                      'flex-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold border transition-colors',
+                      scope === 'range' ? 'bg-brand-soft border-brand/30 text-brand' : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    Custom range
+                  </button>
                 </div>
 
                 {/* Range inputs if scope is range */}
@@ -311,42 +313,42 @@ export function SummarizerPanel() {
                     className="flex gap-2 items-center pt-1"
                   >
                     <div className="flex-1">
-                      <label className="text-[9px] text-muted-foreground">Start Page</label>
+                      <label className="text-[9px] text-muted-foreground">Start page</label>
                       <input
                         type="number"
                         min={1}
                         max={totalPages}
                         value={startPage}
                         onChange={(e) => setStartPage(Math.min(totalPages, Math.max(1, Number(e.target.value) || 1)))}
-                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-emerald-500"
+                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-brand/50 focus:ring-1 focus:ring-brand/30"
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="text-[9px] text-muted-foreground">End Page</label>
+                      <label className="text-[9px] text-muted-foreground">End page</label>
                       <input
                         type="number"
                         min={startPage}
                         max={totalPages}
                         value={endPage}
                         onChange={(e) => setEndPage(Math.min(totalPages, Math.max(startPage, Number(e.target.value) || 1)))}
-                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-emerald-500"
+                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-brand/50 focus:ring-1 focus:ring-brand/30"
                       />
                     </div>
                   </motion.div>
                 )}
               </div>
 
-              {/* 2. Format Selection */}
-              <div className="rounded-xl border border-border bg-muted/20 p-3.5 space-y-3">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Summary Style</label>
+              <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 space-y-3">
+                <SectionLabel>Summary style</SectionLabel>
                 <div className="grid grid-cols-3 gap-1.5">
                   {(['bullets', 'concise', 'detailed'] as const).map((style) => (
                     <button
                       key={style}
                       onClick={() => setFormat(style)}
-                      className={`rounded-lg py-2 text-[10px] font-semibold border capitalize transition-colors ${
-                        format === style ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold' : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                      }`}
+                      className={cn(
+                        'rounded-lg py-2 text-[10px] font-semibold border transition-colors capitalize',
+                        format === style ? 'bg-brand-soft border-brand/30 text-brand' : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                      )}
                     >
                       {style === 'bullets' ? 'Bullets' : style === 'concise' ? 'Concise' : 'Detailed'}
                     </button>
@@ -354,14 +356,13 @@ export function SummarizerPanel() {
                 </div>
               </div>
 
-              {/* Action Button */}
               <button
                 onClick={handleSummarize}
                 disabled={!pdfFileName}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 py-3 text-sm font-semibold text-white hover:from-emerald-600 hover:to-teal-600 shadow-md shadow-emerald-500/10 active:scale-[0.98] disabled:opacity-50 transition-all"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand py-3 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
               >
-                <Play className="h-4 w-4 fill-white" />
-                Generate Summary
+                <Play className="h-4 w-4 fill-current" />
+                Generate summary
               </button>
             </div>
           ) : (
@@ -369,12 +370,12 @@ export function SummarizerPanel() {
             <div className="space-y-4 pb-6 animate-fade-in">
               {/* Summary Paragraph */}
               {summary && (
-                <div className="rounded-xl border border-border bg-background p-3.5 shadow-sm space-y-2">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
-                    <FileText className="h-3.5 w-3.5 text-emerald-500" />
+                <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 space-y-2">
+                  <span className="flex items-center gap-1.5 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    <FileText className="h-3.5 w-3.5 text-brand" />
                     Overview
                   </span>
-                  <p className="text-xs text-foreground/80 leading-relaxed font-medium">
+                  <p className="font-serif text-[13px] leading-relaxed text-foreground/90">
                     {summary}
                   </p>
                 </div>
@@ -382,9 +383,9 @@ export function SummarizerPanel() {
 
               {/* Key Takeaways revision lists */}
               {keyTakeaways.length > 0 && (
-                <div className="rounded-xl border border-border bg-background p-3.5 shadow-sm space-y-2.5">
-                  <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground block">
-                    Key Takeaways & Revision Notes
+                <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 space-y-2.5">
+                  <span className="block text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+                    Key takeaways & revision notes
                   </span>
                   <div className="space-y-2">
                     {keyTakeaways.map((point, index) => {
@@ -396,9 +397,9 @@ export function SummarizerPanel() {
                           className="flex items-start gap-2.5 group cursor-pointer"
                         >
                           <div className={`mt-0.5 h-4 w-4 shrink-0 rounded border flex items-center justify-center transition-all ${
-                            isChecked ? 'bg-emerald-500 border-emerald-500' : 'border-border bg-background group-hover:border-emerald-500'
+                            isChecked ? 'bg-brand border-brand' : 'border-border bg-background group-hover:border-brand/60'
                           }`}>
-                            {isChecked && <Check className="h-3 w-3 text-white stroke-[3px]" />}
+                            {isChecked && <Check className="h-3 w-3 text-brand-fg stroke-[3px]" />}
                           </div>
                           <span className={`text-[11px] leading-relaxed transition-all select-none ${
                             isChecked ? 'text-muted-foreground/50 line-through' : 'text-muted-foreground group-hover:text-foreground'
@@ -413,17 +414,17 @@ export function SummarizerPanel() {
               )}
 
               {/* Action Buttons */}
-              <div className="flex gap-2 border-t border-border/60 pt-4">
+              <div className="flex gap-2 border-t border-border/40 pt-4">
                 <button
                   onClick={handleReset}
                   className="flex-1 flex items-center justify-center gap-1.5 rounded-lg border border-border bg-background py-2 text-xs font-semibold text-foreground hover:bg-muted/50 transition-colors"
                 >
                   <RefreshCw className="h-3.5 w-3.5" />
-                  New Summary
+                  New summary
                 </button>
                 <button
                   onClick={handleExportMarkdown}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500 py-2 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-brand py-2 text-xs font-semibold text-brand-fg transition-opacity hover:opacity-90"
                 >
                   <Download className="h-3.5 w-3.5" />
                   Export .MD

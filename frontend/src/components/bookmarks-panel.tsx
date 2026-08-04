@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback, useState } from 'react'
-import { X, Bookmark, Trash2, BookOpen, Download, Plus, Loader2, Check } from 'lucide-react'
+import { X, Bookmark, Trash2, Download, Plus, Loader2, Check } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
+import { CountBadge, EmptyState, PillTabs, SectionLabel, MemberAvatar } from '@/components/panel-primitives'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 import { useAuth } from '@/context/auth-context'
@@ -192,12 +193,12 @@ export function BookmarksPanel() {
       header={
         <PanelHeader
           icon={Bookmark}
-          iconClassName="text-amber-500"
-          title="Bookmarks"
+          eyebrow="From the page"
+          title="Saved Words"
           badge={
-            <span className="text-[10px] text-muted-foreground">
-              ({shareSession ? bookmarks.length + sharedBookmarks.length : bookmarks.length})
-            </span>
+            <CountBadge
+              count={shareSession ? bookmarks.length + sharedBookmarks.length : bookmarks.length}
+            />
           }
           actions={
             bookmarks.length > 0 ? (
@@ -218,85 +219,75 @@ export function BookmarksPanel() {
       }
     >
       {shareSession && (
-        <div className="mx-4 mt-3 flex gap-0.5 rounded-lg bg-muted/40 p-0.5">
-          <button
-            onClick={() => setSubTab('personal')}
-            className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
-              subTab === 'personal' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            My Bookmarks ({bookmarks.length})
-          </button>
-          <button
-            onClick={() => setSubTab('shared')}
-            className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
-              subTab === 'shared' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Session ({sharedBookmarks.length})
-          </button>
+        <div className="px-4 pt-3">
+          <PillTabs
+            value={subTab}
+            onChange={(v) => setSubTab(v as 'personal' | 'shared')}
+            tabs={[
+              { value: 'personal', label: 'Mine', count: bookmarks.length },
+              { value: 'shared', label: 'Circle', count: sharedBookmarks.length },
+            ]}
+          />
         </div>
       )}
 
       {(!shareSession || subTab === 'personal') ? (
         bookmarks.length === 0 ? (
-          <div className="flex h-full items-center justify-center p-8 text-center">
-            <div>
-              <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/30" />
-              <p className="mt-3 text-sm text-muted-foreground">
-                No bookmarks yet
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground/60">
-                Bookmark pages to quickly jump back to them
-              </p>
-            </div>
+          <div className="p-4">
+            <EmptyState
+              icon={Bookmark}
+              title="No saved words yet"
+              hint="Bookmark a word in the reader to keep it here for review."
+            />
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="space-y-2.5 p-4">
             {[...bookmarks]
               .filter((b) => !pdfFileName || b.pdfFileName === pdfFileName)
               .sort((a, b) => a.timestamp - b.timestamp)
               .map((bm) => (
                 <div
                   key={bm.id}
-                  className="group relative px-4 py-3 transition-colors hover:bg-muted/30"
+                  className="group relative rounded-xl border border-border/60 bg-card/60 p-3 transition-colors hover:border-brand/25 hover:bg-card"
                 >
-                  <div className="flex items-start justify-between">
+                  <div className="flex items-start justify-between gap-2">
                     <button
-                      className="flex-1 text-left"
+                      className="min-w-0 flex-1 text-left"
                       onClick={() => {
                         handleGoToPage(bm.pageNumber)
                         handleOpenWordPopup(bm)
                       }}
                     >
-                      <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                      <span className="block truncate font-serif text-[17px] font-semibold leading-tight text-brand">
                         {bm.word}
                       </span>
-                      <span className="ml-2 text-[10px] text-muted-foreground">
-                        Page {bm.pageNumber}
+                      <span className="mt-1 flex flex-wrap items-center gap-x-2 gap-y-0.5 font-mono text-[10px] text-muted-foreground/70 tabular-nums">
+                        <span>p.{bm.pageNumber}</span>
+                        {bm.pronunciation && (
+                          <span className="font-sans italic text-muted-foreground/60">
+                            / {bm.pronunciation}
+                          </span>
+                        )}
                       </span>
-                      {bm.pronunciation && (
-                        <span className="ml-2 text-[10px] italic text-muted-foreground">
-                          {bm.pronunciation}
-                        </span>
-                      )}
                     </button>
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500"
+                      className="h-6 w-6 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
                       onClick={() => handleDeleteBookmark(bm.id)}
                       aria-label="Delete bookmark"
                     >
                       <Trash2 className="h-3 w-3" />
                     </Button>
                   </div>
-                  <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
-                    {bm.meaning}
-                  </p>
+                  {bm.meaning && (
+                    <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+                      {bm.meaning}
+                    </p>
+                  )}
                   {bm.translation && (
-                    <p className="mt-0.5 text-[10px] text-emerald-600 dark:text-emerald-400">
-                      {bm.translation}
+                    <p className="mt-1 text-[10px] font-medium text-muted-foreground/70">
+                      → {bm.translation}
                     </p>
                   )}
                 </div>
@@ -305,19 +296,15 @@ export function BookmarksPanel() {
         )
       ) : (
         sharedBookmarks.length === 0 ? (
-          <div className="flex h-full items-center justify-center p-8 text-center">
-            <div>
-              <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/30" />
-              <p className="mt-3 text-sm text-muted-foreground">
-                No session bookmarks yet
-              </p>
-              <p className="mt-1 text-xs text-muted-foreground/60">
-                Bookmarks added by group members will appear here
-              </p>
-            </div>
+          <div className="p-4">
+            <EmptyState
+              icon={Bookmark}
+              title="Nothing from the circle yet"
+              hint="Words your group saves will appear here with their reader's ink."
+            />
           </div>
         ) : (
-          <div className="divide-y">
+          <div className="space-y-2.5 p-4">
             {[...sharedBookmarks]
               .sort((a, b) => new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime())
               .map((bm) => {
@@ -329,33 +316,37 @@ export function BookmarksPanel() {
                 return (
                   <div
                     key={bm.bookmarkId}
-                    className="group relative px-4 py-3 transition-colors hover:bg-muted/30"
+                    className="group relative rounded-xl border border-border/60 bg-card/60 p-3"
+                    style={{ borderLeft: `3px solid ${authorColor}` }}
                   >
                     <div className="flex items-start justify-between gap-2">
                       <button
-                        className="flex-1 text-left min-w-0"
+                        className="min-w-0 flex-1 text-left"
                         onClick={() => {
                           handleGoToPage(bm.pageNumber)
                           handleOpenWordPopup(bm)
                         }}
                       >
-                        <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400 truncate block">
+                        <span className="block truncate font-serif text-[17px] font-semibold leading-tight" style={{ color: authorColor }}>
                           {bm.word}
                         </span>
-                        <span className="text-[10px] text-muted-foreground block mt-0.5">
-                          Page {bm.pageNumber} {bm.pronunciation && `· ${bm.pronunciation}`}
-                        </span>
-                        <div className="flex items-center gap-1.5 mt-1 text-[10px]">
-                          <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: authorColor }} />
-                          <span style={{ color: authorColor }} className="font-semibold">
+                        <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground/70">
+                          <span className="font-mono tabular-nums">p.{bm.pageNumber}</span>
+                          {bm.pronunciation && (
+                            <span className="italic text-muted-foreground/60">{bm.pronunciation}</span>
+                          )}
+                        </div>
+                        <div className="mt-1.5 flex items-center gap-1.5 text-[10px]">
+                          <MemberAvatar name={bm.author} color={authorColor} size={15} />
+                          <span className="font-semibold" style={{ color: authorColor }}>
                             {bm.author} {bm.author === user?.username && '(you)'}
                           </span>
                         </div>
                       </button>
 
-                      <div className="flex items-center gap-1 shrink-0">
+                      <div className="flex shrink-0 items-center gap-1">
                         {inPersonalBookmarks ? (
-                          <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">
+                          <span className="inline-flex items-center gap-0.5 rounded-full bg-brand-soft px-1.5 py-0.5 text-[9px] font-semibold text-brand">
                             <Check className="h-2.5 w-2.5" />
                             Saved
                           </span>
@@ -380,7 +371,7 @@ export function BookmarksPanel() {
                           <Button
                             variant="ghost"
                             size="icon"
-                            className="h-6 w-6 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                            className="h-6 w-6 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
                             onClick={() => handleDeleteSharedBookmark(bm.bookmarkId)}
                             aria-label="Delete shared bookmark"
                           >
@@ -390,13 +381,13 @@ export function BookmarksPanel() {
                       </div>
                     </div>
                     {bm.meaning && (
-                      <p className="mt-1 text-xs text-muted-foreground line-clamp-2">
+                      <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                         {bm.meaning}
                       </p>
                     )}
                     {bm.translation && (
-                      <p className="mt-0.5 text-[10px] text-emerald-600 dark:text-emerald-400">
-                        {bm.translation}
+                      <p className="mt-1 text-[10px] font-medium text-muted-foreground/70">
+                        → {bm.translation}
                       </p>
                     )}
                   </div>

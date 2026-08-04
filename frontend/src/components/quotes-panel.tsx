@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Quote as QuoteIcon, Trash2, BookOpen, Loader2, MessageSquarePlus, Search, X, Check, Sparkles, Plus, Image as ImageIcon } from 'lucide-react'
+import { Quote as QuoteIcon, Trash2, Loader2, MessageSquarePlus, Search, X, Check, Sparkles, Plus, Image as ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
+import { CountBadge, EmptyState, PillTabs, MemberAvatar } from '@/components/panel-primitives'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 import { useAuth } from '@/context/auth-context'
@@ -180,12 +181,12 @@ export function QuotesPanel() {
       header={
         <PanelHeader
           icon={QuoteIcon}
-          iconClassName="text-yellow-500"
+          eyebrow="From the page"
           title="Saved Quotes"
           badge={
-            <span className="text-[10px] text-muted-foreground">
-              ({shareSession ? visibleQuotes.length + sharedQuotes.filter((q) => !pdfFileName || q.pdfFileName === pdfFileName).length : visibleQuotes.length})
-            </span>
+            <CountBadge
+              count={shareSession ? visibleQuotes.length + sharedQuotes.filter((q) => !pdfFileName || q.pdfFileName === pdfFileName).length : visibleQuotes.length}
+            />
           }
           onClose={() => setShowQuotes(false)}
         />
@@ -202,7 +203,7 @@ export function QuotesPanel() {
             >
               <div className="flex items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-xs">
-                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-yellow-500 text-white">
+                  <div className="flex h-6 w-6 items-center justify-center rounded-full bg-brand text-brand-fg">
                     <Check className="h-3.5 w-3.5" />
                   </div>
                   <span className="font-semibold text-foreground">
@@ -220,7 +221,7 @@ export function QuotesPanel() {
                   </Button>
                   <Button
                     size="sm"
-                    className="h-9 gap-1.5 bg-yellow-500 text-xs font-semibold text-white hover:bg-yellow-600"
+                    className="h-9 gap-1.5 bg-brand text-xs font-semibold text-brand-fg hover:opacity-90"
                     onClick={handleCreateChat}
                     disabled={creating}
                   >
@@ -247,7 +248,7 @@ export function QuotesPanel() {
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Search quotes, notes, or context"
-              className="h-9 w-full rounded-lg border border-border/50 bg-muted/40 pl-8 pr-8 text-sm placeholder:text-muted-foreground/60 focus:border-yellow-500/50 focus:outline-none focus:ring-1 focus:ring-yellow-500/30"
+              className="h-9 w-full rounded-lg border border-border/50 bg-muted/40 pl-8 pr-8 text-sm placeholder:text-muted-foreground/60 focus:border-brand/50 focus:outline-none focus:ring-1 focus:ring-brand/30"
             />
             {search && (
               <button
@@ -265,7 +266,7 @@ export function QuotesPanel() {
               {pdfFileName ? `In "${pdfFileName}"` : 'Across all books'}
             </span>
             {selectedCount > 0 && (
-              <span className="font-semibold text-yellow-600">
+              <span className="font-semibold text-brand">
                 {selectedCount} selected
               </span>
             )}
@@ -273,62 +274,52 @@ export function QuotesPanel() {
         </div>
 
         {shareSession && (
-          <div className="mx-4 mt-3 flex gap-0.5 rounded-lg bg-muted/40 p-0.5">
-            <button
-              onClick={() => setSubTab('personal')}
-              className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
-                subTab === 'personal' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              My Quotes ({visibleQuotes.length})
-            </button>
-            <button
-              onClick={() => setSubTab('shared')}
-              className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
-                subTab === 'shared' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-              }`}
-            >
-              Session ({sharedQuotes.filter((q) => !pdfFileName || q.pdfFileName === pdfFileName).length})
-            </button>
+          <div className="px-4 pt-3">
+            <PillTabs
+              value={subTab}
+              onChange={(v) => setSubTab(v as 'personal' | 'shared')}
+              tabs={[
+                { value: 'personal', label: 'Mine', count: visibleQuotes.length },
+                { value: 'shared', label: 'Circle', count: sharedQuotes.filter((q) => !pdfFileName || q.pdfFileName === pdfFileName).length },
+              ]}
+            />
           </div>
         )}
 
         {(!shareSession || subTab === 'personal') ? (
           visibleQuotes.length === 0 ? (
-            <div className="flex flex-1 items-center justify-center p-8 text-center">
-              <div>
-                <QuoteIcon className="mx-auto h-8 w-8 text-muted-foreground/30" />
-                <p className="mt-3 text-sm text-muted-foreground">
-                  {search ? 'No quotes match your search' : 'No quotes saved yet'}
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground/60">
-                  Open a quote in the word popup and tap the quote icon to save it
-                </p>
-              </div>
+            <div className="flex-1 p-4">
+              <EmptyState
+                icon={QuoteIcon}
+                title={search ? 'No quotes match your search' : 'No quotes saved yet'}
+                hint="Select a passage in the reader and save it as a quote."
+              />
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 space-y-2.5 overflow-y-auto p-4">
               {visibleQuotes.map((q) => {
                 const isSelected = selected.has(q.id)
                 return (
                   <div
                     key={q.id}
-                    className={`group relative cursor-pointer border-b px-3 py-3 transition-colors ${
-                      isSelected ? 'bg-yellow-50 dark:bg-yellow-950/20' : 'hover:bg-muted/30'
+                    className={`group relative cursor-pointer rounded-xl border p-3 transition-colors ${
+                      isSelected
+                        ? 'border-brand/40 bg-brand-soft/40'
+                        : 'border-border/60 bg-card/60 hover:border-brand/25 hover:bg-card'
                     }`}
                     onClick={() => toggleSelected(q.id)}
                   >
-                    <div className="flex items-start gap-2">
+                    <div className="flex items-start gap-2.5">
                       <button
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation()
                           toggleSelected(q.id)
                         }}
-                        className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
+                        className={`mt-1 flex h-5 w-5 shrink-0 items-center justify-center rounded-md border transition-colors ${
                           isSelected
-                            ? 'border-yellow-500 bg-yellow-500 text-white'
-                            : 'border-border/60 bg-background/50 text-transparent group-hover:border-yellow-500/50'
+                            ? 'border-brand bg-brand text-brand-fg'
+                            : 'border-border/60 bg-background/50 text-transparent group-hover:border-brand/50'
                         }`}
                         aria-pressed={isSelected}
                         aria-label={isSelected ? 'Deselect quote' : 'Select quote'}
@@ -336,26 +327,27 @@ export function QuotesPanel() {
                         <Check className="h-3 w-3" />
                       </button>
                       <div className="min-w-0 flex-1">
-                        <p className="text-sm leading-relaxed text-foreground line-clamp-4">
+                        <p className="font-serif text-[15px] leading-snug text-foreground line-clamp-4">
                           &ldquo;{q.text}&rdquo;
                         </p>
                         {q.noteText && (
                           <p className="mt-1.5 text-xs italic text-muted-foreground line-clamp-2">
-                            Note: {q.noteText}
+                            {q.noteText}
                           </p>
                         )}
-                        <div className="mt-2 flex items-center gap-2 text-[10px] text-muted-foreground">
-                          <BookOpen className="h-3 w-3 shrink-0" />
-                          <span className="truncate">{q.pdfFileName}</span>
+                        <div className="mt-2 flex items-center gap-2 font-mono text-[10px] text-muted-foreground/70 tabular-nums">
+                          <span className="max-w-[180px] truncate font-sans text-muted-foreground/80">
+                            {q.pdfFileName}
+                          </span>
                           <span>·</span>
-                          <span>Page {q.pageNumber || '?'}</span>
+                          <span>p.{q.pageNumber || '?'}</span>
                         </div>
                       </div>
                       <div className="flex shrink-0 items-center gap-0.5">
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-yellow-600"
+                          className="h-7 w-7 text-muted-foreground hover:text-brand"
                           onClick={(e) => { e.stopPropagation(); setCardQuote(q) }}
                           aria-label="Generate quote card"
                         >
@@ -364,7 +356,7 @@ export function QuotesPanel() {
                         <Button
                           variant="ghost"
                           size="icon"
-                          className="h-7 w-7 text-muted-foreground hover:text-red-500"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
                           onClick={(e) => {
                             e.stopPropagation()
                             handleDelete(q.id)
@@ -387,19 +379,15 @@ export function QuotesPanel() {
           )
         ) : (
           sharedQuotes.filter((q) => !pdfFileName || q.pdfFileName === pdfFileName).length === 0 ? (
-            <div className="flex flex-1 items-center justify-center p-8 text-center">
-              <div>
-                <QuoteIcon className="mx-auto h-8 w-8 text-muted-foreground/30" />
-                <p className="mt-3 text-sm text-muted-foreground">
-                  No session quotes yet
-                </p>
-                <p className="mt-1 text-xs text-muted-foreground/60">
-                  Quotes added by group members will appear here
-                </p>
-              </div>
+            <div className="flex-1 p-4">
+              <EmptyState
+                icon={QuoteIcon}
+                title="Nothing from the circle yet"
+                hint="Quotes your group saves will appear here with their reader's ink."
+              />
             </div>
           ) : (
-            <div className="flex-1 overflow-y-auto">
+            <div className="flex-1 space-y-2.5 overflow-y-auto p-4">
               {[...sharedQuotes]
                 .filter((q) => !pdfFileName || q.pdfFileName === pdfFileName)
                 .sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime())
@@ -412,28 +400,31 @@ export function QuotesPanel() {
                   return (
                     <div
                       key={q.quoteId}
-                      className="group relative border-b px-4 py-3 transition-colors hover:bg-muted/30"
+                      className="group relative rounded-xl border border-border/60 bg-card/60 p-3"
+                      style={{ borderLeft: `3px solid ${authorColor}` }}
                     >
                       <div className="flex items-start justify-between gap-2">
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <div className="h-2 w-2 rounded-full" style={{ backgroundColor: authorColor }} />
+                        <div className="min-w-0 flex-1">
+                          <div className="mb-1.5 flex items-center gap-2">
+                            <MemberAvatar name={q.author} color={authorColor} size={16} />
                             <span className="text-xs font-semibold" style={{ color: authorColor }}>
                               {q.author} {q.author === user?.username && '(you)'}
                             </span>
-                            <span className="text-[10px] text-muted-foreground/50 ml-auto">Pg {q.pageNumber}</span>
+                            <span className="ml-auto font-mono text-[10px] text-muted-foreground/50 tabular-nums">
+                              p.{q.pageNumber}
+                            </span>
                           </div>
-                          <p className="text-sm leading-relaxed text-foreground line-clamp-4">
+                          <p className="font-serif text-[15px] leading-snug text-foreground line-clamp-4">
                             &ldquo;{q.text}&rdquo;
                           </p>
                           {q.noteText && (
-                            <p className="mt-1 text-xs italic text-muted-foreground line-clamp-2">Note: {q.noteText}</p>
+                            <p className="mt-1 text-xs italic text-muted-foreground line-clamp-2">{q.noteText}</p>
                           )}
                         </div>
 
-                        <div className="flex items-center gap-1 shrink-0 mt-6">
+                        <div className="flex shrink-0 items-center gap-1">
                           {inPersonal ? (
-                            <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">
+                            <span className="inline-flex items-center gap-0.5 rounded-full bg-brand-soft px-1.5 py-0.5 text-[9px] font-semibold text-brand">
                               <Check className="h-2.5 w-2.5" />
                               Saved
                             </span>
@@ -458,7 +449,7 @@ export function QuotesPanel() {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="h-6 w-6 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                              className="h-6 w-6 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
                               onClick={() => handleDeleteSharedQuote(q.quoteId)}
                               aria-label="Delete shared quote"
                             >

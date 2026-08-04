@@ -184,37 +184,75 @@ export function PdfPage({
     const textLayer = textLayerRef.current
     if (!textLayer) return
 
-    const spans = textLayer.querySelectorAll('span')
-    
     // Clear previous highlights
-    spans.forEach((span) => {
-      if (span.dataset.isBookmarked) {
-        delete span.dataset.isBookmarked
-        span.style.backgroundColor = ''
-        span.style.boxShadow = ''
-        span.style.borderRadius = ''
-      }
+    textLayer.querySelectorAll('mark[data-is-bookmarked]').forEach((mark) => {
+      mark.replaceWith(document.createTextNode(mark.textContent || ''))
     })
 
     if (bookmarksList.length === 0) return
 
-    spans.forEach((span) => {
-      const spanText = (span.textContent || '').trim().toLowerCase()
-      if (!spanText) return
+    const words = bookmarksList
+      .map((b) => (b.word || '').trim().toLowerCase())
+      .filter((w) => w.length >= 2)
+    if (words.length === 0) return
 
-      const isMatch = bookmarksList.some((b) => {
-        const cleanWord = b.word.trim().toLowerCase()
-        if (cleanWord.length < 2) return false
-        return spanText.includes(cleanWord)
-      })
+    // Walk every text node in the layer (spans often hold a whole line, so we
+    // must highlight just the word, not the entire line / span).
+    const walker = document.createTreeWalker(textLayer, NodeFilter.SHOW_TEXT)
+    const textNodes: Text[] = []
+    while (walker.nextNode()) {
+      const node = walker.currentNode as Text
+      if (node.nodeValue && node.nodeValue.trim()) textNodes.push(node)
+    }
 
-      if (isMatch) {
-        span.dataset.isBookmarked = 'true'
-        span.style.backgroundColor = 'var(--brand-soft)'
-        span.style.borderRadius = '2px'
-        span.style.boxShadow = '0 0 0 1px var(--brand-soft)'
+    for (const node of textNodes) {
+      const text = node.nodeValue!
+      const lower = text.toLowerCase()
+
+      // Collect [start, end) ranges for every standalone occurrence of every word
+      const ranges: Array<[number, number]> = []
+      for (const word of words) {
+        let idx = lower.indexOf(word)
+        while (idx !== -1) {
+          const before = text[idx - 1]
+          const after = text[idx + word.length]
+          const standalone =
+            (!before || !/[A-Za-z0-9]/.test(before)) &&
+            (!after || !/[A-Za-z0-9]/.test(after))
+          if (standalone) ranges.push([idx, idx + word.length])
+          idx = lower.indexOf(word, idx + 1)
+        }
       }
-    })
+      if (ranges.length === 0) continue
+
+      // Merge overlapping / adjacent ranges
+      ranges.sort((a, b) => a[0] - b[0])
+      const merged: Array<[number, number]> = []
+      for (const range of ranges) {
+        const last = merged[merged.length - 1]
+        if (last && range[0] <= last[1]) last[1] = Math.max(last[1], range[1])
+        else merged.push(range)
+      }
+
+      // Wrap only the matched words in <mark>, leaving the rest of the line alone
+      const parent = node.parentNode
+      if (!parent) continue
+      const fragment = document.createDocumentFragment()
+      let pos = 0
+      for (const [start, end] of merged) {
+        if (start > pos) fragment.appendChild(document.createTextNode(text.slice(pos, start)))
+        const mark = document.createElement('mark')
+        mark.dataset.isBookmarked = 'true'
+        mark.textContent = text.slice(start, end)
+        mark.style.backgroundColor = 'var(--brand-soft)'
+        mark.style.borderRadius = '2px'
+        mark.style.boxShadow = '0 0 0 1px var(--brand-soft)'
+        fragment.appendChild(mark)
+        pos = end
+      }
+      if (pos < text.length) fragment.appendChild(document.createTextNode(text.slice(pos)))
+      parent.replaceChild(fragment, node)
+    }
   }, [])
 
   // Render the page

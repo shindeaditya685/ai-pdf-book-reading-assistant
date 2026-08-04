@@ -6,7 +6,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Brain,
-  BookOpen,
   RotateCcw,
   Loader2,
   Sparkles,
@@ -19,6 +18,7 @@ import {
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
+import { CountBadge, EmptyState, PillTabs, StatBadge, MemberAvatar } from '@/components/panel-primitives'
 import { usePDFStore, type Flashcard } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 import { useAuth } from '@/context/auth-context'
@@ -242,61 +242,39 @@ export function FlashcardReview() {
       header={
         <PanelHeader
           icon={Brain}
-          iconClassName="text-violet-500"
+          eyebrow="Space-repetition deck"
           title="Flashcards"
           badge={
-            <span className="text-[10px] text-muted-foreground">
-              {shareSession ? flashcards.length + sharedFlashcards.length : flashcards.length}
-            </span>
+            <CountBadge count={shareSession ? flashcards.length + sharedFlashcards.length : flashcards.length} />
           }
           onClose={() => setShowFlashcards(false)}
         />
       }
     >
       {shareSession && (
-        <div className="mx-4 mt-3 flex gap-0.5 rounded-lg bg-muted/40 p-0.5">
-          <button
-            onClick={() => setSubTab('personal')}
-            className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
-              subTab === 'personal' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            My Cards ({flashcards.length})
-          </button>
-          <button
-            onClick={() => setSubTab('shared')}
-            className={`flex-1 rounded-md py-1.5 text-xs font-semibold transition-colors ${
-              subTab === 'shared' ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Session ({sharedFlashcards.length})
-          </button>
+        <div className="px-4 pt-3">
+          <PillTabs
+            value={subTab}
+            onChange={(v) => setSubTab(v as 'personal' | 'shared')}
+            tabs={[
+              { value: 'personal', label: 'Mine', count: flashcards.length },
+              { value: 'shared', label: 'Circle', count: sharedFlashcards.length },
+            ]}
+          />
         </div>
       )}
 
       {(!shareSession || subTab === 'personal') && (
-        <div className="flex items-center gap-2 border-b px-4 py-2">
-          <button
-            onClick={() => { setFilterMode('due'); setCurrentIndex(0); setIsFlipped(false); setSessionComplete(false) }}
-            className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold transition-colors ${
-              filterMode === 'due'
-                ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            Due ({dueCount})
-          </button>
-          <button
-            onClick={() => { setFilterMode('all'); setCurrentIndex(0); setIsFlipped(false); setSessionComplete(false) }}
-            className={`rounded-lg px-2.5 py-1 text-[10px] font-semibold transition-colors ${
-              filterMode === 'all'
-                ? 'bg-violet-100 text-violet-700 dark:bg-violet-900/30 dark:text-violet-300'
-                : 'text-muted-foreground hover:text-foreground'
-            }`}
-          >
-            All ({flashcards.length})
-          </button>
-          {isLoadingCards && <Loader2 className="ml-auto h-3 w-3 animate-spin text-muted-foreground" />}
+        <div className="px-4 pb-1 pt-3">
+          <PillTabs
+            value={filterMode}
+            onChange={(v) => { setFilterMode(v as 'all' | 'due'); setCurrentIndex(0); setIsFlipped(false); setSessionComplete(false) }}
+            tabs={[
+              { value: 'due', label: 'Due', count: dueCount },
+              { value: 'all', label: 'All', count: flashcards.length },
+            ]}
+          />
+          {isLoadingCards && <Loader2 className="mt-2 h-3 w-3 animate-spin text-muted-foreground" />}
         </div>
       )}
 
@@ -304,30 +282,28 @@ export function FlashcardReview() {
           {(!shareSession || subTab === 'personal') ? (
             isLoadingCards ? (
               <div className="flex h-full items-center justify-center">
-                <Loader2 className="h-5 w-5 animate-spin text-violet-500" />
+                <Loader2 className="h-5 w-5 animate-spin text-brand" />
               </div>
             ) : flashcards.length === 0 ? (
-              <div className="flex h-full items-center justify-center p-6 text-center">
-                <div>
-                  <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/30" />
-                  <p className="mt-3 text-sm text-muted-foreground">No flashcards yet</p>
-                  <p className="mt-1 text-xs text-muted-foreground/60">
-                    Bookmark a word, then create a flashcard from the popup
-                  </p>
-                </div>
+              <div className="p-4">
+                <EmptyState
+                  icon={Brain}
+                  title="No flashcards yet"
+                  hint="Save a word in the reader, then create a card from the popup."
+                />
               </div>
             ) : filteredCards.length === 0 && !sessionComplete ? (
-              <div className="flex h-full items-center justify-center p-6 text-center">
-                <div>
-                  <CheckCircle2 className="mx-auto h-8 w-8 text-emerald-500" />
-                  <p className="mt-3 text-sm font-medium text-foreground">All caught up!</p>
-                  <p className="mt-1 text-xs text-muted-foreground/60">
-                    No due cards right now. Check back later.
-                  </p>
+              <div className="p-4">
+                <EmptyState
+                  icon={CheckCircle2}
+                  title="All caught up"
+                  hint="No cards are due right now. Check back later, or browse the whole deck."
+                />
+                <div className="mt-3 flex justify-center">
                   <Button
                     variant="outline"
                     size="sm"
-                    className="mt-4 h-8 gap-1.5 text-xs"
+                    className="h-8 gap-1.5 text-xs"
                     onClick={() => setFilterMode('all')}
                   >
                     <BarChart3 className="h-3 w-3" />
@@ -402,11 +378,11 @@ export function FlashcardReview() {
                         className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border bg-background p-6 shadow-lg"
                         style={{ backfaceVisibility: 'hidden' }}
                       >
-                        <p className="text-center text-2xl font-bold text-foreground">
+                        <p className="text-center font-serif text-2xl font-semibold tracking-tight text-foreground">
                           {currentCard.word}
                         </p>
                         {currentCard.partOfSpeech && (
-                          <span className="mt-2 inline-block rounded-full bg-orange-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-orange-700 dark:bg-orange-950/40 dark:text-orange-400">
+                          <span className="mt-2 inline-block rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                             {currentCard.partOfSpeech}
                           </span>
                         )}
@@ -420,7 +396,8 @@ export function FlashcardReview() {
                                 speechSynthesis.cancel()
                                 speechSynthesis.speak(utterance)
                               }}
-                              className="text-emerald-500 hover:text-emerald-600 transition-colors"
+                              className="text-brand transition-opacity hover:opacity-80"
+                              aria-label="Hear pronunciation"
                             >
                               <Volume2 className="h-3.5 w-3.5" />
                             </button>
@@ -436,10 +413,10 @@ export function FlashcardReview() {
 
                       {/* Back */}
                       <div
-                        className="absolute inset-0 overflow-y-auto rounded-2xl border bg-background p-5 shadow-lg"
+                        className="absolute inset-0 overflow-y-auto rounded-2xl border bg-background p-5 shadow-lg panel-scrollbar"
                         style={{ backfaceVisibility: 'hidden', transform: 'rotateY(180deg)' }}
                       >
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
                           Meaning
                         </p>
                         <p className="mt-1 text-sm leading-relaxed text-foreground">
@@ -447,8 +424,8 @@ export function FlashcardReview() {
                         </p>
 
                         {currentCard.translation && (
-                          <div className="mt-3 rounded-lg bg-emerald-50 p-2.5 dark:bg-emerald-950/20">
-                            <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                          <div className="mt-3 rounded-lg bg-brand-soft/50 p-2.5">
+                            <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand">
                               Translation
                             </p>
                             <p className="mt-0.5 text-sm font-medium text-foreground">
@@ -532,7 +509,7 @@ export function FlashcardReview() {
                       ))}
                       <button
                         onClick={handleDeleteCard}
-                        className="col-span-2 rounded-lg py-1.5 text-[10px] text-muted-foreground/50 hover:text-red-500 transition-colors"
+                        className="col-span-2 rounded-lg py-1.5 text-[10px] text-muted-foreground/50 hover:text-destructive transition-colors"
                       >
                         Delete this card
                       </button>
@@ -553,17 +530,15 @@ export function FlashcardReview() {
             ) : null
           ) : (
             sharedFlashcards.length === 0 ? (
-              <div className="flex h-full items-center justify-center p-6 text-center">
-                <div>
-                  <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/30" />
-                  <p className="mt-3 text-sm text-muted-foreground">No session flashcards yet</p>
-                  <p className="mt-1 text-xs text-muted-foreground/60">
-                    Flashcards created by group members will appear here
-                  </p>
-                </div>
+              <div className="p-4">
+                <EmptyState
+                  icon={Brain}
+                  title="Nothing from the circle yet"
+                  hint="Cards your group creates will appear here with their reader's ink."
+                />
               </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2.5 p-4">
                 {[...sharedFlashcards]
                   .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
                   .map((fc) => {
@@ -573,27 +548,29 @@ export function FlashcardReview() {
                     const isImporting = importingCardId === fc.flashcardId
 
                     return (
-                      <div key={fc.flashcardId} className="rounded-xl border border-border/60 bg-muted/10 p-3.5 relative group">
+                      <div key={fc.flashcardId} className="relative rounded-xl border border-border/60 bg-card/60 p-3.5" style={{ borderLeft: `3px solid ${authorColor}` }}>
                         <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <span className="text-base font-bold text-foreground">{fc.word}</span>
+                          <div className="min-w-0">
+                            <span className="block truncate font-serif text-base font-semibold leading-tight" style={{ color: authorColor }}>
+                              {fc.word}
+                            </span>
                             {fc.pronunciation && (
-                              <span className="ml-1.5 text-xs italic text-muted-foreground">
+                              <span className="ml-1 text-xs italic text-muted-foreground">
                                 {fc.pronunciation}
                               </span>
                             )}
-                            <div className="flex items-center gap-1.5 mt-1 text-[10px]">
-                              <div className="h-1.5 w-1.5 rounded-full" style={{ backgroundColor: authorColor }} />
-                              <span style={{ color: authorColor }} className="font-semibold">
+                            <div className="mt-1 flex items-center gap-1.5 text-[10px]">
+                              <MemberAvatar name={fc.author} color={authorColor} size={15} />
+                              <span className="font-semibold" style={{ color: authorColor }}>
                                 {fc.author} {fc.author === user?.username && '(you)'}
                               </span>
-                              <span className="text-muted-foreground/50">· Page {fc.pageNumber}</span>
+                              <span className="font-mono text-muted-foreground/50 tabular-nums">· p.{fc.pageNumber}</span>
                             </div>
                           </div>
 
-                          <div className="flex items-center gap-1">
+                          <div className="flex shrink-0 items-center gap-1">
                             {inPersonalDeck ? (
-                              <span className="inline-flex items-center gap-0.5 rounded-full bg-emerald-50 px-1.5 py-0.5 text-[9px] font-semibold text-emerald-600 dark:bg-emerald-950/20 dark:text-emerald-400">
+                              <span className="inline-flex items-center gap-0.5 rounded-full bg-brand-soft px-1.5 py-0.5 text-[9px] font-semibold text-brand">
                                 <Check className="h-2.5 w-2.5" />
                                 Deck
                               </span>
@@ -618,8 +595,9 @@ export function FlashcardReview() {
                               <Button
                                 size="icon"
                                 variant="ghost"
-                                className="h-6 w-6 text-muted-foreground hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                className="h-6 w-6 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
                                 onClick={() => handleDeleteSharedCard(fc.flashcardId)}
+                                aria-label="Delete shared flashcard"
                               >
                                 <Trash2 className="h-3 w-3" />
                               </Button>
@@ -632,8 +610,8 @@ export function FlashcardReview() {
                         </p>
 
                         {fc.translation && (
-                          <p className="mt-1 text-[10px] text-emerald-600 dark:text-emerald-400 font-medium">
-                            {fc.translation}
+                          <p className="mt-1 text-[10px] font-medium text-muted-foreground/70">
+                            → {fc.translation}
                           </p>
                         )}
 
@@ -650,14 +628,5 @@ export function FlashcardReview() {
           )}
       </div>
     </ResponsivePanel>
-  )
-}
-
-function StatBadge({ label, count, color }: { label: string; count: number; color: string }) {
-  return (
-    <div className={`rounded-lg px-2 py-1.5 text-center ${color}`}>
-      <p className="text-xs font-bold">{count}</p>
-      <p className="text-[9px] opacity-70">{label}</p>
-    </div>
   )
 }

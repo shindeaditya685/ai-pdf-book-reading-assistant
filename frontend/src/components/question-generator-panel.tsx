@@ -8,6 +8,8 @@ import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
 import * as pdfjsLib from 'pdfjs-dist'
+import { cn } from '@/lib/utils'
+import { SectionLabel } from '@/components/panel-primitives'
 
 // Set worker source
 if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
@@ -221,7 +223,8 @@ export function QuestionGeneratorPanel() {
       header={
         <PanelHeader
           icon={HelpCircle}
-          title="AI Question Generator"
+          eyebrow="Reading aid"
+          title="Questions"
           onClose={() => setShowQuestionGenerator(false)}
         />
       }
@@ -242,42 +245,40 @@ export function QuestionGeneratorPanel() {
             /* LOADING STATE */
             <div className="flex h-full flex-col items-center justify-center py-20 text-center space-y-4">
               <div className="relative">
-                <div className="h-12 w-12 rounded-full border-4 border-muted border-t-emerald-500 animate-spin" />
-                <HelpCircle className="absolute inset-0 m-auto h-5 w-5 text-emerald-500 animate-pulse" />
+                <div className="h-12 w-12 rounded-full border-4 border-muted border-t-brand animate-spin" />
+                <HelpCircle className="absolute inset-0 m-auto h-5 w-5 text-brand animate-pulse" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">AI Generator Active</h3>
+                <h3 className="font-serif text-sm font-semibold text-foreground">Reading the page</h3>
                 <p className="text-xs text-muted-foreground/75 mt-1 font-medium">{loadingStep}</p>
               </div>
             </div>
           ) : quizStep === 'setup' ? (
             /* SETUP CONFIG SCREEN */
             <div className="space-y-4">
-              <div className="rounded-xl border border-border bg-muted/20 p-3.5 space-y-3.5">
-                {/* 1. Scope selection */}
-                <div>
-                  <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Select Scope</label>
-                  <div className="flex gap-1.5 mt-1.5">
-                    <button
-                      onClick={() => setScope('current')}
-                      className={`flex-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold border transition-colors ${
-                        scope === 'current' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      Current Page ({currentPage})
-                    </button>
-                    <button
-                      onClick={() => setScope('range')}
-                      className={`flex-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold border transition-colors ${
-                        scope === 'range' ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400' : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                      }`}
-                    >
-                      Custom Range
-                    </button>
-                  </div>
+              <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 space-y-3.5">
+                <SectionLabel>Select scope</SectionLabel>
+                <div className="flex gap-1.5">
+                  <button
+                    onClick={() => setScope('current')}
+                    className={cn(
+                      'flex-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold border transition-colors',
+                      scope === 'current' ? 'bg-brand-soft border-brand/30 text-brand' : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    Current page ({currentPage})
+                  </button>
+                  <button
+                    onClick={() => setScope('range')}
+                    className={cn(
+                      'flex-1 rounded-lg px-2.5 py-1.5 text-xs font-semibold border transition-colors',
+                      scope === 'range' ? 'bg-brand-soft border-brand/30 text-brand' : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    Custom range
+                  </button>
                 </div>
 
-                {/* Range inputs if scope is range */}
                 {scope === 'range' && (
                   <motion.div
                     initial={{ opacity: 0, height: 0 }}
@@ -285,42 +286,42 @@ export function QuestionGeneratorPanel() {
                     className="flex gap-2 items-center pt-1"
                   >
                     <div className="flex-1">
-                      <label className="text-[9px] text-muted-foreground">Start Page</label>
+                      <label className="text-[9px] text-muted-foreground">Start page</label>
                       <input
                         type="number"
                         min={1}
                         max={totalPages}
                         value={startPage}
                         onChange={(e) => setStartPage(Math.min(totalPages, Math.max(1, Number(e.target.value) || 1)))}
-                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-emerald-500"
+                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-brand/50 focus:ring-1 focus:ring-brand/30"
                       />
                     </div>
                     <div className="flex-1">
-                      <label className="text-[9px] text-muted-foreground">End Page</label>
+                      <label className="text-[9px] text-muted-foreground">End page</label>
                       <input
                         type="number"
                         min={startPage}
                         max={totalPages}
                         value={endPage}
                         onChange={(e) => setEndPage(Math.min(totalPages, Math.max(startPage, Number(e.target.value) || 1)))}
-                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-emerald-500"
+                        className="w-full rounded-lg border border-border bg-background px-2.5 py-1.5 text-xs outline-none focus:border-brand/50 focus:ring-1 focus:ring-brand/30"
                       />
                     </div>
                   </motion.div>
                 )}
               </div>
 
-              {/* 2. Quiz type selection */}
-              <div className="rounded-xl border border-border bg-muted/20 p-3.5 space-y-3">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Question Type</label>
+              <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 space-y-3">
+                <SectionLabel>Question type</SectionLabel>
                 <div className="grid grid-cols-3 gap-1.5">
                   {(['multiple-choice', 'short-answer', 'mix'] as const).map((type) => (
                     <button
                       key={type}
                       onClick={() => setQuizType(type)}
-                      className={`rounded-lg py-2 text-[10px] font-semibold border capitalize transition-colors ${
-                        quizType === type ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold' : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                      }`}
+                      className={cn(
+                        'rounded-lg py-2 text-[10px] font-semibold border transition-colors capitalize',
+                        quizType === type ? 'bg-brand-soft border-brand/30 text-brand' : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                      )}
                     >
                       {type === 'mix' ? 'Mixed' : type === 'multiple-choice' ? 'MCQs' : 'Short'}
                     </button>
@@ -328,17 +329,17 @@ export function QuestionGeneratorPanel() {
                 </div>
               </div>
 
-              {/* 3. Question Count selection */}
-              <div className="rounded-xl border border-border bg-muted/20 p-3.5 space-y-3">
-                <label className="text-[10px] font-bold uppercase tracking-wider text-muted-foreground">Number of Questions</label>
+              <div className="rounded-xl border border-border/70 bg-card/60 p-3.5 space-y-3">
+                <SectionLabel>Number of questions</SectionLabel>
                 <div className="flex gap-2">
                   {[3, 5, 10].map((num) => (
                     <button
                       key={num}
                       onClick={() => setQuestionCount(num)}
-                      className={`flex-1 rounded-lg py-1.5 text-xs font-semibold border transition-colors ${
-                        questionCount === num ? 'bg-emerald-500/10 border-emerald-500 text-emerald-600 dark:text-emerald-400 font-bold' : 'bg-background border-border text-muted-foreground hover:text-foreground'
-                      }`}
+                      className={cn(
+                        'flex-1 rounded-lg py-1.5 text-xs font-semibold border transition-colors',
+                        questionCount === num ? 'bg-brand-soft border-brand/30 text-brand' : 'bg-background border-border text-muted-foreground hover:text-foreground'
+                      )}
                     >
                       {num}
                     </button>
@@ -346,14 +347,13 @@ export function QuestionGeneratorPanel() {
                 </div>
               </div>
 
-              {/* Start Generation Action */}
               <button
                 onClick={handleGenerate}
                 disabled={!pdfFileName}
-                className="w-full flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 py-3 text-sm font-semibold text-white hover:from-emerald-600 hover:to-teal-600 shadow-md shadow-emerald-500/10 active:scale-[0.98] disabled:opacity-50 transition-all"
+                className="w-full flex items-center justify-center gap-2 rounded-xl bg-brand py-3 text-sm font-semibold text-brand-fg transition-opacity hover:opacity-90 active:scale-[0.98] disabled:opacity-50"
               >
-                <Play className="h-4 w-4 fill-white" />
-                Generate Quiz
+                <Play className="h-4 w-4 fill-current" />
+                Generate quiz
               </button>
             </div>
           ) : quizStep === 'quiz' && activeQuestion ? (
@@ -367,7 +367,7 @@ export function QuestionGeneratorPanel() {
                 </div>
                 <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                   <div
-                    className="h-full bg-emerald-500 transition-all duration-300"
+                    className="h-full bg-brand transition-all duration-300"
                     style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
                   />
                 </div>
@@ -426,15 +426,15 @@ export function QuestionGeneratorPanel() {
                     onChange={(e) => setShortAnswerInput(e.target.value)}
                     disabled={showExplanation}
                     rows={4}
-                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-emerald-500 disabled:opacity-70 disabled:bg-muted/20"
+                    className="w-full rounded-xl border border-border bg-background px-3 py-2 text-xs outline-none focus:border-brand/50 disabled:opacity-70 disabled:bg-muted/20"
                   />
                   {!showExplanation && (
                     <button
                       onClick={handleShortAnswerSubmit}
                       disabled={!shortAnswerInput.trim()}
-                      className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600 disabled:opacity-50 transition-colors"
+                      className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-brand-fg transition-opacity hover:opacity-90 disabled:opacity-50"
                     >
-                      Submit Answer
+                      Submit answer
                       <ChevronRight className="h-3.5 w-3.5" />
                     </button>
                   )}
@@ -450,9 +450,9 @@ export function QuestionGeneratorPanel() {
                 >
                   <div>
                     <span className="text-[9px] font-bold uppercase tracking-wider text-muted-foreground">
-                      {activeQuestion.type === 'multiple-choice' ? 'Correct Answer' : 'Model Answer'}
+                      {activeQuestion.type === 'multiple-choice' ? 'Correct answer' : 'Model answer'}
                     </span>
-                    <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    <p className="text-xs font-semibold text-brand mt-0.5">
                       {activeQuestion.type === 'multiple-choice' 
                         ? `Option ${activeQuestion.answer.trim().toUpperCase()}`
                         : activeQuestion.answer
@@ -492,7 +492,7 @@ export function QuestionGeneratorPanel() {
                     /* MCQ next button */
                     <button
                       onClick={handleNextQuestion}
-                      className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500 px-3 py-2 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors mt-2"
+                      className="w-full flex items-center justify-center gap-1.5 rounded-lg bg-brand px-3 py-2 text-xs font-semibold text-brand-fg transition-opacity hover:opacity-90 mt-2"
                     >
                       {currentQuestionIndex < questions.length - 1 ? 'Next Question' : 'Finish Quiz'}
                       <ChevronRight className="h-3.5 w-3.5" />
@@ -505,12 +505,12 @@ export function QuestionGeneratorPanel() {
             /* RESULTS SUMMARY SCREEN */
             <div className="space-y-5 text-center py-6">
               {/* Score circle */}
-              <div className="relative mx-auto h-28 w-28 flex items-center justify-center rounded-full bg-emerald-500/10 border-4 border-emerald-500/20">
+              <div className="relative mx-auto h-28 w-28 flex items-center justify-center rounded-full bg-brand-soft/40 border-4 border-brand/20">
                 <div className="text-center">
-                  <span className="text-3xl font-extrabold text-emerald-600 dark:text-emerald-400">
+                  <span className="font-serif text-3xl font-semibold text-brand tabular-nums">
                     {Math.round((correctAnswersCount / questions.length) * 100)}%
                   </span>
-                  <p className="text-[10px] text-muted-foreground font-semibold mt-0.5">SCORE</p>
+                  <p className="text-[10px] text-muted-foreground uppercase tracking-[0.14em] font-semibold mt-0.5">score</p>
                 </div>
               </div>
 
@@ -542,9 +542,9 @@ export function QuestionGeneratorPanel() {
                 </button>
                 <button
                   onClick={handleRestartQuiz}
-                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-emerald-500 py-2 text-xs font-semibold text-white hover:bg-emerald-600 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 rounded-lg bg-brand py-2 text-xs font-semibold text-brand-fg transition-opacity hover:opacity-90"
                 >
-                  Configure New
+                  Configure new
                 </button>
               </div>
             </div>

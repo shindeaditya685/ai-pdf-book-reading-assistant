@@ -1,9 +1,10 @@
 'use client'
 
 import { useCallback } from 'react'
-import { Trash2, BookOpen, Clock, Volume2, Download } from 'lucide-react'
+import { Trash2, Clock, Volume2, Download } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResponsivePanel, PanelHeader } from '@/components/responsive-panel'
+import { CountBadge, EmptyState } from '@/components/panel-primitives'
 import { usePDFStore } from '@/store/use-pdf-store'
 
 export function HistoryPanel() {
@@ -77,10 +78,9 @@ export function HistoryPanel() {
       header={
         <PanelHeader
           icon={Clock}
+          eyebrow="Looked up while reading"
           title="Word History"
-          badge={
-            <span className="text-[10px] text-muted-foreground">({wordHistory.length})</span>
-          }
+          badge={<CountBadge count={wordHistory.length} />}
           actions={
             wordHistory.length > 0 ? (
               <Button
@@ -100,11 +100,11 @@ export function HistoryPanel() {
       }
       footer={
         wordHistory.length > 0 ? (
-          <div className="border-t p-3">
+          <div className="border-t border-border/40 p-3">
             <Button
               variant="ghost"
               size="sm"
-              className="h-8 w-full text-xs text-muted-foreground hover:text-red-500"
+              className="h-8 w-full text-xs text-muted-foreground hover:text-destructive"
               onClick={clearHistory}
             >
               <Trash2 className="mr-1.5 h-3.5 w-3.5" />
@@ -115,34 +115,30 @@ export function HistoryPanel() {
       }
     >
       {wordHistory.length === 0 ? (
-        <div className="flex h-full items-center justify-center p-8 text-center">
-          <div>
-            <BookOpen className="mx-auto h-8 w-8 text-muted-foreground/30" />
-            <p className="mt-3 text-sm text-muted-foreground">
-              No words looked up yet
-            </p>
-            <p className="mt-1 text-xs text-muted-foreground/60">
-              Click any word in the PDF to see its explanation here
-            </p>
-          </div>
+        <div className="p-4">
+          <EmptyState
+            icon={Clock}
+            title="No words looked up yet"
+            hint="Tap any word in the PDF and it will be remembered here."
+          />
         </div>
       ) : (
-        <div className="divide-y">
+        <div className="space-y-2.5 p-4">
           {wordHistory.map((entry) => (
             <div
               key={entry.id}
-              className="group relative px-4 py-3 transition-colors hover:bg-muted/30"
+              className="group relative rounded-xl border border-border/60 bg-card/60 p-3 transition-colors hover:border-brand/25 hover:bg-card"
             >
-              <div className="flex items-start justify-between">
+              <div className="flex items-start justify-between gap-2">
                 <button
-                  className="flex-1 text-left"
+                  className="min-w-0 flex-1 text-left"
                   onClick={() => handleRestore(entry)}
                 >
-                  <span className="text-sm font-semibold text-emerald-600 dark:text-emerald-400">
+                  <span className="block truncate font-serif text-[17px] font-semibold leading-tight text-brand">
                     {entry.word}
                   </span>
                   {entry.pronunciation && (
-                    <span className="ml-2 text-[10px] text-muted-foreground">
+                    <span className="mt-1 block text-[10px] italic text-muted-foreground/60">
                       <Volume2 className="mr-0.5 inline h-2.5 w-2.5" />
                       {entry.pronunciation}
                     </span>
@@ -151,19 +147,19 @@ export function HistoryPanel() {
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 text-muted-foreground hover:text-red-500"
+                  className="h-6 w-6 shrink-0 text-muted-foreground opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
                   onClick={() => removeHistoryEntry(entry.id)}
                   aria-label="Delete history entry"
                 >
                   <Trash2 className="h-3 w-3" />
                 </Button>
               </div>
-              <p className="mt-0.5 text-xs text-muted-foreground line-clamp-2">
+              <p className="mt-1 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
                 {entry.meaning}
               </p>
-              <div className="mt-1 flex items-center gap-2 text-[10px] text-muted-foreground/60">
-                <span>Page {entry.pageNumber}</span>
-                {entry.translation && <span>{entry.translation}</span>}
+              <div className="mt-1.5 flex items-center gap-2 font-mono text-[10px] text-muted-foreground/60 tabular-nums">
+                <span>p.{entry.pageNumber}</span>
+                {entry.translation && <span className="text-muted-foreground/70">→ {entry.translation}</span>}
               </div>
             </div>
           ))}
