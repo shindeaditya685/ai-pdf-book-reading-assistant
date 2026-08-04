@@ -160,8 +160,11 @@
   * {
     @apply border-border outline-ring/50;
   }
+  html {
+    background-color: var(--canvas);
+  }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-canvas text-ink;
   }
   /* UI fix (U12): visible focus-visible ring for keyboard users. Many
      components use focus:outline-none without a replacement; this gives

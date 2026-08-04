@@ -77,31 +77,31 @@ export default function QuoteChatsPage() {
 
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-yellow-500" />
+      <div className="flex h-screen items-center justify-center bg-canvas">
+        <Loader2 className="h-8 w-8 animate-spin text-brand" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <div className="min-h-screen bg-canvas text-ink">
       {/* ── HEADER ── */}
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-yellow-500/10 bg-background/60 px-4 shadow-[0_1px_0_0_rgba(234,179,8,0.05)] backdrop-blur-xl">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-all hover:border-muted-foreground/20 hover:bg-muted/50 hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" />
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-paper-border bg-canvas/85 px-4 backdrop-blur-xl">
+        <div className="flex items-center gap-2.5">
+          <Link href="/dashboard" aria-label="Back to dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-paper-border text-muted-foreground transition-all hover:border-ink/20 hover:bg-muted/40 hover:text-ink">
+            <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-yellow-500 to-yellow-600 shadow-md shadow-yellow-500/20 ring-1 ring-yellow-500/20">
-            <QuoteIcon className="h-4 w-4 text-white" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand text-brand-fg shadow-sm">
+            <QuoteIcon className="h-3.5 w-3.5" />
           </div>
-          <span className="text-sm font-bold text-foreground">Quote Chats</span>
-          <span className="rounded-full bg-yellow-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-yellow-600 dark:text-yellow-400">
+          <span className="font-serif text-base font-bold tracking-tight text-ink">Quote Chats</span>
+          <span className="rounded-full bg-muted/40 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
             {conversations.length} conversation{conversations.length === 1 ? '' : 's'}
           </span>
         </div>
         <Link
           href="/quotes"
-          className="hidden h-9 items-center gap-1.5 rounded-lg border border-border/60 px-3 text-xs font-semibold text-muted-foreground transition-all hover:bg-muted/50 hover:text-foreground sm:inline-flex"
+          className="hidden h-8 items-center gap-1.5 rounded-lg border border-paper-border bg-card px-3 text-xs font-semibold text-muted-foreground transition-colors hover:text-ink sm:inline-flex"
         >
           All Quotes
         </Link>
@@ -109,9 +109,9 @@ export default function QuoteChatsPage() {
 
       <main className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* ── NEW CHAT ── */}
-        <div className="mb-6 flex flex-col items-stretch gap-3 rounded-2xl border border-yellow-500/20 bg-gradient-to-br from-yellow-500/5 via-background to-background p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+        <div className="mb-6 flex flex-col items-stretch gap-3 rounded-2xl border border-brand/25 bg-brand/5 p-5 shadow-sm sm:flex-row sm:items-center sm:justify-between">
           <div>
-            <h2 className="text-base font-bold text-foreground">Start a new conversation</h2>
+            <h2 className="font-serif text-base font-bold tracking-tight text-ink">Start a new conversation</h2>
             <p className="mt-0.5 text-xs text-muted-foreground">
               You have {quotes.length} saved quote{quotes.length === 1 ? '' : 's'} ready to chat with. Pick some from a quote in the library, or start empty and add quotes as you go.
             </p>
@@ -119,7 +119,7 @@ export default function QuoteChatsPage() {
           <button
             onClick={handleStartChat}
             disabled={creating}
-            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-yellow-500 px-4 text-sm font-bold text-white shadow-sm transition-colors hover:bg-yellow-600 disabled:opacity-50 sm:h-9 sm:px-3 sm:text-xs"
+            className="inline-flex h-10 items-center justify-center gap-2 rounded-xl bg-brand px-4 text-sm font-bold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97] disabled:opacity-50 sm:h-9 sm:px-3 sm:text-xs"
           >
             {creating ? <Loader2 className="h-4 w-4 animate-spin" /> : <Plus className="h-4 w-4" />}
             New chat
@@ -129,15 +129,19 @@ export default function QuoteChatsPage() {
         {/* ── CONVERSATION LIST ── */}
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-6 w-6 animate-spin text-yellow-500" />
+            <Loader2 className="h-6 w-6 animate-spin text-brand" />
           </div>
         ) : conversations.length === 0 ? (
           <div className="flex flex-col items-center gap-3 py-20 text-center">
-            <MessageSquare className="h-10 w-10 text-muted-foreground/20" />
-            <p className="text-sm font-semibold text-muted-foreground/50">No quote chats yet</p>
-            <p className="text-xs text-muted-foreground/40">
-              Start a chat to ask questions about your saved quotes, compare passages, or reflect on what you&apos;ve read
-            </p>
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-paper-border bg-card shadow-sm">
+              <MessageSquare className="h-6 w-6 text-brand/60" />
+            </div>
+            <div>
+              <p className="font-serif text-lg font-bold tracking-tight text-ink">No quote chats yet</p>
+              <p className="mt-0.5 max-w-sm text-xs text-muted-foreground/50">
+                Start a chat to ask questions about your saved quotes, compare passages, or reflect on what you&apos;ve read
+              </p>
+            </div>
           </div>
         ) : (
           <div className="space-y-2">
@@ -146,17 +150,17 @@ export default function QuoteChatsPage() {
               return (
                 <div
                   key={c.id}
-                  className="group flex items-start gap-3 rounded-xl border border-border/40 bg-background/60 p-3 shadow-sm transition-all hover:border-border/70 hover:shadow-md"
+                  className="group flex items-start gap-3 rounded-xl border border-paper-border bg-card p-3 shadow-sm transition-all hover:border-brand/40 hover:shadow-md"
                 >
                   <button
                     onClick={() => router.push(`/quotes/chat/${c.id}`)}
-                    className="flex flex-1 items-start gap-3 text-left min-w-0"
+                    className="flex flex-1 items-start gap-3 min-w-0 text-left"
                   >
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br from-yellow-500/20 to-yellow-500/5 text-yellow-600 dark:text-yellow-400">
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand/10 text-brand">
                       <Sparkles className="h-4 w-4" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-semibold text-foreground">
+                      <p className="truncate font-serif text-sm font-bold tracking-tight text-ink">
                         {c.title || 'Untitled chat'}
                       </p>
                       <div className="mt-1 flex flex-wrap items-center gap-x-3 gap-y-1 text-[10px] text-muted-foreground/60">
@@ -175,7 +179,7 @@ export default function QuoteChatsPage() {
                         </span>
                       </div>
                       {preview && (
-                        <p className="mt-1.5 line-clamp-1 text-xs italic text-muted-foreground/60">
+                        <p className="mt-1.5 line-clamp-1 text-xs italic text-ink/60">
                           &ldquo;{preview.text.slice(0, 80)}{preview.text.length > 80 ? '…' : ''}&rdquo;
                         </p>
                       )}
@@ -183,7 +187,7 @@ export default function QuoteChatsPage() {
                   </button>
                   <button
                     onClick={() => setDeleteConfirm(c.id)}
-                    className="shrink-0 rounded p-1 text-muted-foreground/20 transition-colors hover:bg-red-50 hover:text-red-500"
+                    className="shrink-0 rounded p-1 text-muted-foreground/20 transition-colors hover:bg-red-500/5 hover:text-red-500"
                     title="Delete conversation"
                     aria-label="Delete conversation"
                   >
@@ -198,16 +202,16 @@ export default function QuoteChatsPage() {
 
       {/* ── DELETE CONFIRMATION ── */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-sm rounded-xl border bg-background p-6 shadow-2xl">
-            <h3 className="text-sm font-bold text-foreground">Delete this conversation?</h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-xl border border-paper-border bg-card p-6 shadow-2xl">
+            <h3 className="font-serif text-sm font-bold tracking-tight text-ink">Delete this conversation?</h3>
             <p className="mt-1 text-xs text-muted-foreground">
               This will permanently remove the chat and all its messages. Your saved quotes are not affected.
             </p>
             <div className="mt-4 flex justify-end gap-2">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="rounded-lg border border-border/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                className="rounded-lg border border-paper-border px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-ink transition-colors"
               >
                 Cancel
               </button>

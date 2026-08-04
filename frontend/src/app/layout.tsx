@@ -99,7 +99,7 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} ${lora.variable} antialiased bg-background text-foreground`}
+        className={`${geistSans.variable} ${geistMono.variable} ${lora.variable} antialiased bg-canvas text-ink`}
       >
         {/* UI fix (U12): skip-to-content link for keyboard / screen-reader users. */}
         <a href="#main-content" className="skip-link rounded-md bg-background px-4 py-2 text-sm font-medium shadow-lg border border-border">

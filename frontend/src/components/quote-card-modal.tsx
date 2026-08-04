@@ -147,16 +147,14 @@ export function QuoteCardModal({
           <button
             onClick={handleDownload}
             disabled={downloading}
-            className="flex items-center gap-2 rounded-lg px-5 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all hover:opacity-80 disabled:opacity-50"
-            style={{ backgroundColor: '#1c1917', color: '#fbf9f6', fontFamily: 'var(--font-geist-mono), monospace' }}
+            className="flex items-center gap-2 rounded-lg bg-brand px-5 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97] disabled:opacity-50"
           >
             {downloading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Download className="h-3.5 w-3.5" />}
             {downloading ? 'Downloading\u2026' : 'Save as PNG'}
           </button>
           <button
             onClick={onClose}
-            className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-xs font-semibold uppercase tracking-wider transition-all hover:opacity-70"
-            style={{ color: '#fbf9f6', fontFamily: 'var(--font-geist-mono), monospace' }}
+            className="flex items-center gap-2 rounded-lg px-4 py-2.5 font-mono text-xs font-semibold uppercase tracking-wider text-white/70 transition-colors hover:text-white"
           >
             <X className="h-3.5 w-3.5" />
             Close

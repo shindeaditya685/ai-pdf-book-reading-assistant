@@ -102,7 +102,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   }, {});
 
   return (
-    <div className="flex h-screen overflow-hidden bg-background">
+    <div className="flex h-screen overflow-hidden bg-canvas">
       {mobileOpen && (
         <div
           className="fixed inset-0 z-40 bg-black/60 backdrop-blur-sm lg:hidden"
@@ -265,7 +265,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
         </header>
 
-        <main id="main-content" className={cn("flex-1 flex flex-col", pdfDataUrl ? "overflow-hidden" : "overflow-y-auto")}>
+        <main id="main-content" className={cn("flex-1 flex flex-col bg-canvas", pdfDataUrl ? "overflow-hidden" : "overflow-y-auto")}>
           {children}
         </main>
       </div>
