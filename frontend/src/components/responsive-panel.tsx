@@ -153,7 +153,7 @@ export function PanelHeader({
   return (
     <div className="flex items-center justify-between border-b px-4 py-3">
       <div className="flex min-w-0 items-center gap-2">
-        {Icon && <Icon className={cn('h-4 w-4 shrink-0', iconClassName ?? 'text-emerald-500')} />}
+        {Icon && <Icon className={cn('h-4 w-4 shrink-0', iconClassName ?? 'text-brand')} />}
         <h2 className="truncate text-sm font-semibold text-foreground">{title}</h2>
         {badge}
       </div>

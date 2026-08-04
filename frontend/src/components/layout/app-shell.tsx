@@ -78,6 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pdfDataUrl = usePDFStore((s) => s.pdfDataUrl);
   const toggleSharePanel = usePDFStore((s) => s.toggleSharePanel);
+  const inSession = usePDFStore((s) => !!s.shareSession);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -166,7 +167,9 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       collapsed && "justify-center px-2",
                       active && !item.action
                         ? "bg-emerald-500 text-white shadow-sm shadow-emerald-500/20"
-                        : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
+                        : item.action === "collaborate" && inSession
+                          ? "bg-brand text-brand-fg shadow-sm shadow-brand/25"
+                          : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
                     );
                     const link =
                       item.action === "collaborate" ? (
