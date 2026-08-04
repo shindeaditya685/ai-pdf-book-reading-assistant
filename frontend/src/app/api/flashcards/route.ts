@@ -156,7 +156,8 @@ export async function DELETE(request: Request) {
       const { ObjectId } = await import('mongodb')
       filter._id = new ObjectId(id)
     } else if (word && pdfFileName) {
-      filter.word = word
+      // Words are stored lowercased, so normalize before matching
+      filter.word = word.trim().toLowerCase()
       filter.pdfFileName = pdfFileName
     } else if (pdfFileName) {
       filter.pdfFileName = pdfFileName

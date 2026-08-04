@@ -75,7 +75,7 @@ export async function DELETE(request: Request, { params }: { params: Promise<{ i
 
     await conn.db.collection('word-lists').updateOne(
       { _id: new ObjectId(id) },
-      { $pull: { words: { word } } as any, $set: { updatedAt: new Date() } }
+      { $pull: { words: { word: word.trim().toLowerCase() } } as any, $set: { updatedAt: new Date() } }
     )
 
     return NextResponse.json({ success: true })

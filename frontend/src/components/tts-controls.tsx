@@ -350,6 +350,7 @@ export function TtsControls() {
 
     lastHighlightedIdxRef.current = actualStartWordIdx - 1
     lastBoundaryWordRef.current = -1
+    lastBoundaryWordRef.current = -1
 
     // Split speechText into chunks and keep track of their start indices
     const chunks: { text: string; start: number }[] = []
@@ -446,6 +447,7 @@ export function TtsControls() {
         lastBoundaryWordRef.current = wordIdx
         if (wordIdx >= 0 && wordIdx !== lastHighlightedIdxRef.current && wordIdx < wordsRef.current.length) {
           lastHighlightedIdxRef.current = wordIdx
+          lastBoundaryWordRef.current = wordIdx
           highlightWord(wordOffsetsRef.current[wordIdx] ?? wordIdx)
         }
       }

@@ -99,7 +99,9 @@ export function WordPopup() {
 
   const isBookmarked = selectedPageNumber && selectedWord
     ? bookmarks.some(
-        (b) => b.pageNumber === selectedPageNumber && b.word === selectedWord && b.pdfFileName === pdfFileName
+        (b) =>
+          b.word.toLowerCase() === selectedWord.toLowerCase() &&
+          b.pdfFileName === pdfFileName
       )
     : false
 
@@ -151,15 +153,19 @@ export function WordPopup() {
   }, [selectedWord, explanation, fetchLists])
 
   const isFlashcardCreated = selectedWord && pdfFileName
-    ? flashcards.some((f) => f.word === selectedWord && f.pdfFileName === pdfFileName)
+    ? flashcards.some((f) => f.word.toLowerCase() === selectedWord.toLowerCase() && f.pdfFileName === pdfFileName)
     : false
 
   const handleToggleFlashcard = useCallback(async () => {
     if (!selectedWord || !explanation) return
+    const word = selectedWord.trim().toLowerCase()
     if (isFlashcardCreated) {
-      removeFlashcard(selectedWord + pdfFileName)
+      const flashcard = flashcards.find(
+        (f) => f.word.toLowerCase() === word && f.pdfFileName === pdfFileName
+      )
+      if (flashcard) removeFlashcard(flashcard._id || flashcard.id || '')
       await authFetch(
-        `/api/flashcards?word=${encodeURIComponent(selectedWord)}&pdfFileName=${encodeURIComponent(pdfFileName || '')}`,
+        `/api/flashcards?word=${encodeURIComponent(word)}&pdfFileName=${encodeURIComponent(pdfFileName || '')}`,
         { method: 'DELETE' }
       ).catch(() => {})
     } else {
@@ -168,7 +174,7 @@ export function WordPopup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create',
-          word: selectedWord,
+          word,
           meaning: explanation.meaning,
           pronunciation: explanation.pronunciation || '',
           translation: explanation.translation || '',
@@ -181,13 +187,13 @@ export function WordPopup() {
       })
       const data = await res.json()
       if (data.success) {
-        addFlashcard(data.flashcard || { ...data, word: selectedWord, pdfFileName })
+        addFlashcard(data.flashcard || { ...data, word, pdfFileName })
         const session = usePDFStore.getState().shareSession
         if (session) {
           const shareRes = await authFetch('/api/share/flashcards', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id: data.id, sessionId: session._id, word: selectedWord, pdfFileName }),
+            body: JSON.stringify({ id: data.id, sessionId: session._id, word, pdfFileName }),
           })
           if (shareRes.ok) {
             const shared = await shareRes.json()
@@ -196,35 +202,62 @@ export function WordPopup() {
         }
       }
     }
-  }, [selectedWord, explanation, selectedSentence, selectedPageNumber, pdfFileName, isFlashcardCreated, removeFlashcard, addFlashcard, addSharedFlashcard])
+  }, [selectedWord, explanation, selectedSentence, selectedPageNumber, pdfFileName, isFlashcardCreated, flashcards, removeFlashcard, addFlashcard, addSharedFlashcard])
 
   const handleBookmark = useCallback(() => {
     if (!selectedPageNumber || !explanation) return
 
+    // Always store words in one (lowercase) form so the same word can't appear
+    // both capitalized and lowercase across bookmarks/flashcards/vocabulary.
+    const word = (selectedWord || '').trim().toLowerCase()
+
     if (isBookmarked) {
       const existing = bookmarks.find(
-        (b) => b.pageNumber === selectedPageNumber && b.word === selectedWord && b.pdfFileName === pdfFileName
+        (b) => b.word.toLowerCase() === word && b.pdfFileName === pdfFileName
       )
       if (existing) {
         removeBookmark(existing.id)
         authFetch(`/api/db/bookmarks?id=${existing.id}`, { method: 'DELETE' }).catch(() => {})
-        // Also delete the auto-created flashcard
-        console.log('deleting flashcard for', selectedWord, pdfFileName)
-        authFetch(
-          `/api/flashcards?word=${encodeURIComponent(selectedWord || '')}&pdfFileName=${encodeURIComponent(pdfFileName || '')}`,
-          { method: 'DELETE' }
-        ).then(r => {
-          console.log('flashcard delete response', r.status)
-          r.json().then(d => console.log('flashcard delete body', d))
-        }).catch(e => console.error('flashcard delete error', e))
       }
+      // Cascade delete: also remove the matching flashcard + vocabulary entry.
+      const flashcard = flashcards.find(
+        (f) => f.word.toLowerCase() === word && f.pdfFileName === pdfFileName
+      )
+      if (flashcard) {
+        removeFlashcard(flashcard._id || flashcard.id || '')
+        authFetch(
+          `/api/flashcards?word=${encodeURIComponent(word)}&pdfFileName=${encodeURIComponent(pdfFileName || '')}`,
+          { method: 'DELETE' }
+        ).catch(() => {})
+      }
+      const st = usePDFStore.getState()
+      if (st.autoAddToList && st.defaultListId) {
+        authFetch(
+          `/api/word-lists/${st.defaultListId}/words?word=${encodeURIComponent(word)}`,
+          { method: 'DELETE' }
+        ).catch(() => {})
+        st.setWordLists(
+          st.wordLists.map((l) =>
+            l._id === st.defaultListId
+              ? { ...l, words: l.words.filter((w) => w.word.toLowerCase() !== word) }
+              : l
+          )
+        )
+      }
+      return
+    }
+
+    // Dedupe: don't insert the same word twice in bookmarks.
+    if (
+      bookmarks.some((b) => b.word.toLowerCase() === word && b.pdfFileName === pdfFileName)
+    ) {
       return
     }
 
     const bookmark = {
       id: `bm-${Date.now()}`,
       pageNumber: selectedPageNumber,
-      word: selectedWord || '',
+      word,
       meaning: explanation.meaning,
       pronunciation: explanation.pronunciation,
       translation: explanation.translation,
@@ -263,7 +296,7 @@ export function WordPopup() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'create',
-          word: selectedWord || '',
+          word,
           meaning: explanation.meaning,
           pronunciation: explanation.pronunciation || '',
           translation: explanation.translation || '',
@@ -284,7 +317,7 @@ export function WordPopup() {
               body: JSON.stringify({
                 id: data.id,
                 sessionId: currentSession._id,
-                word: selectedWord || '',
+                word,
                 meaning: explanation.meaning,
                 pronunciation: explanation.pronunciation || '',
                 translation: explanation.translation || '',
@@ -310,7 +343,7 @@ export function WordPopup() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          word: selectedWord,
+          word,
           meaning: explanation.meaning,
           pronunciation: explanation.pronunciation,
           translation: explanation.translation,
@@ -320,13 +353,13 @@ export function WordPopup() {
       }).catch(() => {})
       usePDFStore.getState().setWordLists(
         usePDFStore.getState().wordLists.map((l) =>
-          l._id === defaultListId
-            ? { ...l, words: [...l.words, { word: selectedWord || '', meaning: explanation.meaning, addedAt: new Date().toISOString() }] }
+          l._id === defaultListId && !l.words.some((w) => w.word.toLowerCase() === word)
+            ? { ...l, words: [...l.words, { word, meaning: explanation.meaning, addedAt: new Date().toISOString() }] }
             : l
         )
       )
     }
-  }, [selectedPageNumber, explanation, selectedWord, selectedSentence, addBookmark, removeBookmark, bookmarks, isBookmarked, pdfFileName, autoFlashcard, autoAddToList, defaultListId])
+  }, [selectedPageNumber, explanation, selectedWord, selectedSentence, addBookmark, removeBookmark, removeFlashcard, bookmarks, flashcards, isBookmarked, pdfFileName, autoFlashcard, autoAddToList, defaultListId])
 
   const handleSaveQuote = useCallback(async () => {
     if (!selectedPageNumber || !quoteText || !pdfFileName) return

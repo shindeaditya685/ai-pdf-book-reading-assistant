@@ -20,6 +20,10 @@ export function BookmarksPanel() {
     sharedBookmarks,
     removeSharedBookmark,
     addBookmark,
+    flashcards,
+    removeFlashcard,
+    autoAddToList,
+    defaultListId,
     setSelectedWord,
     setSelectedSentence,
     setSelectedPageNumber,
@@ -42,6 +46,7 @@ export function BookmarksPanel() {
   )
 
   const handleDeleteBookmark = useCallback(async (id: string) => {
+    const bookmark = bookmarks.find((b) => b.id === id)
     removeBookmark(id)
     try {
       await authFetch(`/api/db/bookmarks?id=${encodeURIComponent(id)}`, { method: 'DELETE' })
@@ -52,7 +57,35 @@ export function BookmarksPanel() {
     } catch (err) {
       console.error('Failed to delete bookmark:', err)
     }
-  }, [removeBookmark, shareSession, removeSharedBookmark])
+    // Cascade delete: removing a bookmark also removes its flashcard + the
+    // word from the default vocabulary list.
+    if (bookmark) {
+      const word = bookmark.word.trim().toLowerCase()
+      const flashcard = flashcards.find(
+        (f) => f.word.toLowerCase() === word && f.pdfFileName === bookmark.pdfFileName
+      )
+      if (flashcard) {
+        removeFlashcard(flashcard._id || flashcard.id || '')
+        authFetch(
+          `/api/flashcards?word=${encodeURIComponent(word)}&pdfFileName=${encodeURIComponent(bookmark.pdfFileName)}`,
+          { method: 'DELETE' }
+        ).catch(() => {})
+      }
+      if (autoAddToList && defaultListId) {
+        authFetch(
+          `/api/word-lists/${defaultListId}/words?word=${encodeURIComponent(word)}`,
+          { method: 'DELETE' }
+        ).catch(() => {})
+        usePDFStore.getState().setWordLists(
+          usePDFStore.getState().wordLists.map((l) =>
+            l._id === defaultListId
+              ? { ...l, words: l.words.filter((w) => w.word.toLowerCase() !== word) }
+              : l
+          )
+        )
+      }
+    }
+  }, [bookmarks, flashcards, removeBookmark, removeFlashcard, shareSession, removeSharedBookmark, autoAddToList, defaultListId])
 
   const handleDeleteSharedBookmark = useCallback(async (bookmarkId: string) => {
     if (!shareSession) return

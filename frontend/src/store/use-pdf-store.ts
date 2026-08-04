@@ -1087,9 +1087,17 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
     })),
 
   addBookmark: (bookmark) =>
-    set((s) => ({
-      bookmarks: [...s.bookmarks, bookmark],
-    })),
+    set((s) => {
+      const word = bookmark.word.trim().toLowerCase()
+      // Deduplicate by (word, pdf) and always store words in one (lowercase) form
+      const existing = s.bookmarks.find(
+        (b) => b.pdfFileName === bookmark.pdfFileName && b.word.trim().toLowerCase() === word
+      )
+      if (existing) {
+        return { bookmarks: s.bookmarks.map((b) => (b.id === existing.id ? { ...b, ...bookmark, word } : b)) }
+      }
+      return { bookmarks: [...s.bookmarks, { ...bookmark, word }] }
+    }),
   removeBookmark: (id) =>
     set((s) => ({
       bookmarks: s.bookmarks.filter((b) => b.id !== id),
@@ -1342,10 +1350,10 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       flashcards: [
         ...s.flashcards.filter(
           (f) =>
-            f.word !== flashcard.word ||
+            f.word.toLowerCase() !== (flashcard.word || '').toLowerCase() ||
             f.pdfFileName !== flashcard.pdfFileName,
         ),
-        flashcard,
+        { ...flashcard, word: (flashcard.word || '').trim().toLowerCase() },
       ],
     })),
   removeFlashcard: (id) =>
