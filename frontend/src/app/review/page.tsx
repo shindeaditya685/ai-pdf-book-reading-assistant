@@ -79,47 +79,48 @@ export default function ReviewPage() {
 
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+      <div className="flex h-screen items-center justify-center bg-canvas">
+        <Loader2 className="h-8 w-8 animate-spin text-brand" />
       </div>
     )
   }
 
   const card = cards[index]
   const isDone = index >= cards.length
+  const passed = results.filter((r) => r.grade >= 3).length
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
-      <header className="sticky top-0 z-50 flex h-16 items-center justify-between border-b border-violet-500/10 bg-background/60 px-4 shadow-[0_1px_0_0_rgba(139,92,246,0.05)] backdrop-blur-xl">
-        <div className="flex items-center gap-3">
-          <Link href="/dashboard" className="flex h-8 w-8 items-center justify-center rounded-xl border border-border/60 text-muted-foreground transition-all hover:border-muted-foreground/20 hover:bg-muted/50 hover:text-foreground">
-            <ArrowLeft className="h-4 w-4" />
+    <div className="min-h-screen bg-canvas text-ink">
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-paper-border bg-canvas/85 px-4 backdrop-blur-xl">
+        <div className="flex items-center gap-2.5">
+          <Link href="/dashboard" aria-label="Back to dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-paper-border text-muted-foreground transition-all hover:border-ink/20 hover:bg-muted/40 hover:text-ink">
+            <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
-          <div className="relative flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-violet-500 to-violet-600 shadow-md shadow-violet-500/20 ring-1 ring-violet-500/20">
-            <Brain className="h-4 w-4 text-white" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand text-brand-fg shadow-sm">
+            <Brain className="h-3.5 w-3.5" />
           </div>
-          <span className="text-sm font-bold text-foreground">Review</span>
+          <span className="font-serif text-base font-bold tracking-tight text-ink">Review</span>
           {!isDone && dueCount > 0 && (
-            <span className="rounded-full bg-violet-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+            <span className="rounded-full bg-brand-soft px-2 py-0.5 font-mono text-[10px] font-semibold text-brand tabular-nums">
               {dueCount} due
             </span>
           )}
         </div>
       </header>
 
-      <main className="mx-auto max-w-2xl px-4 py-12 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-2xl px-4 py-10 sm:px-6 lg:px-8">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <Loader2 className="h-8 w-8 animate-spin text-violet-500" />
+            <Loader2 className="h-8 w-8 animate-spin text-brand" />
           </div>
         ) : dueCount === 0 && !isDone ? (
           <div className="flex flex-col items-center gap-4 py-20 text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-emerald-100 to-emerald-50 dark:from-emerald-900/30 dark:to-emerald-800/20">
-              <CheckCircle2 className="h-8 w-8 text-emerald-500" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full border border-paper-border bg-card shadow-sm">
+              <CheckCircle2 className="h-8 w-8 text-brand" />
             </div>
-            <p className="text-lg font-bold text-foreground">All caught up!</p>
+            <p className="font-serif text-2xl font-bold tracking-tight text-ink">All caught up</p>
             <p className="text-sm text-muted-foreground/60">No flashcards are due for review right now.</p>
-            <Link href="/dashboard" className="mt-2 rounded-lg bg-violet-500 px-4 py-2 text-xs font-semibold text-white hover:bg-violet-600 transition-colors">
+            <Link href="/dashboard" className="mt-2 rounded-lg bg-brand px-5 py-2 text-xs font-semibold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97]">
               Back to Dashboard
             </Link>
           </div>
@@ -127,37 +128,37 @@ export default function ReviewPage() {
           /* ── SUMMARY ── */
           <div className="space-y-6">
             <div className="text-center">
-              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br from-violet-100 to-violet-50 dark:from-violet-900/30 dark:to-violet-800/20">
-                <Sparkles className="h-8 w-8 text-violet-500" />
+              <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-soft">
+                <Sparkles className="h-7 w-7 text-brand" />
               </div>
-              <h2 className="mt-4 text-lg font-bold text-foreground">Review Complete!</h2>
-              <p className="mt-1 text-sm text-muted-foreground/60">{results.length} cards reviewed</p>
+              <h2 className="mt-4 font-serif text-2xl font-bold tracking-tight text-ink">Review complete</h2>
+              <p className="mt-1 font-mono text-xs text-muted-foreground/60 tabular-nums">{results.length} cards reviewed</p>
             </div>
 
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-              <div className="rounded-xl border bg-background/60 p-4 text-center shadow-sm">
-                <p className="text-2xl font-bold text-emerald-500 tabular-nums">{results.filter((r) => r.grade >= 3).length}</p>
-                <p className="text-[10px] font-semibold text-muted-foreground/60">Good / Easy</p>
+              <div className="rounded-xl border border-paper-border bg-card p-4 text-center shadow-sm">
+                <p className="font-mono text-2xl font-bold text-emerald-500 tabular-nums">{passed}</p>
+                <p className="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">Passed</p>
               </div>
-              <div className="rounded-xl border bg-background/60 p-4 text-center shadow-sm">
-                <p className="text-2xl font-bold text-red-500 tabular-nums">{results.filter((r) => r.grade < 3).length}</p>
-                <p className="text-[10px] font-semibold text-muted-foreground/60">Again</p>
+              <div className="rounded-xl border border-paper-border bg-card p-4 text-center shadow-sm">
+                <p className="font-mono text-2xl font-bold text-red-500 tabular-nums">{results.length - passed}</p>
+                <p className="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">Retry</p>
               </div>
-              <div className="rounded-xl border bg-background/60 p-4 text-center shadow-sm">
-                <p className="text-2xl font-bold text-foreground tabular-nums">{results.length}</p>
-                <p className="text-[10px] font-semibold text-muted-foreground/60">Total</p>
+              <div className="rounded-xl border border-paper-border bg-card p-4 text-center shadow-sm">
+                <p className="font-mono text-2xl font-bold text-ink tabular-nums">{results.length}</p>
+                <p className="mt-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">Total</p>
               </div>
             </div>
 
-            <div className="rounded-xl border bg-background/60 shadow-sm">
-              <div className="border-b border-border/40 px-4 py-2">
-                <p className="text-xs font-semibold text-muted-foreground/60">Card-by-card</p>
+            <div className="overflow-hidden rounded-xl border border-paper-border bg-card shadow-sm">
+              <div className="border-b border-paper-border px-4 py-2">
+                <p className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">Card by card</p>
               </div>
-              <div className="divide-y divide-border/20">
+              <div className="divide-y divide-paper-border/60">
                 {results.map((r, i) => (
                   <div key={i} className="flex items-center justify-between px-4 py-2.5">
-                    <span className="text-sm font-medium text-foreground">{r.word}</span>
-                    <span className={`flex items-center gap-1 text-xs font-semibold ${r.grade >= 3 ? 'text-emerald-500' : 'text-red-400'}`}>
+                    <span className="font-serif text-sm font-semibold tracking-tight text-ink">{r.word}</span>
+                    <span className={`flex items-center gap-1 font-mono text-xs font-semibold ${r.grade >= 3 ? 'text-emerald-500' : 'text-red-400'}`}>
                       {r.grade >= 3 ? <ThumbsUp className="h-3 w-3" /> : <ThumbsDown className="h-3 w-3" />}
                       {r.grade >= 3 ? 'Passed' : 'Retry'}
                     </span>
@@ -169,43 +170,43 @@ export default function ReviewPage() {
             <div className="flex justify-center gap-3">
               <button
                 onClick={() => { setIndex(0); setResults([]); setRevealed(false); loadCards() }}
-                className="flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                className="flex items-center gap-1.5 rounded-lg border border-paper-border px-3 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-ink"
               >
                 <RotateCcw className="h-3.5 w-3.5" />
                 Review Again
               </button>
               <Link
                 href="/dashboard"
-                className="rounded-lg bg-violet-500 px-4 py-1.5 text-xs font-semibold text-white hover:bg-violet-600 transition-colors"
+                className="rounded-lg bg-brand px-4 py-1.5 text-xs font-semibold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97]"
               >
                 Back to Dashboard
               </Link>
             </div>
           </div>
         ) : (
-          /* ── ACTIVE QUIZ ── */
+          /* ── ACTIVE REVIEW ── */
           <div className="space-y-6">
             {/* Progress */}
-            <div className="flex items-center justify-between text-xs text-muted-foreground/60">
+            <div className="flex items-center justify-between font-mono text-xs text-muted-foreground/60 tabular-nums">
               <span>{index + 1} of {cards.length}</span>
-              <span className="tabular-nums">{Math.round(((index) / cards.length) * 100)}%</span>
+              <span>{Math.round(((index) / cards.length) * 100)}%</span>
             </div>
-            <div className="h-1.5 w-full rounded-full bg-muted/50">
+            <div className="h-1 w-full rounded-full bg-muted/60" role="progressbar" aria-valuenow={index} aria-valuemin={0} aria-valuemax={cards.length}>
               <div
-                className="h-full rounded-full bg-gradient-to-r from-violet-500 to-violet-400 transition-all"
+                className="h-full rounded-full bg-brand transition-all duration-300"
                 style={{ width: `${(index / cards.length) * 100}%` }}
               />
             </div>
 
             {/* Card */}
-            <div className="rounded-2xl border bg-background/60 p-5 shadow-lg backdrop-blur-sm text-center sm:p-8">
+            <div className="rounded-2xl border border-paper-border bg-card p-5 text-center shadow-lg shadow-black/5 sm:p-8">
               {!revealed ? (
                 <div className="space-y-4">
-                  <p className="text-2xl font-bold text-foreground sm:text-3xl">{card.word}</p>
+                  <p className="font-serif text-3xl font-bold tracking-tight text-ink sm:text-4xl">{card.word}</p>
                   {card.pronunciation && (
-                    <p className="text-sm italic text-muted-foreground/60">{card.pronunciation}</p>
+                    <p className="font-mono text-sm italic text-muted-foreground/60">/{card.pronunciation}/</p>
                   )}
-                  <div className="flex items-center justify-center gap-3 text-[10px] text-muted-foreground/40">
+                  <div className="flex items-center justify-center gap-3 font-mono text-[10px] text-muted-foreground/40 tabular-nums">
                     <span className="flex items-center gap-1">
                       <BookOpen className="h-2.5 w-2.5" />
                       {(card.pdfFileName || '').split('/').pop()}
@@ -218,7 +219,7 @@ export default function ReviewPage() {
                   <div className="pt-4">
                     <button
                       onClick={handleReveal}
-                      className="rounded-xl bg-gradient-to-r from-violet-500 to-violet-600 px-8 py-3 text-sm font-bold text-white shadow-lg shadow-violet-500/20 transition-all hover:from-violet-600 hover:to-violet-700 hover:shadow-xl hover:shadow-violet-500/30 active:scale-[0.97]"
+                      className="rounded-xl bg-brand px-8 py-3 text-sm font-bold text-brand-fg shadow-lg shadow-brand/20 transition-all hover:brightness-110 active:scale-[0.97]"
                     >
                       Show Answer
                     </button>
@@ -226,33 +227,35 @@ export default function ReviewPage() {
                 </div>
               ) : (
                 <div className="space-y-4">
-                  <p className="text-2xl font-bold text-foreground">{card.word}</p>
+                  <p className="font-serif text-3xl font-bold tracking-tight text-ink">{card.word}</p>
                   {card.pronunciation && (
-                    <p className="text-sm italic text-muted-foreground/60">{card.pronunciation}</p>
+                    <p className="font-mono text-sm italic text-muted-foreground/60">/{card.pronunciation}/</p>
                   )}
 
                   <div className="mx-auto mt-4 max-w-md space-y-3 rounded-xl bg-muted/30 p-4 text-left">
                     {card.meaning && (
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">Meaning</p>
-                        <p className="mt-0.5 text-sm text-foreground">{card.meaning}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Meaning</p>
+                        <p className="mt-0.5 text-sm leading-relaxed text-ink/85">{card.meaning}</p>
                       </div>
                     )}
                     {card.translation && (
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-violet-600 dark:text-violet-400">Translation</p>
-                        <p className="mt-0.5 text-sm font-medium text-foreground">{card.translation}</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-brand/80">Translation</p>
+                        <p className="mt-0.5 font-serif text-sm font-medium italic text-brand">{card.translation}</p>
                       </div>
                     )}
                     {card.sentence && (
                       <div>
-                        <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Example</p>
-                        <p className="mt-0.5 text-sm italic text-muted-foreground/80 border-l-2 border-muted-foreground/20 pl-2">"{card.sentence}"</p>
+                        <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground/60">Example</p>
+                        <p className="mt-0.5 border-l-2 border-brand/30 pl-2 font-serif text-sm italic leading-relaxed text-ink/70">
+                          &ldquo;{card.sentence}&rdquo;
+                        </p>
                       </div>
                     )}
                   </div>
 
-                  <p className="pt-2 text-[11px] text-muted-foreground/40">How well did you remember?</p>
+                  <p className="pt-2 font-mono text-[11px] text-muted-foreground/40">How well did you remember?</p>
                   <div className="grid grid-cols-3 gap-1.5 sm:flex sm:justify-center sm:gap-3">
                     <button
                       onClick={() => handleGrade(1)}
@@ -284,8 +287,8 @@ export default function ReviewPage() {
             </div>
 
             {/* Card info footer */}
-            <div className="text-center text-[10px] text-muted-foreground/30">
-              Reviewed {card.totalReviews} time{card.totalReviews !== 1 ? 's' : ''} · Interval: {card.interval}d · Stability: {card.stability?.toFixed(1) || card.ef?.toFixed(1)}
+            <div className="text-center font-mono text-[10px] text-muted-foreground/40 tabular-nums">
+              Reviewed {card.totalReviews} time{card.totalReviews !== 1 ? 's' : ''} · Interval {card.interval}d · Stability {card.stability?.toFixed(1) || card.ef?.toFixed(1)}
             </div>
           </div>
         )}

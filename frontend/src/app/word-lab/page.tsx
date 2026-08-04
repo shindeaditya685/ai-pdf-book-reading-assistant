@@ -247,8 +247,8 @@ export default function WordLabPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-stone-50 dark:bg-stone-950">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+      <div className="flex h-screen items-center justify-center bg-canvas">
+        <Loader2 className="h-8 w-8 animate-spin text-brand" />
       </div>
     )
   }
@@ -374,14 +374,14 @@ export default function WordLabPage() {
 
         {words.length === 0 && !error && !['custom-setup', 'custom-test', 'custom-results', 'history', 'review', 'flashcard', 'pronunciation'].includes(phase) ? (
           <div className="rounded-xl border border-stone-200 bg-white p-10 text-center shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
-            <GraduationCap className="mx-auto h-10 w-10 text-stone-300 dark:text-stone-600" />
-            <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-stone-900 dark:text-white">No Words Yet</h3>
-            <p className="mt-1.5 text-sm text-stone-400 dark:text-stone-500">
+            <GraduationCap className="mx-auto h-10 w-10 text-muted-foreground/40" />
+            <h3 className="mt-4 font-serif text-xl font-bold tracking-tight text-ink">No Words Yet</h3>
+            <p className="mt-1.5 text-sm text-muted-foreground/70">
               Start reading and saving words to build your daily vocabulary list.
             </p>
             <Link
               href="/dashboard"
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-stone-900 px-6 py-2.5 text-sm font-semibold text-white shadow-sm transition-all hover:bg-stone-700 active:scale-[0.97] dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-ink px-6 py-2.5 text-sm font-semibold text-canvas shadow-sm transition-all hover:brightness-125 active:scale-[0.97]"
             >
               Go to Reading Desk
             </Link>
@@ -399,9 +399,9 @@ export default function WordLabPage() {
 
             {generatingQuestions && (
               <div className="flex flex-col items-center justify-center py-24">
-                <Loader2 className="h-10 w-10 animate-spin text-amber-500" />
-                <p className="mt-4 text-sm font-medium text-stone-500">Generating questions with AI...</p>
-                <p className="mt-1 text-xs text-stone-400">Creating fill-in-the-blank, multiple choice, and reverse recall questions</p>
+                <Loader2 className="h-10 w-10 animate-spin text-brand" />
+                <p className="mt-4 text-sm font-medium text-muted-foreground">Generating questions with AI...</p>
+                <p className="mt-1 text-xs text-muted-foreground/70">Creating fill-in-the-blank, multiple choice, and reverse recall questions</p>
               </div>
             )}
 
@@ -459,21 +459,21 @@ export default function WordLabPage() {
             )}
 
             {phase === 'custom-results' && (
-              <div className="rounded-xl border border-stone-200 bg-white p-6 shadow-sm dark:border-stone-700/50 dark:bg-stone-900/60">
+              <div className="rounded-xl border border-paper-border bg-card p-6 shadow-sm">
                 <div className="text-center">
-                  <BookOpen className="mx-auto h-8 w-8 text-violet-400" />
-                  <h3 className="mt-3 font-serif text-lg font-bold text-stone-900 dark:text-white">Custom Test Complete</h3>
-                  <p className="mt-1 text-sm text-stone-400 dark:text-stone-500">
+                  <BookOpen className="mx-auto h-8 w-8 text-brand" />
+                  <h3 className="mt-3 font-serif text-lg font-bold text-ink">Custom Test Complete</h3>
+                  <p className="mt-1 text-sm text-muted-foreground/70">
                     You got {customTestResults.filter((r) => r.correct).length} / {customTestResults.length} correct
                   </p>
                   <div className="mt-4 flex items-center justify-center gap-1.5">
-                    <div className="h-2 flex-1 max-w-xs rounded-full bg-stone-200 dark:bg-stone-700">
+                    <div className="h-2 flex-1 max-w-xs rounded-full bg-muted">
                       <div
-                        className="h-2 rounded-full bg-violet-500 transition-all"
+                        className="h-2 rounded-full bg-brand transition-all"
                         style={{ width: `${(customTestResults.filter((r) => r.correct).length / customTestResults.length) * 100}%` }}
                       />
                     </div>
-                    <span className="text-xs font-bold text-stone-500 dark:text-stone-400">
+                    <span className="font-mono text-xs font-bold text-muted-foreground tabular-nums">
                       {Math.round((customTestResults.filter((r) => r.correct).length / customTestResults.length) * 100)}%
                     </span>
                   </div>
@@ -491,17 +491,17 @@ export default function WordLabPage() {
                     >
                       <div className="flex items-start justify-between gap-2">
                         <div>
-                          <span className="font-bold text-stone-900 dark:text-white">{r.word}</span>
-                          <span className="ml-2 text-xs text-stone-400 dark:text-stone-500">
+                          <span className="font-serif font-semibold tracking-tight text-ink">{r.word}</span>
+                          <span className="ml-2 font-mono text-xs text-muted-foreground/70">
                             {r.questionType.replace('-', ' ')}
                           </span>
                         </div>
-                        <span className={`text-xs font-bold ${r.correct ? 'text-emerald-600' : 'text-rose-600'}`}>
+                        <span className={`font-mono text-xs font-bold ${r.correct ? 'text-emerald-600' : 'text-rose-600'}`}>
                           {r.correct ? 'Correct' : 'Wrong'}
                         </span>
                       </div>
                       {!r.correct && (
-                        <p className="mt-1 text-xs text-stone-500 dark:text-stone-400">
+                        <p className="mt-1 font-mono text-xs text-muted-foreground/70">
                           Your answer: {r.userAnswer || '(empty)'} &middot; Correct: {r.correctAnswer}
                         </p>
                       )}
@@ -512,13 +512,13 @@ export default function WordLabPage() {
                 <div className="mt-5 flex justify-center gap-3">
                   <button
                     onClick={handleCustomBack}
-                    className="rounded-lg border border-stone-200 px-4 py-2 text-xs font-bold text-stone-600 transition-all hover:border-stone-300 dark:border-stone-700 dark:text-stone-400"
+                    className="rounded-lg border border-paper-border px-4 py-2 text-xs font-bold text-muted-foreground transition-colors hover:text-ink"
                   >
                     Back to Setup
                   </button>
                   <button
                     onClick={() => router.push('/dashboard')}
-                    className="rounded-lg bg-stone-900 px-4 py-2 text-xs font-bold text-white shadow-sm transition-all hover:bg-stone-700 dark:bg-white dark:text-stone-900 dark:hover:bg-stone-200"
+                    className="rounded-lg bg-ink px-4 py-2 text-xs font-bold text-canvas shadow-sm transition-all hover:brightness-125 active:scale-[0.97]"
                   >
                     Done
                   </button>
@@ -527,7 +527,7 @@ export default function WordLabPage() {
             )}
 
             {saving && (
-              <div className="fixed bottom-4 right-4 flex items-center gap-2 rounded-lg bg-stone-900 px-3 py-2 text-xs text-white shadow-lg dark:bg-white dark:text-stone-900">
+              <div className="fixed bottom-4 right-4 flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-xs text-canvas shadow-lg">
                 <Loader2 className="h-3 w-3 animate-spin" />
                 Saving results...
               </div>

@@ -538,6 +538,9 @@ html {
 .panel-scrollbar::-webkit-scrollbar-thumb:hover {
   background: color-mix(in oklch, var(--muted-foreground) 55%, transparent);
 }
+.panel-scrollbar::-webkit-scrollbar:horizontal {
+  height: 5px;
+}
 
 /* Word lab test scrollbar */
 .test-scrollbar::-webkit-scrollbar {

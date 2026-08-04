@@ -153,57 +153,62 @@ export default function VocabularyPage() {
 
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-background">
-        <Loader2 className="h-8 w-8 animate-spin text-amber-500" />
+      <div className="flex h-screen items-center justify-center bg-canvas">
+        <Loader2 className="h-8 w-8 animate-spin text-brand" />
       </div>
     )
   }
 
   const activeFilters = [search, pdfFilter, listFilter, letterFilter].some(Boolean)
 
+  const filterControl =
+    'h-9 rounded-lg border border-paper-border bg-card px-2.5 text-sm text-ink outline-none transition-all focus:border-brand/50 focus:ring-2 focus:ring-brand/15'
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-background to-muted/20">
+    <div className="min-h-screen bg-canvas text-ink">
       {/* ── HEADER ── */}
-      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-amber-500/10 bg-background/70 px-4 shadow-[0_1px_0_0_rgba(212,163,115,0.06)] backdrop-blur-xl">
+      <header className="sticky top-0 z-50 flex h-14 items-center justify-between border-b border-paper-border bg-canvas/85 px-4 backdrop-blur-xl">
         <div className="flex items-center gap-2.5">
-          <Link href="/dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-border/50 text-muted-foreground transition-all hover:border-muted-foreground/20 hover:bg-muted/40 hover:text-foreground">
+          <Link href="/dashboard" aria-label="Back to dashboard" className="flex h-7 w-7 items-center justify-center rounded-lg border border-paper-border text-muted-foreground transition-all hover:border-ink/20 hover:bg-muted/40 hover:text-ink">
             <ArrowLeft className="h-3.5 w-3.5" />
           </Link>
-          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-amber-500 to-amber-600 shadow-sm shadow-amber-500/15">
-            <BookText className="h-3.5 w-3.5 text-white" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-md bg-brand text-brand-fg shadow-sm">
+            <BookText className="h-3.5 w-3.5" />
           </div>
-          <span className="text-sm font-semibold text-foreground">Lexicon</span>
+          <span className="font-serif text-base font-bold tracking-tight text-ink">Lexicon</span>
         </div>
         <div className="flex items-center gap-2">
-          <span className="rounded-md bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-amber-600 dark:text-amber-400 tabular-nums">
+          <span className="rounded-full bg-brand-soft px-2 py-0.5 font-mono text-[10px] font-semibold text-brand tabular-nums">
             {filtered.length} word{filtered.length !== 1 ? 's' : ''}
           </span>
           {pdfs.length > 0 && (
-            <span className="hidden rounded-md bg-muted/50 px-2 py-0.5 text-[10px] font-medium text-muted-foreground/60 sm:inline-block tabular-nums">
+            <span className="hidden rounded-md border border-paper-border bg-card px-2 py-0.5 font-mono text-[10px] font-medium text-muted-foreground/60 sm:inline-block tabular-nums">
               {pdfs.length} book{pdfs.length !== 1 ? 's' : ''}
             </span>
           )}
         </div>
       </header>
 
-      <main className="mx-auto max-w-4xl px-4 py-6 sm:px-6 lg:px-8">
+      <main className="mx-auto max-w-4xl px-4 pb-24 pt-6 sm:px-6 lg:px-8">
         {/* ── FILTERS ── */}
         <div className="mb-5 flex flex-col gap-2.5 sm:flex-row sm:items-center">
           <div className="relative flex-1">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-3.5 w-3.5 -translate-y-1/2 text-muted-foreground/40" />
             <input
               type="text"
+              role="searchbox"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               onKeyDown={handleSearchKeyDown}
               placeholder="Search your lexicon..."
-              className="h-9 w-full rounded-lg border border-border/50 bg-background/60 pl-9 pr-3 text-sm text-foreground placeholder:text-muted-foreground/35 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-500/12"
+              className="h-9 w-full rounded-lg border border-paper-border bg-card pl-9 pr-3 text-sm text-ink placeholder:text-muted-foreground/35 outline-none transition-all focus:border-brand/50 focus:ring-2 focus:ring-brand/15"
             />
           </div>
           <select
             value={pdfFilter}
             onChange={(e) => { setPdfFilter(e.target.value); setPage(1) }}
-            className="h-9 rounded-lg border border-border/50 bg-background/60 px-2.5 text-sm text-foreground outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-500/12 sm:w-40"
+            aria-label="Filter by book"
+            className={`${filterControl} sm:w-40`}
           >
             <option value="">All Books</option>
             {pdfs.filter(p => p !== 'bulk-import').map((p) => (
@@ -216,7 +221,8 @@ export default function VocabularyPage() {
           <select
             value={listFilter}
             onChange={(e) => { setListFilter(e.target.value); setPage(1) }}
-            className="h-9 rounded-lg border border-border/50 bg-background/60 px-2.5 text-sm text-foreground outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-500/12 sm:w-36"
+            aria-label="Filter by list"
+            className={`${filterControl} sm:w-36`}
           >
             <option value="">All Lists</option>
             {wordLists.map((l) => (
@@ -230,67 +236,74 @@ export default function VocabularyPage() {
           <BulkWordUpload onComplete={loadWords} />
         </div>
 
-        {/* ── ALPHABET NAVIGATION ── */}
+        {/* ── A–Z THUMB INDEX ──
+            The dictionary device: each letter is a live gauge — letters holding
+            words sit in ink, the active letter is brand-filled, empties dim. */}
         {filtered.length > 0 && (
-          <div className="mb-5 flex flex-wrap items-center gap-1">
+          <nav
+            aria-label="Letter index"
+            className="panel-scrollbar sticky top-14 z-40 -mx-4 mb-5 flex items-center gap-1 overflow-x-auto border-b border-paper-border/60 bg-canvas/90 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8"
+          >
             <button
               onClick={() => { setLetterFilter(''); setPage(1) }}
-              className={`flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-[11px] font-semibold transition-all ${
+              className={`flex h-7 min-w-7 shrink-0 items-center justify-center rounded-md px-1.5 font-mono text-[11px] font-semibold transition-all ${
                 !letterFilter
-                  ? 'bg-amber-100/80 text-amber-800 shadow-sm dark:bg-amber-900/25 dark:text-amber-300'
-                  : 'text-muted-foreground/50 hover:bg-amber-50/50 hover:text-amber-700 dark:hover:bg-amber-900/15 dark:hover:text-amber-400'
+                  ? 'bg-brand text-brand-fg shadow-sm'
+                  : 'text-muted-foreground/60 hover:bg-brand-soft hover:text-brand'
               }`}
             >
               All
             </button>
-            <div className="h-4 w-px bg-border/40 mx-0.5" />
+            <div className="mx-0.5 h-4 w-px shrink-0 bg-paper-border" />
             {'ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('').map((letter) => {
               const hasWords = availableLetters.has(letter)
               return (
                 <button
                   key={letter}
                   disabled={!hasWords}
+                  aria-pressed={letterFilter === letter}
+                  aria-label={`Words starting with ${letter}`}
                   onClick={() => hasWords && (setLetterFilter(letter), setPage(1))}
-                  className={`flex h-7 w-7 items-center justify-center rounded-md text-[11px] font-bold transition-all ${
+                  className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md font-mono text-[11px] font-semibold transition-all ${
                     letterFilter === letter
-                      ? 'bg-amber-100/80 text-amber-800 shadow-sm dark:bg-amber-900/25 dark:text-amber-300'
+                      ? 'bg-brand text-brand-fg shadow-sm'
                       : hasWords
-                        ? 'text-muted-foreground/60 hover:bg-amber-50/50 hover:text-amber-700 dark:hover:bg-amber-900/15 dark:hover:text-amber-400'
-                        : 'text-muted-foreground/15 cursor-default'
+                        ? 'text-ink hover:bg-brand-soft hover:text-brand'
+                        : 'text-ink/15 cursor-default'
                   }`}
                 >
                   {letter}
                 </button>
               )
             })}
-          </div>
+          </nav>
         )}
 
         {/* ── WORD LIST ── */}
         {loading ? (
           <div className="flex items-center justify-center py-24">
             <div className="flex flex-col items-center gap-3">
-              <Loader2 className="h-5 w-5 animate-spin text-amber-500" />
-              <span className="text-xs text-muted-foreground/50">Loading your lexicon...</span>
+              <Loader2 className="h-5 w-5 animate-spin text-brand" />
+              <span className="font-mono text-xs text-muted-foreground/50">Loading your lexicon...</span>
             </div>
           </div>
         ) : filtered.length === 0 ? (
           <div className="flex flex-col items-center gap-4 py-24 text-center">
-            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-amber-100/50 dark:bg-amber-900/15">
-              <BookText className="h-6 w-6 text-amber-500/60" />
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-paper-border bg-card shadow-sm">
+              <BookText className="h-6 w-6 text-brand/60" />
             </div>
             <div>
-              <p className="text-sm font-semibold text-foreground">
-                {activeFilters ? 'No words match your filters' : 'Your lexicon is empty'}
+              <p className="font-serif text-lg font-bold tracking-tight text-ink">
+                {activeFilters ? 'Nothing on this shelf' : 'Your lexicon is empty'}
               </p>
-              <p className="mt-0.5 text-xs text-muted-foreground/50">
+              <p className="mt-0.5 text-xs text-muted-foreground/60">
                 {activeFilters
-                  ? 'Try adjusting your search or filters above'
-                  : 'Bookmark words while reading or import a list to get started'}
+                  ? 'Try a different search or clear a filter above'
+                  : 'Bookmark words while reading, or import a list to get started'}
               </p>
             </div>
             {!activeFilters && (
-              <Link href="/dashboard" className="mt-1 rounded-lg bg-amber-500 px-4 py-2 text-xs font-semibold text-white shadow-sm shadow-amber-500/20 hover:bg-amber-600 transition-colors">
+              <Link href="/dashboard" className="mt-1 rounded-lg bg-brand px-4 py-2 text-xs font-semibold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97]">
                 Start Reading
               </Link>
             )}
@@ -299,30 +312,29 @@ export default function VocabularyPage() {
           <div className="space-y-5">
             {groups.map((g) => (
               <div key={g.letter}>
-                <div className="sticky top-14 z-40 -mx-4 px-4 py-2 backdrop-blur-md sm:-mx-6 sm:px-6 lg:-mx-8 lg:px-8">
-                  <div className="flex items-center gap-2.5">
-                    <div className="flex h-7 w-7 items-center justify-center rounded-md bg-gradient-to-br from-amber-500 to-amber-600 shadow-sm shadow-amber-500/15">
-                      <span className="text-xs font-bold text-white">{g.letter}</span>
-                    </div>
-                    <div className="h-px flex-1 bg-gradient-to-r from-amber-200/40 to-transparent dark:from-amber-800/15" />
-                    <span className="text-[10px] font-medium text-muted-foreground/40 tabular-nums">{g.words.length} word{g.words.length !== 1 ? 's' : ''}</span>
+                <div className="flex items-center gap-2.5 py-2">
+                  <div className="flex h-7 w-7 items-center justify-center rounded-md border border-paper-border bg-card">
+                    <span className="font-mono text-xs font-bold text-brand">{g.letter}</span>
                   </div>
+                  <div className="h-px flex-1 bg-paper-border/70" />
+                  <span className="font-mono text-[10px] text-muted-foreground/50 tabular-nums">{g.words.length} word{g.words.length !== 1 ? 's' : ''}</span>
                 </div>
-                <div className="mt-2 space-y-1.5">
+                <div className="mt-1.5 space-y-1.5">
                   {g.words.map((w) => {
                     const isExpanded = expanded === w.word
                     return (
                       <div
                         key={w.word}
-                        className={`rounded-xl border bg-background/50 shadow-sm transition-all ${
+                        className={`rounded-xl border bg-card shadow-sm transition-all ${
                           isExpanded
-                            ? 'border-amber-400/30 shadow-amber-500/5'
-                            : 'border-border/40 hover:border-border/70 hover:shadow-md'
+                            ? 'border-brand/30 shadow-brand/5'
+                            : 'border-paper-border hover:border-ink/20 hover:shadow-md'
                         }`}
                       >
                         <div
                           role="button"
                           tabIndex={0}
+                          aria-expanded={isExpanded}
                           onClick={() => setExpanded(isExpanded ? null : w.word)}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' || e.key === ' ') {
@@ -334,13 +346,13 @@ export default function VocabularyPage() {
                         >
                           <div className="flex-1 min-w-0">
                             <div className="flex items-baseline gap-2.5">
-                              <span className="text-base font-bold tracking-tight text-foreground">{w.word}</span>
+                              <span className="font-serif text-lg font-bold tracking-tight text-ink">{w.word}</span>
                               {w.pronunciation && (
                                 <span className="hidden items-center gap-1 sm:inline-flex">
-                                  <span className="text-[11px] font-medium text-muted-foreground/40">{w.pronunciation}</span>
+                                  <span className="font-mono text-[11px] text-muted-foreground/45">/{w.pronunciation}/</span>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); speak(w.word) }}
-                                    className="rounded p-0.5 text-muted-foreground/20 transition-colors hover:text-amber-500 hover:bg-amber-500/10"
+                                    className="rounded p-0.5 text-muted-foreground/20 transition-colors hover:bg-brand-soft hover:text-brand"
                                     title="Listen to pronunciation"
                                     aria-label={`Pronounce ${w.word}`}
                                   >
@@ -349,17 +361,17 @@ export default function VocabularyPage() {
                                 </span>
                               )}
                             </div>
-                            <div className="mt-1 flex items-center gap-3 text-[10px] text-muted-foreground/50">
+                            <div className="mt-1 flex items-center gap-3 font-mono text-[10px] text-muted-foreground/50">
                               <span className="flex items-center gap-0.5 tabular-nums">
                                 <Hash className="h-2.5 w-2.5" />
                                 {w.frequency}x
                               </span>
-                              <span className="hidden items-center gap-0.5 sm:flex">
+                              <span className="hidden items-center gap-0.5 tabular-nums sm:flex">
                                 <BookOpen className="h-2.5 w-2.5" />
                                 {w.pdfs.length} book{w.pdfs.length !== 1 ? 's' : ''}
                               </span>
                               {w.translation && (
-                                <span className="hidden items-center gap-0.5 font-medium text-amber-600/70 dark:text-amber-400/70 sm:flex">
+                                <span className="hidden items-center gap-0.5 font-serif italic text-brand/80 sm:flex">
                                   <Languages className="h-2.5 w-2.5" />
                                   {w.translation}
                                 </span>
@@ -371,7 +383,7 @@ export default function VocabularyPage() {
                               {w.meaning}
                             </span>
                           )}
-                          <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted-foreground/25 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                          <ChevronDown className={`h-3.5 w-3.5 shrink-0 text-muted-foreground/30 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                           <button
                             onClick={(e) => { e.stopPropagation(); setDeleteConfirm(w.word) }}
                             className="shrink-0 rounded p-0.5 text-muted-foreground/15 transition-colors hover:text-red-500 hover:bg-red-500/5"
@@ -383,40 +395,40 @@ export default function VocabularyPage() {
                         </div>
 
                         {isExpanded && (
-                          <div className="border-t border-amber-400/15 px-3.5 py-3 space-y-3">
+                          <div className="space-y-3 border-t border-brand/15 px-3.5 py-3">
                             {w.meaning && (
                               <div>
                                 <div className="flex items-center gap-1.5">
-                                  <p className="text-[9px] font-semibold uppercase tracking-widest text-amber-600/60 dark:text-amber-400/60">Meaning</p>
+                                  <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">Meaning</p>
                                   <button
                                     onClick={(e) => { e.stopPropagation(); speak(w.word) }}
-                                    className="rounded p-0.5 text-muted-foreground/20 transition-colors hover:text-amber-500 hover:bg-amber-500/10"
+                                    className="rounded p-0.5 text-muted-foreground/20 transition-colors hover:bg-brand-soft hover:text-brand"
                                     title="Listen to pronunciation"
                                     aria-label={`Pronounce ${w.word}`}
                                   >
                                     <Volume2 className="h-3 w-3" />
                                   </button>
                                 </div>
-                                <p className="mt-0.5 text-sm leading-relaxed text-foreground">{w.meaning}</p>
+                                <p className="mt-0.5 text-sm leading-relaxed text-ink/85">{w.meaning}</p>
                               </div>
                             )}
                             {w.translation && (
-                              <div className="inline-flex items-center gap-1.5 rounded-lg bg-amber-50/50 px-2.5 py-1.5 dark:bg-amber-900/10">
-                                <Languages className="h-3 w-3 text-amber-500/60" />
-                                <span className="text-xs font-medium text-amber-700 dark:text-amber-300">{w.translation}</span>
+                              <div className="inline-flex items-center gap-1.5 rounded-lg bg-brand-soft px-2.5 py-1.5">
+                                <Languages className="h-3 w-3 text-brand" />
+                                <span className="font-serif text-xs font-medium italic text-brand">{w.translation}</span>
                               </div>
                             )}
                             {w.sentence && (
-                              <div className="relative border-l-2 border-amber-300/40 pl-3 dark:border-amber-600/30">
-                                <Quote className="absolute -left-[7px] -top-1 h-3 w-3 text-amber-400/50 dark:text-amber-500/40" />
-                                <p className="text-xs italic leading-relaxed text-muted-foreground/70">{w.sentence}</p>
+                              <div className="relative border-l-2 border-brand/30 pl-3">
+                                <Quote className="absolute -left-[7px] -top-1 h-3 w-3 text-brand/50" />
+                                <p className="font-serif text-xs italic leading-relaxed text-ink/70">&ldquo;{w.sentence}&rdquo;</p>
                               </div>
                             )}
                             {w.pdfs.length > 0 && (
                               <div className="flex flex-wrap items-center gap-1.5">
                                 <BookOpen className="h-2.5 w-2.5 text-muted-foreground/40" />
                                 {w.pdfs.map((p) => (
-                                  <span key={p} className="inline-flex items-center rounded-md bg-muted/40 px-2 py-0.5 text-[10px] font-medium text-muted-foreground/60">
+                                  <span key={p} className="inline-flex items-center rounded-md border border-paper-border bg-muted/30 px-2 py-0.5 font-mono text-[10px] text-muted-foreground/60">
                                     {p.split('/').pop() || p}
                                   </span>
                                 ))}
@@ -435,15 +447,16 @@ export default function VocabularyPage() {
 
         {/* ── PAGINATION ── */}
         {totalPages > 1 && (
-          <div className="mt-8 flex items-center justify-between border-t border-border/30 pt-4">
-            <p className="text-[11px] text-muted-foreground/50 tabular-nums">
+          <div className="mt-8 flex items-center justify-between border-t border-paper-border/60 pt-4">
+            <p className="font-mono text-[11px] text-muted-foreground/50 tabular-nums">
               Page {page} of {totalPages}
             </p>
             <div className="flex items-center gap-1">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={page <= 1}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/50 transition-all hover:bg-amber-50/50 hover:text-amber-700 dark:hover:bg-amber-900/15 dark:hover:text-amber-400 disabled:pointer-events-none disabled:opacity-25"
+                aria-label="Previous page"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/50 transition-all hover:bg-brand-soft hover:text-brand disabled:pointer-events-none disabled:opacity-25"
               >
                 <ChevronLeft className="h-3.5 w-3.5" />
               </button>
@@ -460,15 +473,16 @@ export default function VocabularyPage() {
                 }
                 return pages.map((p, i) =>
                   p === '...' ? (
-                    <span key={`ellipsis-${i}`} className="flex h-7 w-5 items-center justify-center text-[10px] text-muted-foreground/25">···</span>
+                    <span key={`ellipsis-${i}`} className="flex h-7 w-5 items-center justify-center font-mono text-[10px] text-muted-foreground/25">···</span>
                   ) : (
                     <button
                       key={p}
                       onClick={() => setPage(p as number)}
-                      className={`flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 text-[11px] font-semibold transition-all ${
+                      aria-current={p === page ? 'page' : undefined}
+                      className={`flex h-7 min-w-7 items-center justify-center rounded-md px-1.5 font-mono text-[11px] font-semibold transition-all ${
                         p === page
-                          ? 'bg-amber-100/80 text-amber-800 shadow-sm dark:bg-amber-900/25 dark:text-amber-300'
-                          : 'text-muted-foreground/60 hover:bg-amber-50/50 hover:text-amber-700 dark:hover:bg-amber-900/15 dark:hover:text-amber-400'
+                          ? 'bg-brand text-brand-fg shadow-sm'
+                          : 'text-muted-foreground/60 hover:bg-brand-soft hover:text-brand'
                       }`}
                     >
                       {p}
@@ -479,7 +493,8 @@ export default function VocabularyPage() {
               <button
                 onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                 disabled={page >= totalPages}
-                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/50 transition-all hover:bg-amber-50/50 hover:text-amber-700 dark:hover:bg-amber-900/15 dark:hover:text-amber-400 disabled:pointer-events-none disabled:opacity-25"
+                aria-label="Next page"
+                className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/50 transition-all hover:bg-brand-soft hover:text-brand disabled:pointer-events-none disabled:opacity-25"
               >
                 <ChevronRight className="h-3.5 w-3.5" />
               </button>
@@ -490,27 +505,27 @@ export default function VocabularyPage() {
 
       {/* ── DELETE CONFIRMATION ── */}
       {deleteConfirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-sm">
-          <div className="mx-4 w-full max-w-sm rounded-xl border border-border/60 bg-background p-6 shadow-2xl">
-            <div className="flex items-center gap-3 mb-4">
-              <div className="flex h-8 w-8 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/20">
-                <Trash2 className="h-4 w-4 text-red-500" />
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-xl border border-paper-border bg-card p-6 shadow-2xl">
+            <div className="mb-4 flex items-start gap-3">
+              <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/25 dark:text-red-400">
+                <Trash2 className="h-4 w-4" />
               </div>
               <div>
-                <h3 className="text-sm font-bold text-foreground">Remove &ldquo;{deleteConfirm}&rdquo;?</h3>
-                <p className="text-xs text-muted-foreground/60">This removes all bookmarks and history for this word.</p>
+                <h3 className="font-serif text-sm font-bold tracking-tight text-ink">Remove &ldquo;{deleteConfirm}&rdquo;?</h3>
+                <p className="mt-0.5 text-xs text-muted-foreground/60">This removes all bookmarks and history for this word.</p>
               </div>
             </div>
             <div className="flex justify-end gap-2">
               <button
                 onClick={() => setDeleteConfirm(null)}
-                className="rounded-lg border border-border/60 px-3.5 py-1.5 text-xs font-semibold text-muted-foreground hover:text-foreground transition-colors"
+                className="rounded-lg border border-paper-border px-3.5 py-1.5 text-xs font-semibold text-muted-foreground transition-colors hover:text-ink"
               >
                 Cancel
               </button>
               <button
                 onClick={() => handleDeleteWord(deleteConfirm)}
-                className="rounded-lg bg-red-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm shadow-red-500/20 hover:bg-red-600 transition-colors"
+                className="rounded-lg bg-red-500 px-3.5 py-1.5 text-xs font-semibold text-white shadow-sm transition-all hover:bg-red-600 active:scale-[0.97]"
               >
                 Remove
               </button>

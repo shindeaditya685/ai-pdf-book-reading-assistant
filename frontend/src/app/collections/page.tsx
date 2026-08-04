@@ -161,41 +161,42 @@ export default function CollectionsPage() {
 
   if (authLoading) {
     return (
-      <div className="flex h-screen items-center justify-center bg-[#1C1917]">
-        <Loader2 className="h-8 w-8 animate-spin text-emerald-500" />
+      <div className="flex h-screen items-center justify-center bg-canvas">
+        <Loader2 className="h-8 w-8 animate-spin text-brand" />
       </div>
     )
   }
 
   return (
-    <div className="min-h-screen bg-[#1C1917]">
+    <div className="min-h-screen bg-canvas text-ink">
       {/* Header */}
-      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-[#3F3A35] bg-[#1C1917]/90 px-4 backdrop-blur-md">
+      <header className="sticky top-0 z-30 flex h-14 items-center justify-between border-b border-paper-border bg-canvas/85 px-4 backdrop-blur-xl">
         <div className="flex items-center gap-3 min-w-0">
           {selectedId ? (
             <button
               onClick={goToList}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#3F3A35] bg-[#26221E] text-[#A09890] transition-colors hover:border-[#5A5245] hover:text-[#FBF9F6]"
+              aria-label="Back to collections"
+              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-paper-border text-muted-foreground transition-all hover:border-ink/20 hover:bg-muted/40 hover:text-ink"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
           ) : (
-            <Link href="/dashboard" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#3F3A35] bg-[#26221E] text-[#A09890] transition-colors hover:border-[#5A5245] hover:text-[#FBF9F6]">
+            <Link href="/dashboard" aria-label="Back to dashboard" className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-paper-border text-muted-foreground transition-all hover:border-ink/20 hover:bg-muted/40 hover:text-ink">
               <ArrowLeft className="h-4 w-4" />
             </Link>
           )}
           <div className="flex items-center gap-2.5 min-w-0">
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg bg-[#10B981]/20 ring-1 ring-[#10B981]/30">
-              <BookMarked className="h-3.5 w-3.5 text-[#10B981]" />
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-brand text-brand-fg shadow-sm">
+              <BookMarked className="h-3.5 w-3.5" />
             </div>
             <div className="min-w-0">
-              <h1 className="truncate font-serif text-sm font-bold text-[#FBF9F6]">
+              <h1 className="truncate font-serif text-base font-bold tracking-tight text-ink">
                 {selected ? selected.name : 'Collections'}
               </h1>
               {selected ? (
-                <p className="text-[11px] text-[#7C6F5E]">{selected.wordCount} words</p>
+                <p className="font-mono text-[11px] text-muted-foreground tabular-nums">{selected.wordCount} words</p>
               ) : (
-                <p className="text-[11px] text-[#7C6F5E]">{collections.length} collections</p>
+                <p className="font-mono text-[11px] text-muted-foreground tabular-nums">{collections.length} collections</p>
               )}
             </div>
           </div>
@@ -204,7 +205,7 @@ export default function CollectionsPage() {
         {!selectedId && (
           <button
             onClick={() => setShowCreate(!showCreate)}
-            className="flex h-7 items-center gap-1.5 rounded-lg bg-[#10B981] px-2.5 text-[11px] font-semibold text-white transition-colors hover:bg-[#059669]"
+            className="flex h-7 items-center gap-1.5 rounded-lg bg-brand px-2.5 text-[11px] font-semibold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97]"
           >
             <Plus className="h-3 w-3" />
             <span className="hidden sm:inline">New Collection</span>
@@ -218,50 +219,50 @@ export default function CollectionsPage() {
           <div>
             {selectedLoading ? (
               <div className="flex items-center justify-center py-24">
-                <Loader2 className="h-6 w-6 animate-spin text-[#10B981]" />
+                <Loader2 className="h-6 w-6 animate-spin text-brand" />
               </div>
             ) : selected ? (
               <div>
                 {/* Study desk toolbar */}
                 {selected.words.length > 0 && (
-                  <div className="sticky top-14 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 py-3 mb-5 bg-[#1C1917]/90 backdrop-blur-md border-b border-[#3F3A35]/30">
+                  <div className="sticky top-14 z-20 -mx-4 px-4 sm:-mx-6 sm:px-6 py-3 mb-5 bg-canvas/90 backdrop-blur-md border-b border-paper-border/60">
                     <div className="flex items-center gap-3">
-                      {/* Review tool card */}
+                      {/* Review tool card — primary */}
                       <button
                         onClick={() => setStudyMode('flashcard')}
-                        className="group flex flex-1 items-center gap-3 rounded-xl border border-[#10B981]/20 bg-gradient-to-br from-[#10B981]/8 to-transparent p-3 transition-all hover:border-[#10B981]/35 hover:from-[#10B981]/15 active:scale-[0.98]"
+                        className="group flex flex-1 items-center gap-3 rounded-xl border border-brand/30 bg-brand/10 p-3 transition-all hover:border-brand/45 hover:bg-brand/15 active:scale-[0.98]"
                       >
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#10B981]/15 ring-1 ring-[#10B981]/25">
-                          <Brain className="h-4 w-4 text-[#10B981]" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand text-brand-fg shadow-sm">
+                          <Brain className="h-4 w-4" />
                         </div>
                         <div className="text-left min-w-0">
-                          <p className="text-xs font-semibold text-[#FBF9F6]">Review</p>
-                          <p className="text-[10px] text-[#7C6F5E]">Flashcards</p>
+                          <p className="text-xs font-semibold text-ink">Review</p>
+                          <p className="text-[10px] text-muted-foreground">Flashcards</p>
                         </div>
                       </button>
 
-                      {/* Quiz tool card */}
+                      {/* Quiz tool card — secondary */}
                       <button
                         onClick={() => setStudyMode('test')}
-                        className="group flex flex-1 items-center gap-3 rounded-xl border border-[#D4A373]/20 bg-gradient-to-br from-[#D4A373]/8 to-transparent p-3 transition-all hover:border-[#D4A373]/35 hover:from-[#D4A373]/15 active:scale-[0.98]"
+                        className="group flex flex-1 items-center gap-3 rounded-xl border border-paper-border bg-card p-3 transition-all hover:border-brand/35 hover:bg-brand/5 active:scale-[0.98]"
                       >
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#D4A373]/15 ring-1 ring-[#D4A373]/25">
-                          <Sparkles className="h-4 w-4 text-[#D4A373]" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-soft text-brand">
+                          <Sparkles className="h-4 w-4" />
                         </div>
                         <div className="text-left min-w-0">
-                          <p className="text-xs font-semibold text-[#FBF9F6]">Quiz</p>
-                          <p className="text-[10px] text-[#7C6F5E]">AI-generated</p>
+                          <p className="text-xs font-semibold text-ink">Quiz</p>
+                          <p className="text-[10px] text-muted-foreground">AI-generated</p>
                         </div>
                       </button>
 
                       {/* Word count + delete */}
-                      <div className="flex items-center gap-2 pl-2 border-l border-[#3F3A35]/50">
-                        <span className="font-mono text-[10px] text-[#7C6F5E]/50 whitespace-nowrap">
+                      <div className="flex items-center gap-2 pl-2 border-l border-paper-border/70">
+                        <span className="font-mono text-[10px] text-muted-foreground/50 whitespace-nowrap tabular-nums">
                           {selected.words.length}
                         </span>
                         <button
                           onClick={() => { if (confirm('Delete this collection?')) handleDelete(selected._id) }}
-                          className="flex h-7 w-7 items-center justify-center rounded-lg text-[#7C6F5E]/20 transition-colors hover:bg-[#B33A3A]/10 hover:text-[#B33A3A]"
+                          className="flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground/20 transition-colors hover:bg-red-500/10 hover:text-red-500"
                           title="Delete collection"
                         >
                           <Trash2 className="h-3 w-3" />
@@ -274,14 +275,16 @@ export default function CollectionsPage() {
                 {/* Empty state */}
                 {selected.words.length === 0 ? (
                   <div className="flex flex-col items-center gap-4 py-20 text-center">
-                    <BookText className="h-10 w-10 text-[#7C6F5E]/30" />
+                    <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-paper-border bg-card shadow-sm">
+                      <BookText className="h-6 w-6 text-brand/60" />
+                    </div>
                     <div>
-                      <p className="font-serif text-base font-semibold text-[#7C6F5E]">No words yet</p>
-                      <p className="mt-1 text-xs text-[#7C6F5E]/50">Import words from the vocabulary page</p>
+                      <p className="font-serif text-lg font-bold tracking-tight text-ink">No words yet</p>
+                      <p className="mt-0.5 text-xs text-muted-foreground/60">Import words from the vocabulary page</p>
                     </div>
                     <Link
                       href="/vocabulary"
-                      className="rounded-lg bg-[#10B981] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#059669]"
+                      className="mt-1 rounded-lg bg-brand px-4 py-2 text-xs font-semibold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97]"
                     >
                       Go to Vocabulary
                     </Link>
@@ -295,18 +298,16 @@ export default function CollectionsPage() {
                   return (
                     <div>
                       {/* Word list — expandable accordion cards */}
-                      <div className="border-l border-[#3F3A35] pl-4 sm:pl-6">
+                      <div className="relative border-l border-paper-border">
                         {pageWords.map((w, i) => {
                           const isExpanded = expanded === `${w.word}-${w.order}`
                           return (
                             <div
                               key={w.word + w.order}
-                              className="border-b border-[#3F3A35]/40 last:border-0"
+                              className="relative border-b border-paper-border/50 last:border-0"
                             >
                               {/* Ruler dot */}
-                              <div className={`absolute -left-[19px] h-1.5 w-1.5 rounded-full transition-colors sm:-left-[25px] ${isExpanded ? 'bg-[#D4A373]' : 'bg-[#10B981]/40'}`}
-                                style={{ marginTop: '18px' }}
-                              />
+                              <span className={`absolute -left-[3px] top-[19px] h-1.5 w-1.5 rounded-full transition-colors ${isExpanded ? 'bg-brand' : 'bg-brand/40'}`} />
 
                               {/* Collapsed row */}
                               <div
@@ -319,32 +320,32 @@ export default function CollectionsPage() {
                                     setExpanded(isExpanded ? null : `${w.word}-${w.order}`)
                                   }
                                 }}
-                                className={`group flex w-full cursor-pointer items-center gap-3 py-3 text-left transition-colors hover:bg-[#26221E]/30 ${isExpanded ? 'bg-[#26221E]/20' : ''}`}
+                                className={`group flex w-full cursor-pointer items-center gap-3 py-3 pl-4 text-left transition-colors hover:bg-muted/40 rounded-md sm:pl-6 ${isExpanded ? 'bg-muted/30' : ''}`}
                               >
                                 <div className="flex-1 min-w-0">
                                   <div className="flex items-center gap-2.5 flex-wrap">
-                                    <span className="font-serif text-base font-bold tracking-tight text-[#FBF9F6]">
+                                    <span className="font-serif text-lg font-bold tracking-tight text-ink">
                                       {w.word}
                                     </span>
                                     {w.partOfSpeech && (
-                                      <span className="rounded-full border border-[#D4A373]/20 bg-[#D4A373]/8 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-[#D4A373]">
+                                      <span className="rounded-full border border-paper-border bg-muted/30 px-2 py-0.5 text-[9px] font-semibold uppercase tracking-wider text-muted-foreground">
                                         {w.partOfSpeech}
                                       </span>
                                     )}
                                   </div>
                                   {w.meaning && (
-                                    <p className="mt-0.5 truncate text-sm text-[#A09890]/70">{w.meaning}</p>
+                                    <p className="mt-0.5 truncate text-sm text-muted-foreground/70">{w.meaning}</p>
                                   )}
                                 </div>
 
                                 <div className="flex items-center gap-2 shrink-0">
                                   {w.translation && !isExpanded && (
-                                    <span className="hidden text-[11px] font-medium text-[#10B981]/60 sm:block">{w.translation}</span>
+                                    <span className="hidden font-serif text-[11px] font-medium italic text-brand/70 sm:block">{w.translation}</span>
                                   )}
-                                  <ChevronDown className={`h-3.5 w-3.5 text-[#7C6F5E]/30 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
+                                  <ChevronDown className={`h-3.5 w-3.5 text-muted-foreground/30 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                                   <button
                                     onClick={(e) => { e.stopPropagation(); handleDeleteWord(w.word) }}
-                                    className="rounded p-0.5 text-[#7C6F5E]/10 opacity-0 transition-all hover:text-[#B33A3A] group-hover:opacity-100"
+                                    className="rounded p-0.5 text-muted-foreground/10 opacity-0 transition-all hover:text-red-500 group-hover:opacity-100"
                                     title="Remove word"
                                   >
                                     <X className="h-3 w-3" />
@@ -354,47 +355,47 @@ export default function CollectionsPage() {
 
                               {/* Expanded details */}
                               {isExpanded && (
-                                <div className="border-l-2 border-[#D4A373]/30 pb-4 pl-3 ml-0.5">
+                                <div className="border-l-2 border-brand/30 pb-4 pl-3 ml-0.5">
                                   <div className="mb-3 flex items-center gap-2.5 flex-wrap">
                                     {w.partOfSpeech && (
-                                      <span className="rounded-full border border-[#D4A373]/25 bg-[#D4A373]/10 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-[#D4A373]">
+                                      <span className="rounded-full border border-paper-border bg-muted/30 px-2.5 py-0.5 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">
                                         {w.partOfSpeech}
                                       </span>
                                     )}
                                     {w.pronunciation && (
-                                      <span className="font-mono text-[11px] tracking-wide text-[#7C6F5E]/60">
+                                      <span className="font-mono text-[11px] tracking-wide text-muted-foreground/60">
                                         {w.pronunciation}
                                       </span>
                                     )}
                                   </div>
 
-                                  <p className="text-sm leading-relaxed text-[#FBF9F6]">
-                                    {w.meaning || <span className="italic text-[#7C6F5E]/40">No meaning</span>}
+                                  <p className="text-sm leading-relaxed text-ink">
+                                    {w.meaning || <span className="italic text-muted-foreground/40">No meaning</span>}
                                   </p>
 
                                   {w.translation && (
-                                    <p className="mt-2 text-sm font-medium text-[#10B981]/80">
+                                    <p className="mt-2 font-serif text-sm font-medium italic text-brand">
                                       {w.translation}
                                     </p>
                                   )}
 
                                   {w.example && (
                                     <div className="mt-2.5">
-                                      <p className="text-[10px] font-semibold uppercase tracking-wider text-[#7C6F5E]/60">Example</p>
-                                      <p className="mt-0.5 border-l-2 border-[#3F3A35] pl-3 text-sm italic leading-relaxed text-[#A09890]">
+                                      <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Example</p>
+                                      <p className="mt-0.5 border-l-2 border-brand/30 pl-3 text-sm italic leading-relaxed text-ink/70">
                                         &ldquo;{w.example}&rdquo;
                                       </p>
                                     </div>
                                   )}
 
-                                  <p className="mt-2 text-[10px] text-[#7C6F5E]/30">
+                                  <p className="mt-2 font-mono text-[10px] text-muted-foreground/40">
                                     Added {new Date(w.createdAt).toLocaleDateString()}
                                   </p>
 
-                                  <div className="mt-2.5 pt-2 border-t border-[#3F3A35]/30">
+                                  <div className="mt-2.5 pt-2 border-t border-paper-border/40">
                                     <button
                                       onClick={(e) => { e.stopPropagation(); setStudyWord(w) }}
-                                      className="flex items-center gap-1.5 text-[11px] font-semibold text-[#10B981]/50 transition-colors hover:text-[#10B981]"
+                                      className="flex items-center gap-1.5 text-[11px] font-semibold text-brand/70 transition-colors hover:text-brand"
                                     >
                                       <Brain className="h-3 w-3" />
                                       Flashcard this word
@@ -413,17 +414,19 @@ export default function CollectionsPage() {
                           <button
                             onClick={() => setWordPage((p) => Math.max(1, p - 1))}
                             disabled={wordPage === 1}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#3F3A35] text-[#7C6F5E] transition-colors hover:border-[#5A5245] hover:text-[#FBF9F6] disabled:cursor-not-allowed disabled:opacity-30"
+                            aria-label="Previous page"
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/50 transition-all hover:bg-brand-soft hover:text-brand disabled:pointer-events-none disabled:opacity-25"
                           >
                             <ChevronLeft className="h-3 w-3" />
                           </button>
-                          <span className="font-mono text-[11px] text-[#7C6F5E]/50">
+                          <span className="font-mono text-[11px] text-muted-foreground/50 tabular-nums">
                             {start + 1}&ndash;{end} of {total}
                           </span>
                           <button
                             onClick={() => setWordPage((p) => Math.min(totalPages, p + 1))}
                             disabled={wordPage === totalPages}
-                            className="flex h-7 w-7 items-center justify-center rounded-lg border border-[#3F3A35] text-[#7C6F5E] transition-colors hover:border-[#5A5245] hover:text-[#FBF9F6] disabled:cursor-not-allowed disabled:opacity-30"
+                            aria-label="Next page"
+                            className="flex h-7 w-7 items-center justify-center rounded-md text-muted-foreground/50 transition-all hover:bg-brand-soft hover:text-brand disabled:pointer-events-none disabled:opacity-25"
                           >
                             <ChevronRight className="h-3 w-3" />
                           </button>
@@ -435,7 +438,7 @@ export default function CollectionsPage() {
               </div>
             ) : (
               <div className="flex items-center justify-center py-24">
-                <Loader2 className="h-6 w-6 animate-spin text-[#10B981]" />
+                <Loader2 className="h-6 w-6 animate-spin text-brand" />
               </div>
             )}
           </div>
@@ -444,27 +447,28 @@ export default function CollectionsPage() {
           <div>
             {/* Create form */}
             {showCreate && (
-              <div className="mb-6 rounded-xl border border-[#10B981]/20 bg-[#10B981]/5 px-4 py-3">
+              <div className="mb-6 rounded-xl border border-paper-border bg-card px-4 py-3 shadow-sm">
                 <div className="flex items-center gap-3">
                   <input
                     value={createName}
                     onChange={(e) => setCreateName(e.target.value)}
                     onKeyDown={(e) => { if (e.key === 'Enter') handleCreate() }}
                     placeholder="Collection name"
-                    className="flex-1 h-9 rounded-lg border border-[#3F3A35] bg-[#26221E] px-3 text-sm text-[#FBF9F6] placeholder:text-[#7C6F5E]/40 outline-none transition-all focus:border-[#10B981]/50 focus:ring-2 focus:ring-[#10B981]/15"
+                    className="flex-1 h-9 rounded-lg border border-paper-border bg-muted/40 px-3 text-sm text-ink placeholder:text-muted-foreground/35 outline-none transition-all focus:border-brand/50 focus:ring-2 focus:ring-brand/15"
                     autoFocus
                   />
                   <button
                     onClick={handleCreate}
                     disabled={!createName.trim() || creating}
-                    className="flex h-9 items-center gap-1.5 rounded-lg bg-[#10B981] px-3 text-xs font-semibold text-white transition-colors hover:bg-[#059669] disabled:opacity-50"
+                    className="flex h-9 items-center gap-1.5 rounded-lg bg-brand px-3 text-xs font-semibold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97] disabled:opacity-40"
                   >
                     {creating ? <Loader2 className="h-3 w-3 animate-spin" /> : <Plus className="h-3.5 w-3.5" />}
                     Create
                   </button>
                   <button
                     onClick={() => setShowCreate(false)}
-                    className="flex h-9 w-9 items-center justify-center rounded-lg text-[#7C6F5E] transition-colors hover:bg-[#26221E] hover:text-[#FBF9F6]"
+                    aria-label="Cancel"
+                    className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted/40 hover:text-ink"
                   >
                     <X className="h-4 w-4" />
                   </button>
@@ -474,46 +478,48 @@ export default function CollectionsPage() {
 
             {loading ? (
               <div className="flex items-center justify-center py-24">
-                <Loader2 className="h-6 w-6 animate-spin text-[#10B981]" />
+                <Loader2 className="h-6 w-6 animate-spin text-brand" />
               </div>
             ) : collections.length === 0 ? (
               <div className="flex flex-col items-center gap-4 py-20 text-center">
-                <Library className="h-10 w-10 text-[#7C6F5E]/30" />
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl border border-paper-border bg-card shadow-sm">
+                  <Library className="h-6 w-6 text-brand/60" />
+                </div>
                 <div>
-                  <p className="font-serif text-base font-semibold text-[#7C6F5E]">No collections yet</p>
-                  <p className="mt-1 text-xs text-[#7C6F5E]/50">Create one and import words from vocabulary</p>
+                  <p className="font-serif text-lg font-bold tracking-tight text-ink">No collections yet</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground/60">Create one and import words from vocabulary</p>
                 </div>
                 <button
                   onClick={() => setShowCreate(true)}
-                  className="rounded-lg bg-[#10B981] px-4 py-2 text-xs font-semibold text-white transition-colors hover:bg-[#059669]"
+                  className="mt-1 rounded-lg bg-brand px-4 py-2 text-xs font-semibold text-brand-fg shadow-sm transition-all hover:brightness-110 active:scale-[0.97]"
                 >
                   Create Collection
                 </button>
               </div>
             ) : (
-              /* Ledger-style list */
-              <div className="border-l border-[#3F3A35] pl-4 sm:pl-6">
+              /* Shelf of bound volumes */
+              <div className="relative border-l border-paper-border">
                 {collections.map((c) => (
                   <button
                     key={c._id}
                     onClick={() => { setSelectedId(c._id); fetchCollection(c._id) }}
-                    className="group relative flex w-full items-center gap-4 border-b border-[#3F3A35]/50 py-3.5 text-left transition-all hover:border-[#3F3A35] last:border-0"
+                    className="group relative flex w-full items-center gap-4 border-b border-paper-border/50 py-3.5 pl-4 text-left transition-colors last:border-0 hover:bg-muted/30 sm:pl-6"
                   >
                     {/* Dot on the ruler line */}
-                    <div className="absolute -left-[19px] top-[19px] h-1.5 w-1.5 rounded-full bg-[#10B981]/20 transition-colors group-hover:bg-[#10B981]/60 sm:-left-[25px]" />
+                    <span className="absolute -left-[3px] top-[19px] h-1.5 w-1.5 rounded-full bg-brand/20 transition-colors group-hover:bg-brand/60" />
 
-                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-[#26221E] ring-1 ring-[#3F3A35] transition-all group-hover:ring-[#10B981]/30">
-                      <BookMarked className="h-4 w-4 text-[#7C6F5E] transition-colors group-hover:text-[#10B981]" />
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-card ring-1 ring-paper-border transition-all group-hover:ring-brand/40">
+                      <BookMarked className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-brand" />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="font-serif text-sm font-bold text-[#FBF9F6] transition-colors group-hover:text-[#10B981]">
+                      <p className="font-serif text-base font-bold tracking-tight text-ink transition-colors group-hover:text-brand">
                         {c.name}
                       </p>
-                      <p className="mt-0.5 font-mono text-[11px] text-[#7C6F5E]/60">
+                      <p className="mt-0.5 font-mono text-[11px] text-muted-foreground/60 tabular-nums">
                         {c.wordCount} word{c.wordCount !== 1 ? 's' : ''}
                       </p>
                     </div>
-                    <ChevronLeft className="h-3.5 w-3.5 -rotate-180 text-[#7C6F5E]/30 transition-colors group-hover:text-[#7C6F5E]/60" />
+                    <ChevronLeft className="h-3.5 w-3.5 -rotate-180 text-muted-foreground/30 transition-colors group-hover:text-muted-foreground/60" />
                   </button>
                 ))}
               </div>

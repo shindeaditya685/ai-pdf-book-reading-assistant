@@ -147,16 +147,16 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
     <div className={`rounded-xl border shadow-sm transition-all ${
       status === 'done'
         ? 'border-emerald-400/30 bg-emerald-50/30 dark:bg-emerald-950/10'
-        : 'border-border/50 bg-card'
+        : 'border-paper-border bg-card'
     }`}>
       {/* ── HEADER ── */}
       <div className="flex items-center justify-between px-4 py-3">
         <div className="flex items-center gap-2.5">
-          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-amber-500 to-amber-600 shadow-sm shadow-amber-500/15">
-            <Upload className="h-3.5 w-3.5 text-white" />
+          <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-brand text-brand-fg shadow-sm">
+            <Upload className="h-3.5 w-3.5" />
           </div>
           <div>
-            <span className="text-sm font-semibold text-foreground">Import Words</span>
+            <span className="text-sm font-semibold text-ink">Import Words</span>
             <span className="ml-2 text-[11px] text-muted-foreground/50">
               Add words with AI-powered definitions
             </span>
@@ -165,7 +165,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
         {status === 'idle' && !showAdvanced && (
           <button
             onClick={() => setShowAdvanced(true)}
-            className="flex items-center gap-1 rounded-md bg-amber-50/50 px-2.5 py-1 text-[10px] font-medium text-amber-700 hover:bg-amber-100/50 dark:bg-amber-900/15 dark:text-amber-400 dark:hover:bg-amber-900/25 transition-colors"
+            className="flex items-center gap-1 rounded-md bg-brand-soft px-2.5 py-1 text-[10px] font-medium text-brand hover:bg-brand-soft/70 transition-colors"
           >
             Options
             <ChevronDown className="h-3 w-3" />
@@ -182,11 +182,11 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
             onChange={(e) => setInput(e.target.value)}
             placeholder="ephemeral, pragmatic, ubiquitous, sesquipedalian, serendipity"
             rows={3}
-            className="min-h-[72px] w-full resize-y rounded-lg border border-border/50 bg-background/80 px-3 py-2.5 text-sm text-foreground placeholder:text-muted-foreground/30 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-500/10 disabled:opacity-50"
+            className="min-h-[72px] w-full resize-y rounded-lg border border-paper-border bg-muted/40 px-3 py-2.5 text-sm text-ink placeholder:text-muted-foreground/30 outline-none transition-all focus:border-brand/50 focus:ring-2 focus:ring-brand/15 disabled:opacity-50"
             disabled={status === 'processing'}
           />
           {input && wordCount > 0 && (
-            <div className="absolute bottom-2 right-2 rounded-md bg-amber-100/60 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:bg-amber-900/20 dark:text-amber-400 tabular-nums">
+            <div className="absolute bottom-2 right-2 rounded-md bg-brand-soft px-2 py-0.5 text-[10px] font-semibold text-brand tabular-nums">
               {wordCount} word{wordCount !== 1 ? 's' : ''}
               {wordCount > 100 && (
                 <span className="ml-1 text-red-500">(max 100)</span>
@@ -213,7 +213,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
                 <button
                   type="button"
                   onClick={() => setBookDropdownOpen(!bookDropdownOpen)}
-                  className="flex h-9 w-full items-center justify-between rounded-lg border border-border/50 bg-background/60 px-3 text-sm text-foreground outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-500/10"
+                  className="flex h-9 w-full items-center justify-between rounded-lg border border-paper-border bg-muted/40 px-3 text-sm text-ink outline-none transition-all focus:border-brand/50 focus:ring-2 focus:ring-brand/15"
                   disabled={status === 'processing'}
                 >
                   <span className={selectedBook ? '' : 'text-muted-foreground/40'}>
@@ -226,7 +226,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
                     <button
                       type="button"
                       onClick={() => { setSelectedBook(null); setBookDropdownOpen(false) }}
-                      className={`flex w-full items-center px-3 py-2 text-left text-xs transition-colors hover:bg-muted ${!selectedBook ? 'bg-amber-50/50 dark:bg-amber-900/10 font-semibold' : 'text-muted-foreground'}`}
+                      className={`flex w-full items-center px-3 py-2 text-left text-xs transition-colors hover:bg-muted ${!selectedBook ? 'bg-brand-soft/60 font-semibold' : 'text-muted-foreground'}`}
                     >
                       None
                     </button>
@@ -235,7 +235,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
                         key={book.name}
                         type="button"
                         onClick={() => { setSelectedBook(book); setBookDropdownOpen(false) }}
-                        className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted ${selectedBook?.name === book.name ? 'bg-amber-50/50 dark:bg-amber-900/10 font-semibold text-foreground' : 'text-foreground'}`}
+                        className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted ${selectedBook?.name === book.name ? 'bg-brand-soft/60 font-semibold text-ink' : 'text-ink'}`}
                       >
                         <BookText className="h-3 w-3 shrink-0 text-muted-foreground/40" />
                         <span className="truncate">{book.label}</span>
@@ -257,7 +257,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
                       value={collectionName}
                       onChange={(e) => setCollectionName(e.target.value)}
                       placeholder="New collection name..."
-                      className="h-9 flex-1 rounded-lg border border-border/50 bg-background/60 px-3 text-sm text-foreground placeholder:text-muted-foreground/30 outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-500/10"
+                      className="h-9 flex-1 rounded-lg border border-paper-border bg-muted/40 px-3 text-sm text-ink placeholder:text-muted-foreground/30 outline-none transition-all focus:border-brand/50 focus:ring-2 focus:ring-brand/15"
                       disabled={status === 'processing'}
                       autoFocus
                     />
@@ -274,7 +274,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
                     <button
                       type="button"
                       onClick={() => setCollectionDropdownOpen(!collectionDropdownOpen)}
-                      className="flex h-9 w-full items-center justify-between rounded-lg border border-border/50 bg-background/60 px-3 text-sm text-foreground outline-none transition-all focus:border-amber-400/50 focus:ring-2 focus:ring-amber-500/10"
+                      className="flex h-9 w-full items-center justify-between rounded-lg border border-paper-border bg-muted/40 px-3 text-sm text-ink outline-none transition-all focus:border-brand/50 focus:ring-2 focus:ring-brand/15"
                       disabled={status === 'processing'}
                     >
                       <span className={collectionName ? '' : 'text-muted-foreground/40'}>
@@ -287,7 +287,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
                         <button
                           type="button"
                           onClick={() => { setCollectionName(''); setCollectionDropdownOpen(false) }}
-                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted ${!collectionName ? 'bg-amber-50/50 dark:bg-amber-900/10 font-semibold text-foreground' : 'text-muted-foreground'}`}
+                          className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted ${!collectionName ? 'bg-brand-soft/60 font-semibold text-ink' : 'text-muted-foreground'}`}
                         >
                           <Check className={`h-3 w-3 ${!collectionName ? 'opacity-100' : 'opacity-0'}`} />
                           None
@@ -297,7 +297,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
                             key={c._id}
                             type="button"
                             onClick={() => { setCollectionName(c.name); setCollectionDropdownOpen(false) }}
-                            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted ${collectionName === c.name ? 'bg-amber-50/50 dark:bg-amber-900/10 font-semibold text-foreground' : 'text-foreground'}`}
+                            className={`flex w-full items-center gap-2 px-3 py-2 text-left text-xs transition-colors hover:bg-muted ${collectionName === c.name ? 'bg-brand-soft/60 font-semibold text-ink' : 'text-ink'}`}
                           >
                             <Check className={`h-3 w-3 ${collectionName === c.name ? 'opacity-100' : 'opacity-0'}`} />
                             <Library className="h-3 w-3 shrink-0 text-muted-foreground/40" />
@@ -309,7 +309,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
                         <button
                           type="button"
                           onClick={() => { setShowNewCollectionInput(true); setCollectionDropdownOpen(false) }}
-                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-amber-600 hover:bg-amber-50/50 dark:text-amber-400 dark:hover:bg-amber-900/10 transition-colors"
+                          className="flex w-full items-center gap-2 px-3 py-2 text-left text-xs text-brand hover:bg-brand-soft/50 transition-colors"
                         >
                           <Plus className="h-3 w-3" />
                           Create new collection...
@@ -332,7 +332,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
                       disabled={status === 'processing'}
                     />
                     <div className={`h-5 w-9 rounded-full transition-colors ${
-                      createFlashcards ? 'bg-amber-400' : 'bg-border'
+                      createFlashcards ? 'bg-brand' : 'bg-border'
                     }`} />
                     <div className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform ${
                       createFlashcards ? 'translate-x-4' : ''
@@ -369,7 +369,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
               size="sm"
               disabled={!input.trim() || wordCount === 0 || wordCount > 100}
               onClick={handleSubmit}
-              className="h-8 gap-1.5 bg-amber-500 text-xs font-semibold text-white shadow-sm shadow-amber-500/20 hover:bg-amber-600 disabled:opacity-40"
+              className="h-8 gap-1.5 bg-brand text-xs font-semibold text-brand-fg shadow-sm shadow-brand/20 hover:brightness-110 disabled:opacity-40"
             >
               <>
                 <Sparkles className="h-3 w-3" />
@@ -394,7 +394,7 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
               size="sm"
               disabled={!input.trim() || wordCount === 0 || wordCount > 100 || status === 'processing'}
               onClick={handleSubmit}
-              className="h-8 gap-1.5 bg-amber-500 text-xs font-semibold text-white shadow-sm shadow-amber-500/20 hover:bg-amber-600 disabled:opacity-40"
+              className="h-8 gap-1.5 bg-brand text-xs font-semibold text-brand-fg shadow-sm shadow-brand/20 hover:brightness-110 disabled:opacity-40"
             >
               {status === 'processing' ? (
                 <>
@@ -413,17 +413,17 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
 
         {/* ── PROGRESS ── */}
         {status === 'processing' && (
-          <div className="flex items-center gap-2 rounded-lg bg-amber-50/50 px-3 py-2 dark:bg-amber-900/10">
-            <Loader2 className="h-3.5 w-3.5 animate-spin text-amber-500" />
+          <div className="flex items-center gap-2 rounded-lg bg-brand-soft/40 px-3 py-2">
+            <Loader2 className="h-3.5 w-3.5 animate-spin text-brand" />
             <div className="flex-1 min-w-0">
-              <div className="h-1.5 rounded-full bg-amber-200/50 dark:bg-amber-800/30 overflow-hidden">
+              <div className="h-1.5 rounded-full bg-brand/15 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-gradient-to-r from-amber-400 to-amber-500 transition-all duration-300"
+                  className="h-full rounded-full bg-gradient-to-r from-brand to-brand/80 transition-all duration-300"
                   style={{ width: totalBatches > 0 ? `${(currentBatch / totalBatches) * 100}%` : '0%' }}
                 />
               </div>
             </div>
-            <span className="text-[10px] font-medium text-amber-700 dark:text-amber-400 tabular-nums">
+            <span className="text-[10px] font-medium text-brand tabular-nums">
               {currentBatch}/{totalBatches}
             </span>
           </div>
@@ -483,18 +483,18 @@ export function BulkWordUpload({ onComplete }: { onComplete?: () => void }) {
             )}
 
             {result.words.length > 0 && (
-              <div className="max-h-28 overflow-y-auto space-y-0.5 rounded-md bg-white/50 dark:bg-black/20 p-2">
+              <div className="max-h-28 overflow-y-auto space-y-0.5 rounded-md bg-muted/40 p-2">
                 {result.words.map((w) => (
                   <div key={w.word} className="flex items-center gap-2 text-[11px]">
                     <button
                       onClick={() => speak(w.word)}
-                      className="shrink-0 rounded p-0.5 text-muted-foreground/20 transition-colors hover:text-amber-500 hover:bg-amber-500/10"
+                      className="shrink-0 rounded p-0.5 text-muted-foreground/20 transition-colors hover:text-brand hover:bg-brand/10"
                       title="Listen"
                       aria-label={`Pronounce ${w.word}`}
                     >
                       <Volume2 className="h-3 w-3" />
                     </button>
-                    <span className="font-semibold text-foreground">{w.word}</span>
+                    <span className="font-semibold text-ink">{w.word}</span>
                     <span className="text-muted-foreground/70 truncate">{w.meaning}</span>
                     {w.translation && (
                       <span className="shrink-0 text-emerald-600/70 dark:text-emerald-400/70">{w.translation}</span>
