@@ -1,6 +1,18 @@
 'use client'
 
-import { Globe, Volume2, Sun, Moon, Settings2, Palette, Bookmark, Brain, List, Clock, Timer, Check } from 'lucide-react'
+import {
+  Globe,
+  Settings2,
+  Bookmark,
+  Clock,
+  Timer,
+  Brain,
+  List,
+  Palette,
+  Sun,
+  Moon,
+  Check,
+} from 'lucide-react'
 import {
   Select,
   SelectContent,
@@ -11,19 +23,100 @@ import {
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
 import { usePDFStore, LANGUAGE_LABELS, ACCENT_LABELS, type TranslationLanguage, type PronunciationAccent } from '@/store/use-pdf-store'
 import { Button } from '@/components/ui/button'
-import { motion } from 'framer-motion'
+import { cn } from '@/lib/utils'
+import type { ReactNode } from 'react'
 
-const ACCENT_OPTIONS = [
-  { value: 'emerald' as const, label: 'Emerald', className: 'bg-emerald-500' },
-  { value: 'violet' as const, label: 'Violet', className: 'bg-violet-500' },
-  { value: 'amber' as const, label: 'Amber', className: 'bg-amber-500' },
-  { value: 'rose' as const, label: 'Rose', className: 'bg-rose-500' },
-  { value: 'blue' as const, label: 'Blue', className: 'bg-blue-500' },
-  { value: 'purple' as const, label: 'Purple', className: 'bg-purple-500' },
-  { value: 'cyan' as const, label: 'Cyan', className: 'bg-cyan-500' },
-  { value: 'orange' as const, label: 'Orange', className: 'bg-orange-500' },
-  { value: 'pink' as const, label: 'Pink', className: 'bg-pink-500' },
+/* Exact shade values match the --brand of each accent class in globals.css.
+   They are hard-coded (not bg-emerald-500 etc.) so the swatches are accurate
+   even while the applied accent overrides Tailwind's emerald/violet scales. */
+const ACCENTS = [
+  { value: 'emerald' as const, name: 'Emerald', hex: '#10b981' },
+  { value: 'violet' as const, name: 'Violet', hex: '#8b5cf6' },
+  { value: 'amber' as const, name: 'Amber', hex: '#f59e0b' },
+  { value: 'rose' as const, name: 'Rose', hex: '#f43f5e' },
+  { value: 'blue' as const, name: 'Blue', hex: '#3b82f6' },
+  { value: 'purple' as const, name: 'Purple', hex: '#a855f7' },
+  { value: 'cyan' as const, name: 'Cyan', hex: '#06b6d4' },
+  { value: 'orange' as const, name: 'Orange', hex: '#f97316' },
+  { value: 'pink' as const, name: 'Pink', hex: '#ec4899' },
 ]
+
+function SectionLabel({ children }: { children: ReactNode }) {
+  return (
+    <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground">
+      {children}
+    </p>
+  )
+}
+
+function Toggle({
+  on,
+  onChange,
+  disabled,
+  label,
+}: {
+  on: boolean
+  onChange: () => void
+  disabled?: boolean
+  label: string
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={on}
+      aria-label={label}
+      onClick={onChange}
+      disabled={disabled}
+      className={cn(
+        'relative h-5 w-9 shrink-0 rounded-full transition-colors duration-200 ease-in-out',
+        on ? 'bg-brand' : 'bg-muted-foreground/25',
+        disabled && 'cursor-not-allowed opacity-60'
+      )}
+    >
+      <span
+        className={cn(
+          'absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-sm transition-transform duration-200 ease-in-out',
+          on && 'translate-x-4'
+        )}
+      />
+    </button>
+  )
+}
+
+function SwitchRow({
+  icon,
+  label,
+  hint,
+  on,
+  onChange,
+  disabled,
+}: {
+  icon?: ReactNode
+  label: string
+  hint?: string
+  on: boolean
+  onChange: () => void
+  disabled?: boolean
+}) {
+  return (
+    <div
+      className={cn(
+        'flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-3 py-2.5 transition-colors',
+        !disabled && 'hover:bg-background'
+      )}
+    >
+      <div className="flex min-w-0 items-center gap-2.5">
+        {icon && <span className="shrink-0 text-muted-foreground/70">{icon}</span>}
+        <div className="min-w-0">
+          <span className="block text-xs font-medium text-foreground">{label}</span>
+          {hint && <span className="mt-0.5 block truncate text-[10px] text-muted-foreground/70">{hint}</span>}
+        </div>
+      </div>
+      <Toggle on={on} onChange={onChange} disabled={disabled} label={label} />
+    </div>
+  )
+}
 
 export function SettingsPanel() {
   const {
@@ -41,7 +134,7 @@ export function SettingsPanel() {
     setAutoAddToList,
     defaultListId,
     showReadingTimer,
-    setShowReadingTimer
+    setShowReadingTimer,
   } = usePDFStore()
 
   return (
@@ -60,35 +153,36 @@ export function SettingsPanel() {
       <PopoverContent
         align="end"
         sideOffset={8}
-        className="w-80 rounded-2xl border-border/50 bg-background/80 p-4 shadow-2xl backdrop-blur-xl focus-visible:outline-none"
+        className="panel-scrollbar max-h-[min(70vh,32rem)] w-80 overflow-y-auto rounded-2xl border-border/50 bg-background/80 p-4 shadow-2xl backdrop-blur-xl focus-visible:outline-none overscroll-contain"
       >
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Header */}
-          <div className="flex items-center gap-2 pb-3 border-b border-border/40">
-            <div className="flex h-7 w-7 items-center justify-center rounded-lg bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-md">
-              <Settings2 className="h-4 w-4 text-white" />
-            </div>
-            <div>
-              <span className="text-sm font-bold text-foreground block leading-none">Settings</span>
-              <span className="text-[10px] text-muted-foreground/80 mt-0.5 block">Customize your workspace</span>
-            </div>
-          </div>
+          <header className="px-0.5">
+            <p className="mb-1 block h-2 w-8 rounded-full bg-brand" />
+            <h2 className="font-serif text-lg font-semibold leading-tight tracking-tight text-foreground">
+              Your reading room
+            </h2>
+            <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
+              Tune the voice, the timer, and how your saved words behave.
+            </p>
+          </header>
 
-          {/* Section: Language & Accent */}
-          <div className="rounded-xl border border-border/40 bg-muted/30 p-3 space-y-3">
-            <div className="flex items-center gap-1.5 border-b border-border/20 pb-1.5">
-              <Globe className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">Language & Accent</span>
+          {/* Language */}
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-1.5 border-b border-border/30 pb-1.5">
+              <Globe className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <SectionLabel>Language</SectionLabel>
             </div>
 
-            {/* Translation Language */}
             <div className="space-y-1">
-              <label className="text-[10px] font-medium text-muted-foreground/80">Translation Language</label>
+              <label className="block text-[10px] font-medium text-muted-foreground/80">
+                Translation language
+              </label>
               <Select
                 value={translationLanguage}
                 onValueChange={(val) => setTranslationLanguage(val as TranslationLanguage)}
               >
-                <SelectTrigger className="h-8 w-full rounded-lg border-border/60 text-xs bg-background/50 hover:bg-background/80 transition-colors">
+                <SelectTrigger className="h-8 w-full rounded-lg border-border/60 bg-background/50 text-xs transition-colors hover:bg-background/80">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -101,14 +195,12 @@ export function SettingsPanel() {
               </Select>
             </div>
 
-            {/* Pronunciation Accent */}
             <div className="space-y-1">
-              <label className="text-[10px] font-medium text-muted-foreground/80">Pronunciation Accent</label>
-              <Select
-                value={accent}
-                onValueChange={(val) => setAccent(val as PronunciationAccent)}
-              >
-                <SelectTrigger className="h-8 w-full rounded-lg border-border/60 text-xs bg-background/50 hover:bg-background/80 transition-colors">
+              <label className="block text-[10px] font-medium text-muted-foreground/80">
+                Pronunciation accent
+              </label>
+              <Select value={accent} onValueChange={(val) => setAccent(val as PronunciationAccent)}>
+                <SelectTrigger className="h-8 w-full rounded-lg border-border/60 bg-background/50 text-xs transition-colors hover:bg-background/80">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -122,159 +214,111 @@ export function SettingsPanel() {
             </div>
           </div>
 
-          {/* Section: Reading Tools */}
-          <div className="rounded-xl border border-border/40 bg-muted/30 p-3 space-y-3">
-            <div className="flex items-center gap-1.5 border-b border-border/20 pb-1.5">
-              <Clock className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">Reading Tools</span>
+          {/* Reading aid */}
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-1.5 border-b border-border/30 pb-1.5">
+              <Clock className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <SectionLabel>Reading</SectionLabel>
             </div>
-
-            <div className="flex items-center justify-between rounded-lg bg-background/40 border border-border/30 px-3 py-2 text-xs text-muted-foreground transition-all hover:bg-background/60 shadow-sm">
-              <div className="flex items-center gap-2">
-                <Timer className="h-3.5 w-3.5 text-muted-foreground/60" />
-                <span>Show Reading Timer</span>
-              </div>
-              <motion.button
-                whileTap={{ scale: 0.9 }}
-                role="switch"
-                aria-checked={showReadingTimer}
-                onClick={() => setShowReadingTimer(!showReadingTimer)}
-                className={`relative h-5 w-9 rounded-full transition-colors duration-200 ease-in-out shadow-inner ${
-                  showReadingTimer ? 'bg-emerald-500' : 'bg-muted-foreground/20'
-                }`}
-              >
-                <span
-                  className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out ${
-                    showReadingTimer ? 'translate-x-4' : ''
-                  }`}
-                />
-              </motion.button>
-            </div>
+            <SwitchRow
+              icon={<Timer className="h-3.5 w-3.5" />}
+              label="Reading timer"
+              on={showReadingTimer}
+              onChange={() => setShowReadingTimer(!showReadingTimer)}
+            />
           </div>
 
-          {/* Section: Vocabulary Workflow */}
-          <div className="rounded-xl border border-border/40 bg-muted/30 p-3 space-y-3">
-            <div className="flex items-center gap-1.5 border-b border-border/20 pb-1.5">
-              <Bookmark className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">Vocabulary Workflow</span>
+          {/* When you save a word */}
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-1.5 border-b border-border/30 pb-1.5">
+              <Bookmark className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <SectionLabel>Vocabulary</SectionLabel>
             </div>
-
-            <p className="text-[10px] text-muted-foreground/75 px-1 leading-normal">
-              When I bookmark a word on the page:
-            </p>
-
             <div className="space-y-2">
-              {/* Toggle: Auto Flashcard */}
-              <div className="flex items-center justify-between rounded-lg bg-background/40 border border-border/30 px-3 py-2 text-xs text-muted-foreground transition-all hover:bg-background/60 shadow-sm">
-                <div className="flex items-center gap-2">
-                  <Brain className="h-3.5 w-3.5 text-muted-foreground/60" />
-                  <span>Auto-create flashcard</span>
-                </div>
-                <motion.button
-                  whileTap={{ scale: 0.9 }}
-                  role="switch"
-                  aria-checked={autoFlashcard}
-                  onClick={() => setAutoFlashcard(!autoFlashcard)}
-                  className={`relative h-5 w-9 rounded-full transition-colors duration-200 ease-in-out shadow-inner ${
-                    autoFlashcard ? 'bg-emerald-500' : 'bg-muted-foreground/20'
-                  }`}
-                >
-                  <span
-                    className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out ${
-                      autoFlashcard ? 'translate-x-4' : ''
-                    }`}
-                  />
-                </motion.button>
-              </div>
-
-              {/* Toggle: Auto Add List */}
-              <div className={`flex items-center justify-between rounded-lg bg-background/40 border border-border/30 px-3 py-2 text-xs text-muted-foreground transition-all hover:bg-background/60 shadow-sm ${
-                !defaultListId ? 'opacity-50' : ''
-              }`}>
-                <div className="flex items-center gap-2">
-                  <List className="h-3.5 w-3.5 text-muted-foreground/60" />
-                  <span>Add to default list</span>
-                </div>
-                <motion.button
-                  whileTap={defaultListId ? { scale: 0.9 } : undefined}
-                  role="switch"
-                  aria-checked={autoAddToList && !!defaultListId}
-                  onClick={() => setAutoAddToList(!autoAddToList)}
-                  disabled={!defaultListId}
-                  className={`relative h-5 w-9 rounded-full transition-colors duration-200 ease-in-out shadow-inner ${
-                    autoAddToList && defaultListId ? 'bg-emerald-500' : 'bg-muted-foreground/20'
-                  } ${!defaultListId ? 'cursor-not-allowed' : ''}`}
-                >
-                  <span
-                    className={`absolute left-0.5 top-0.5 h-4 w-4 rounded-full bg-white shadow-md transition-transform duration-200 ease-in-out ${
-                      autoAddToList && defaultListId ? 'translate-x-4' : ''
-                    }`}
-                  />
-                </motion.button>
-              </div>
-
-              {!defaultListId && (
-                <p className="px-1 text-[9px] text-muted-foreground/60 italic leading-snug">
-                  * Star a word list under Word Lists to auto-add.
-                </p>
-              )}
+              <SwitchRow
+                icon={<Brain />}
+                label="Auto-create a flashcard"
+                on={autoFlashcard}
+                onChange={() => setAutoFlashcard(!autoFlashcard)}
+              />
+              <SwitchRow
+                icon={<List />}
+                label="Add to the default list"
+                hint={!defaultListId ? 'Star a list under Word lists to switch on' : undefined}
+                on={autoAddToList && !!defaultListId}
+                onChange={() => setAutoAddToList(!autoAddToList)}
+                disabled={!defaultListId}
+              />
             </div>
           </div>
 
-          {/* Section: Theme & Accent */}
-          <div className="rounded-xl border border-border/40 bg-muted/30 p-3 space-y-3">
-            <div className="flex items-center gap-1.5 border-b border-border/20 pb-1.5">
-              <Palette className="h-3.5 w-3.5 text-emerald-500" />
-              <span className="text-[10px] font-bold uppercase tracking-wider text-foreground">Theme & Accent</span>
+          {/* Look */}
+          <div className="space-y-2.5">
+            <div className="flex items-center gap-1.5 border-b border-border/30 pb-1.5">
+              <Palette className="h-3.5 w-3.5 text-muted-foreground/70" />
+              <SectionLabel>Look</SectionLabel>
             </div>
 
-            <div className="space-y-1.5">
-              <label className="text-[10px] font-medium text-muted-foreground/80 block">Theme Color</label>
-              <div className="grid grid-cols-5 gap-2">
-                {ACCENT_OPTIONS.map((opt) => {
+            <div className="flex items-center justify-between rounded-xl border border-border/70 bg-background/60 px-1 py-1">
+              <button
+                onClick={() => theme !== 'light' && toggleTheme()}
+                className={cn(
+                  'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-semibold transition-colors',
+                  theme === 'light' ? 'bg-brand-soft text-brand' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Sun className="h-3.5 w-3.5" />
+                Light
+              </button>
+              <button
+                onClick={() => theme !== 'dark' && toggleTheme()}
+                className={cn(
+                  'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-semibold transition-colors',
+                  theme === 'dark' ? 'bg-brand-soft text-brand' : 'text-muted-foreground hover:text-foreground'
+                )}
+              >
+                <Moon className="h-3.5 w-3.5" />
+                Dark
+              </button>
+            </div>
+
+            {/* Accent — the signature "shelf of inks" */}
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <span className="text-[10px] font-medium text-muted-foreground/80">Highlight shade</span>
+                <span className="font-mono text-[10px] tracking-wider text-muted-foreground/70">
+                  {ACCENTS.find((a) => a.value === themeAccent)?.name}
+                </span>
+              </div>
+              <div className="grid grid-cols-9 gap-1.5" role="group" aria-label="Highlight shade">
+                {ACCENTS.map((opt) => {
                   const isSelected = themeAccent === opt.value
                   return (
-                    <motion.button
+                    <button
                       key={opt.value}
-                      whileHover={{ scale: 1.15 }}
-                      whileTap={{ scale: 0.95 }}
+                      type="button"
+                      aria-pressed={isSelected}
+                      title={opt.name}
+                      aria-label={opt.name}
                       onClick={() => setThemeAccent(opt.value)}
-                      className={`relative flex h-8 items-center justify-center rounded-xl ${opt.className} transition-all shadow-sm ${
-                        isSelected
-                          ? 'ring-2 ring-offset-2 ring-offset-background ring-foreground scale-110 shadow-md'
-                          : 'opacity-80 hover:opacity-100'
-                      }`}
-                      title={opt.label}
+                      style={{
+                        backgroundColor: opt.hex,
+                        boxShadow: isSelected
+                          ? `0 0 0 2px var(--popover), 0 0 0 4px ${opt.hex}`
+                          : undefined,
+                      }}
+                      className={cn(
+                        'relative flex h-9 items-center justify-center rounded-[10px] transition-transform duration-150 ease-out hover:scale-110 motion-reduce:transition-none',
+                        !isSelected && 'opacity-85 saturate-[0.9] hover:opacity-100 hover:saturate-100'
+                      )}
                     >
                       {isSelected && (
-                        <Check className="h-4 w-4 text-white drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]" />
+                        <Check className="h-3 w-3 text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.35)]" />
                       )}
-                    </motion.button>
+                    </button>
                   )
                 })}
               </div>
-            </div>
-
-            {/* Appearance Toggle */}
-            <div className="pt-1.5">
-              <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={toggleTheme}
-                className="flex w-full items-center justify-between rounded-lg bg-background/50 border border-border/40 px-3 py-2 text-xs font-medium text-muted-foreground transition-all hover:bg-background hover:text-foreground shadow-sm"
-              >
-                <div className="flex items-center gap-2">
-                  {theme === 'dark' ? (
-                    <Sun className="h-4 w-4 text-amber-500" />
-                  ) : (
-                    <Moon className="h-4 w-4 text-indigo-500" />
-                  )}
-                  <span>Appearance</span>
-                </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider bg-muted/80 px-2 py-0.5 rounded-md text-foreground">
-                  {theme === 'dark' ? 'Dark' : 'Light'}
-                </span>
-              </motion.button>
             </div>
           </div>
         </div>

@@ -583,7 +583,7 @@ export function ShareSessionPanel() {
         />
       }
     >
-      <div className="flex-1 overflow-auto">
+      <div className="panel-scrollbar flex-1 overflow-auto">
         {tab === 'sessions' || !shareSession ? (
           <div className="space-y-5 p-4">
             {/* Room introduction */}
@@ -1206,7 +1206,7 @@ export function ShareSessionPanel() {
               {subTab === 'chat' && (
                 <div className="flex flex-col gap-2">
                   <div className="flex h-[400px] flex-col rounded-2xl border border-border/60 bg-card/40">
-                    <div className="flex-1 space-y-2.5 overflow-auto p-3">
+                    <div className="panel-scrollbar flex-1 space-y-2.5 overflow-auto p-3">
                       {sessionChat.length === 0 ? (
                         <EmptyState
                           icon={MessageCircle}

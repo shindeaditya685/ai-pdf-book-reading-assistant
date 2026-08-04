@@ -97,7 +97,7 @@ export function ResponsivePanel({
                 <div className="h-1.5 w-10 rounded-full bg-muted-foreground/30" />
               </div>
               {header}
-              <div className="flex-1 overflow-y-auto overscroll-contain">{children}</div>
+              <div className="panel-scrollbar flex-1 overflow-y-auto overscroll-contain">{children}</div>
               {footer}
             </motion.div>
           </div>
@@ -123,7 +123,7 @@ export function ResponsivePanel({
           aria-label={ariaLabel}
         >
           {header}
-          <div className="flex-1 overflow-y-auto">{children}</div>
+          <div className="panel-scrollbar flex-1 overflow-y-auto">{children}</div>
           {footer}
         </motion.div>
       )}
