@@ -78,7 +78,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const pdfDataUrl = usePDFStore((s) => s.pdfDataUrl);
   const toggleSharePanel = usePDFStore((s) => s.toggleSharePanel);
-  const inSession = usePDFStore((s) => !!s.shareSession);
+  const showSharePanel = usePDFStore((s) => s.showSharePanel);
 
   useEffect(() => {
     setMobileOpen(false);
@@ -167,7 +167,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
                       collapsed && "justify-center px-2",
                       active && !item.action
                         ? "bg-emerald-500 text-white shadow-sm shadow-emerald-500/20"
-                        : item.action === "collaborate" && inSession
+                        : item.action === "collaborate" && showSharePanel
                           ? "bg-brand text-brand-fg shadow-sm shadow-brand/25"
                           : "text-muted-foreground hover:bg-sidebar-accent hover:text-foreground",
                     );
@@ -265,7 +265,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
           </Link>
         </header>
 
-        <main id="main-content" className={cn("flex-1 flex flex-col bg-canvas", pdfDataUrl ? "overflow-hidden" : "overflow-y-auto")}>
+        <main id="main-content" className={cn("flex-1 flex flex-col bg-canvas", pathname === "/dashboard" && pdfDataUrl ? "overflow-hidden" : "overflow-y-auto")}>
           {children}
         </main>
       </div>

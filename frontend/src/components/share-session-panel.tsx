@@ -1,6 +1,7 @@
 'use client'
 
 import { useCallback, useEffect, useState, type ReactNode } from 'react'
+import { useRouter, usePathname } from 'next/navigation'
 import {
   Users,
   Copy,
@@ -195,6 +196,8 @@ export function ShareSessionPanel() {
   } = usePDFStore()
 
   const { user } = useAuth()
+  const router = useRouter()
+  const pathname = usePathname()
   const [tab, setTab] = useState<'sessions' | 'session'>('sessions')
   const [sessionName, setSessionName] = useState('')
   const [inviteCode, setInviteCode] = useState('')
@@ -425,7 +428,10 @@ export function ShareSessionPanel() {
         if (pdf?.content) {
           setCurrentPage(1)
           setPdfFileName(pdf.fileName)
-          setTimeout(() => setPdfDataUrl(pdf.content), 50)
+          setPdfDataUrl(pdf.content)
+          if (pathname !== '/dashboard') {
+            router.push('/dashboard')
+          }
         }
       }
     } catch { /* ignore */ }
