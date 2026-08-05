@@ -41,6 +41,8 @@ import {
   Quote as QuoteIcon,
   MoreVertical,
   Menu,
+  Ruler,
+  Focus,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Progress } from '@/components/ui/progress'
@@ -57,6 +59,7 @@ import {
 
 import { WordConfirmTooltip } from '@/components/word-confirm-tooltip'
 import { SelectionContextMenu } from '@/components/selection-context-menu'
+import { ReaderLine } from '@/components/reader-line'
 
 // Set worker source
 if (typeof window !== 'undefined') {
@@ -176,6 +179,8 @@ export function PDFViewer() {
     focusMode,
     setFocusMode,
     setPdfDataUrl,
+    readerAidMode,
+    setReaderAidMode,
   } = usePDFStore()
 
   if (prevScaleRef.current === 0) prevScaleRef.current = scale
@@ -1021,6 +1026,13 @@ export function PDFViewer() {
   const zoomIn = useCallback(() => { setScale(Math.min(scale + 0.25, 3)) }, [scale, setScale])
   const zoomOut = useCallback(() => { setScale(Math.max(scale - 0.25, 0.5)) }, [scale, setScale])
 
+  // Cycle the reading aid: off -> line -> focus -> off
+  const cycleReaderAid = useCallback(() => {
+    const order: ['off', 'line', 'focus'] = ['off', 'line', 'focus']
+    const idx = order.indexOf(readerAidMode)
+    setReaderAidMode(order[(idx + 1) % order.length])
+  }, [readerAidMode, setReaderAidMode])
+
   // Keyboard shortcuts: Arrow keys for page navigation
   // 1=Select, 2=Highlight, 3=Pen, 4=Eraser, 5=Sticky note, Ctrl/Cmd+Z=Undo, Ctrl/Cmd+Shift+Z=Redo
   useEffect(() => {
@@ -1092,11 +1104,16 @@ export function PDFViewer() {
           e.preventDefault()
           setAnnotationMode('note')
           break
+        case 'l':
+        case 'L':
+          e.preventDefault()
+          cycleReaderAid()
+          break
       }
     }
     window.addEventListener('keydown', handler)
     return () => window.removeEventListener('keydown', handler)
-  }, [pdfDataUrl, setAnnotationMode, undo, redo, goToPrevPage, goToNextPage])
+  }, [pdfDataUrl, setAnnotationMode, undo, redo, goToPrevPage, goToNextPage, cycleReaderAid])
 
   // Clear selection when clicking outside the text layer
   const handleContainerClick = useCallback((e: React.MouseEvent) => {
@@ -1299,6 +1316,9 @@ export function PDFViewer() {
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={handleReadAloud} title="Read Aloud">
                     <Volume2 className="h-4 w-4" />
                   </Button>
+                  <Button variant={readerAidMode !== 'off' ? "secondary" : "ghost"} size="icon" className="h-8 w-8" onClick={cycleReaderAid} title={`Reading aid: ${readerAidMode} (L)`}>
+                    {readerAidMode === 'focus' ? <Focus className="h-4 w-4" /> : <Ruler className="h-4 w-4" />}
+                  </Button>
                   <Button variant={!!shareSession ? "secondary" : "ghost"} size="icon" className="h-8 w-8" onClick={toggleSharePanel} title={shareSession ? `Session: ${shareSession.name}` : "Collaborate"}>
                     <Users className="h-4 w-4" />
                   </Button>
@@ -1357,6 +1377,10 @@ export function PDFViewer() {
                       <DropdownMenuItem onClick={handleReadAloud}>
                         <Volume2 className="mr-2 h-4 w-4" />
                         <span>Read Aloud</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={cycleReaderAid}>
+                        {readerAidMode === 'focus' ? <Focus className="mr-2 h-4 w-4" /> : <Ruler className="mr-2 h-4 w-4" />}
+                        <span>Reading aid: {readerAidMode}</span>
                       </DropdownMenuItem>
                       <DropdownMenuItem onClick={toggleSharePanel}>
                         <Users className="mr-2 h-4 w-4" />
@@ -1431,6 +1455,7 @@ export function PDFViewer() {
 
       <div className={`relative flex-1 overflow-hidden transition-all duration-200 ${showToolbar && !focusMode ? 'pt-14' : 'pt-0'}`}>
         <AnnotationToolbar onClearAll={handleClearAllPageAnnotations} />
+        <ReaderLine containerRef={containerRef} />
 
         <div
           ref={containerRef}

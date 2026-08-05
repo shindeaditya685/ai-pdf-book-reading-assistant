@@ -17,6 +17,7 @@ const helpers = [
   { name: "Prism", gradient: "from-cyan-500 to-blue-600" },
   { name: "Nyxyara", gradient: "from-rose-500 to-pink-600" },
   { name: "Invincible", gradient: "from-indigo-500 to-violet-600" },
+  { name: "Mike", gradient: "from-teal-500 to-cyan-600" },
 ];
 
 const contributions = [

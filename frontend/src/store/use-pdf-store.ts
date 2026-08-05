@@ -709,6 +709,12 @@ interface PDFState {
   autoAddToList: boolean
   showReadingTimer: boolean
 
+  // Reading aid (focus aid): 'off' | 'line' | 'focus'
+  readerAidMode: 'off' | 'line' | 'focus'
+  readerAidHeight: number
+  readerAidColor: string
+  readerAidOpacity: number
+
   // Word List actions
   setWordLists: (lists: WordList[]) => void
   setSubscribedLists: (lists: WordList[]) => void
@@ -720,6 +726,12 @@ interface PDFState {
   setAutoFlashcard: (on: boolean) => void
   setAutoAddToList: (on: boolean) => void
   setShowReadingTimer: (show: boolean) => void
+
+  // Reading aid actions
+  setReaderAidMode: (mode: 'off' | 'line' | 'focus') => void
+  setReaderAidHeight: (height: number) => void
+  setReaderAidColor: (color: string) => void
+  setReaderAidOpacity: (opacity: number) => void
 
   // Flashcard actions
   setFlashcards: (flashcards: Flashcard[]) => void;
@@ -901,6 +913,25 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   autoFlashcard: typeof window !== 'undefined' ? localStorage.getItem('word-list-auto-flashcard') !== 'false' : true,
   autoAddToList: typeof window !== 'undefined' ? localStorage.getItem('word-list-auto-add') === 'true' : false,
   showReadingTimer: typeof window !== 'undefined' ? localStorage.getItem('show-reading-timer') !== 'false' : true,
+
+  readerAidMode: (() => {
+    if (typeof window === 'undefined') return 'off'
+    const stored = localStorage.getItem('reader-aid-mode')
+    if (stored === 'line' || stored === 'focus') return stored
+    if (localStorage.getItem('reader-line-enabled') === 'true') return 'line'
+    return 'off'
+  })(),
+  readerAidHeight: (() => {
+    if (typeof window === 'undefined') return 2
+    const v = parseInt(localStorage.getItem('reader-aid-height') ?? '')
+    return Number.isFinite(v) ? Math.min(200, Math.max(1, v)) : 2
+  })(),
+  readerAidColor: typeof window !== 'undefined' ? localStorage.getItem('reader-aid-color') || '#000000' : '#000000',
+  readerAidOpacity: (() => {
+    if (typeof window === 'undefined') return 0.4
+    const v = parseFloat(localStorage.getItem('reader-aid-opacity') ?? '')
+    return Number.isFinite(v) ? Math.min(1, Math.max(0.05, v)) : 0.4
+  })(),
 
   flashcards: [],
   showFlashcards: false,
@@ -1342,6 +1373,25 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   setShowReadingTimer: (show) => {
     if (typeof window !== 'undefined') localStorage.setItem('show-reading-timer', String(show))
     set({ showReadingTimer: show })
+  },
+
+  setReaderAidMode: (mode) => {
+    if (typeof window !== 'undefined') localStorage.setItem('reader-aid-mode', mode)
+    set({ readerAidMode: mode })
+  },
+  setReaderAidHeight: (height) => {
+    const clamped = Math.min(200, Math.max(1, Math.round(height)))
+    if (typeof window !== 'undefined') localStorage.setItem('reader-aid-height', String(clamped))
+    set({ readerAidHeight: clamped })
+  },
+  setReaderAidColor: (color) => {
+    if (typeof window !== 'undefined') localStorage.setItem('reader-aid-color', color)
+    set({ readerAidColor: color })
+  },
+  setReaderAidOpacity: (opacity) => {
+    const clamped = Math.min(1, Math.max(0.05, opacity))
+    if (typeof window !== 'undefined') localStorage.setItem('reader-aid-opacity', String(clamped))
+    set({ readerAidOpacity: clamped })
   },
 
   setFlashcards: (flashcards) => set({ flashcards }),

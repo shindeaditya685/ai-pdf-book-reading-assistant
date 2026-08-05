@@ -12,6 +12,8 @@ import {
   Sun,
   Moon,
   Check,
+  Ruler,
+  Focus,
 } from 'lucide-react'
 import {
   Select,
@@ -21,9 +23,11 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover'
+import { Slider } from '@/components/ui/slider'
 import { usePDFStore, LANGUAGE_LABELS, ACCENT_LABELS, type TranslationLanguage, type PronunciationAccent } from '@/store/use-pdf-store'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
+import { useState } from 'react'
 import type { ReactNode } from 'react'
 
 /* Exact shade values match the --brand of each accent class in globals.css.
@@ -39,6 +43,19 @@ const ACCENTS = [
   { value: 'cyan' as const, name: 'Cyan', hex: '#06b6d4' },
   { value: 'orange' as const, name: 'Orange', hex: '#f97316' },
   { value: 'pink' as const, name: 'Pink', hex: '#ec4899' },
+]
+
+const READER_AID_COLORS = [
+  '#000000',
+  '#ffffff',
+  '#10b981',
+  '#8b5cf6',
+  '#f59e0b',
+  '#f43f5e',
+  '#3b82f6',
+  '#06b6d4',
+  '#ec4899',
+  '#facc15',
 ]
 
 function SectionLabel({ children }: { children: ReactNode }) {
@@ -135,6 +152,14 @@ export function SettingsPanel() {
     defaultListId,
     showReadingTimer,
     setShowReadingTimer,
+    readerAidMode,
+    setReaderAidMode,
+    readerAidHeight,
+    setReaderAidHeight,
+    readerAidColor,
+    setReaderAidColor,
+    readerAidOpacity,
+    setReaderAidOpacity,
   } = usePDFStore()
 
   return (
@@ -226,6 +251,125 @@ export function SettingsPanel() {
               on={showReadingTimer}
               onChange={() => setShowReadingTimer(!showReadingTimer)}
             />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-3 rounded-xl border border-border/70 bg-background/60 px-3 py-2.5">
+                <div className="flex min-w-0 items-center gap-2.5">
+                  <span className="shrink-0 text-muted-foreground/70">
+                    <Ruler className="h-3.5 w-3.5" />
+                  </span>
+                  <div className="min-w-0">
+                    <span className="block text-xs font-medium text-foreground">Reading aid</span>
+                    <span className="mt-0.5 block truncate text-[10px] text-muted-foreground/70">
+                      Follows your cursor while you read
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Mode: off / line / focus */}
+              <div className="flex items-center gap-1 rounded-xl border border-border/70 bg-background/60 p-1">
+                {(['off', 'line', 'focus'] as const).map((m) => (
+                  <button
+                    key={m}
+                    type="button"
+                    onClick={() => setReaderAidMode(m)}
+                    className={cn(
+                      'flex h-8 flex-1 items-center justify-center gap-1.5 rounded-lg text-xs font-semibold capitalize transition-colors',
+                      readerAidMode === m
+                        ? 'bg-brand-soft text-brand'
+                        : 'text-muted-foreground hover:text-foreground'
+                    )}
+                  >
+                    {m === 'focus' ? <Focus className="h-3.5 w-3.5" /> : null}
+                    {m === 'line' ? <Ruler className="h-3.5 w-3.5" /> : null}
+                    {m}
+                  </button>
+                ))}
+              </div>
+
+              {readerAidMode !== 'off' && (
+                <div className="space-y-2.5 rounded-xl border border-border/70 bg-background/60 px-3 py-3">
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-xs font-medium text-foreground">Height</span>
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min={1}
+                        max={200}
+                        value={readerAidHeight}
+                        onChange={(e) => {
+                          const v = parseInt(e.target.value, 10)
+                          if (Number.isFinite(v) && v >= 1 && v <= 200) setReaderAidHeight(v)
+                        }}
+                        onBlur={(e) => {
+                          const v = parseInt(e.target.value, 10)
+                          setReaderAidHeight(Number.isFinite(v) ? v : 2)
+                        }}
+                        className="h-8 w-16 rounded-lg border border-border/60 bg-background/50 px-2 text-right font-mono text-xs text-foreground focus:border-brand/50 focus:outline-none focus:ring-1 focus:ring-brand/15"
+                        aria-label="Reading aid height in pixels"
+                      />
+                      <span className="font-mono text-[10px] text-muted-foreground/70">px</span>
+                    </div>
+                  </div>
+
+                  {/* Color */}
+                  <div>
+                    <span className="mb-1.5 block text-[10px] font-medium text-muted-foreground/80">Colour</span>
+                    <div className="grid grid-cols-5 gap-1.5" role="group" aria-label="Reading aid colour">
+                      {READER_AID_COLORS.map((hex) => {
+                        const isSelected = readerAidColor === hex
+                        return (
+                          <button
+                            key={hex}
+                            type="button"
+                            aria-pressed={isSelected}
+                            title={hex}
+                            aria-label={`Reading aid colour ${hex}`}
+                            onClick={() => setReaderAidColor(hex)}
+                            style={{
+                              backgroundColor: hex,
+                              boxShadow: isSelected
+                                ? `0 0 0 2px var(--popover), 0 0 0 4px ${hex}`
+                                : `inset 0 0 0 1px rgba(128,128,128,0.4)`,
+                            }}
+                            className={cn(
+                              'relative flex h-7 items-center justify-center rounded-lg transition-transform duration-150 ease-out hover:scale-110 motion-reduce:transition-none',
+                              !isSelected && 'opacity-85 hover:opacity-100'
+                            )}
+                          >
+                            {isSelected && (
+                              <Check
+                                className="h-3 w-3 drop-shadow-[0_1px_1px_rgba(0,0,0,0.6)]"
+                                style={{ color: hex === '#ffffff' ? '#000000' : '#ffffff' }}
+                              />
+                            )}
+                          </button>
+                        )
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Opacity */}
+                  <div className="space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <span className="text-[10px] font-medium text-muted-foreground/80">Opacity</span>
+                      <span className="font-mono text-[10px] tracking-wider text-muted-foreground/70">
+                        {Math.round(readerAidOpacity * 100)}%
+                      </span>
+                    </div>
+                    <Slider
+                      value={[readerAidOpacity]}
+                      min={0.05}
+                      max={1}
+                      step={0.05}
+                      onValueChange={([v]) => setReaderAidOpacity(v)}
+                      className="[&_[data-slot=slider-range]]:bg-brand"
+                      aria-label="Reading aid opacity"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* When you save a word */}
