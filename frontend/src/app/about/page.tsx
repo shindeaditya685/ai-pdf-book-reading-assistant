@@ -328,10 +328,22 @@ export default function AboutPage() {
                 Home
               </Link>
               <Link
+                href="/thanks"
+                className="transition-colors hover:text-foreground"
+              >
+                Thanks
+              </Link>
+              <Link
                 href="/terms"
                 className="transition-colors hover:text-foreground"
               >
                 Terms
+              </Link>
+              <Link
+                href="/privacy"
+                className="transition-colors hover:text-foreground"
+              >
+                Privacy
               </Link>
               <Link
                 href="/privacy"

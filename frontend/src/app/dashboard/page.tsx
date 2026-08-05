@@ -807,6 +807,25 @@ export default function DashboardPage() {
             <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">?</kbd>
             <span className="text-muted-foreground">This help</span>
           </div>
+          <div className="mt-3 border-t border-border/60 pt-3">
+            <p className="mb-2 font-mono text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">Annotations</p>
+            <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+              <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">1</kbd>
+              <span className="text-muted-foreground">Select</span>
+              <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">2</kbd>
+              <span className="text-muted-foreground">Highlight</span>
+              <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">3</kbd>
+              <span className="text-muted-foreground">Draw (pen)</span>
+              <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">4</kbd>
+              <span className="text-muted-foreground">Eraser</span>
+              <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">5</kbd>
+              <span className="text-muted-foreground">Sticky note</span>
+              <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">Ctrl+Z</kbd>
+              <span className="text-muted-foreground">Undo</span>
+              <kbd className="rounded border bg-muted px-2 py-0.5 text-xs font-mono">Ctrl+Shift+Z</kbd>
+              <span className="text-muted-foreground">Redo</span>
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </>

@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react'
 import Link from 'next/link'
-import { BookOpen, Sparkles, Brain, Users, Bookmark, Clock, Languages, Volume2, Search, Zap, BarChart3, GraduationCap, Globe, MessageSquare, Layers, SunMoon, ChevronRight, Heart, Cpu } from 'lucide-react'
+import { BookOpen, Sparkles, Brain, Users, Bookmark, Clock, Languages, Volume2, Search, Zap, BarChart3, GraduationCap, Globe, MessageSquare, Layers, SunMoon, ChevronRight, Heart, Cpu, List, Quote, Library } from 'lucide-react'
 import { motion, useInView } from 'framer-motion'
 import { LandingNav } from '@/components/landing-nav'
 import { AuthCTA } from '@/components/auth-cta'
@@ -148,6 +148,16 @@ const FEATURE_CATEGORIES = [
       { icon: BarChart3, title: 'Reading Analytics', desc: 'Track pages read, time spent, words looked up, and maintain your reading streak.' },
     ],
   },
+]
+
+/* ── What's New (recently added features) ── */
+const NEW_FEATURES = [
+  { icon: List, title: 'Word Lists', desc: 'Curate your own vocabulary lists, publish them publicly, subscribe to lists from other readers, and import words straight into flashcards.', gradient: 'from-emerald-500/20 to-teal-500/10', iconColor: 'text-emerald-400' },
+  { icon: Quote, title: 'Passages & Quote Cards', desc: 'Save favorite passages with personal notes, then turn them into beautiful shareable quote cards or export them as PNG images.', gradient: 'from-violet-500/20 to-purple-500/10', iconColor: 'text-violet-400' },
+  { icon: MessageSquare, title: 'Quote Chat', desc: 'Pick any saved passage and have an AI conversation about it — compare ideas, reflect, and explore deeper connections.', gradient: 'from-cyan-500/20 to-blue-500/10', iconColor: 'text-cyan-400' },
+  { icon: Library, title: 'Collections & Quizzes', desc: 'Group words into collections and study them with flashcards or AI-generated quizzes that adapt to your level.', gradient: 'from-amber-500/20 to-orange-500/10', iconColor: 'text-amber-400' },
+  { icon: GraduationCap, title: 'IELTS Prep', desc: 'A dedicated IELTS module with exam-style passages, targeted vocabulary, and AI-graded speaking and writing practice.', gradient: 'from-rose-500/20 to-pink-500/10', iconColor: 'text-rose-400' },
+  { icon: SunMoon, title: 'Focus & Reading Timer', desc: 'Distraction-free focus mode with a built-in reading timer so you can stay in the zone, session after session.', gradient: 'from-emerald-500/20 to-teal-500/10', iconColor: 'text-emerald-400' },
 ]
 
 /* ── How It Works Steps ── */
@@ -481,6 +491,53 @@ export default function LandingPage() {
         </section>
 
         {/* ═══════════════════════════════════════════
+            WHAT'S NEW — RECENTLY ADDED FEATURES
+        ═══════════════════════════════════════════ */}
+        <section className="relative border-b border-border/50 py-28 overflow-hidden">
+          <FloatingOrb className="-left-32 top-1/3" color="rgba(16,185,129,0.08)" size="320px" delay={1} />
+
+          <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <AnimatedSection className="mx-auto max-w-2xl text-center mb-16">
+              <span className="mb-4 inline-flex items-center gap-2 rounded-full border border-violet-500/20 bg-violet-500/10 px-4 py-1.5 text-xs font-semibold text-violet-600 dark:text-violet-400">
+                <Sparkles className="h-3.5 w-3.5" />
+                What's New
+              </span>
+              <h2 className="text-3xl font-bold tracking-tight text-foreground sm:text-4xl lg:text-5xl">
+                Fresh Features, Just Landed
+              </h2>
+              <p className="mt-4 text-base text-muted-foreground">
+                Recent additions to help you read, learn, and collaborate even better.
+              </p>
+            </AnimatedSection>
+
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+              {NEW_FEATURES.map(({ icon: Icon, title, desc, gradient, iconColor }, i) => (
+                <motion.div
+                  key={title}
+                  variants={fadeUp}
+                  initial="hidden"
+                  whileInView="visible"
+                  viewport={{ once: true, margin: '-30px' }}
+                  custom={i}
+                  className="group relative overflow-hidden rounded-xl border border-border/50 bg-background/60 p-6 shadow-sm transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md"
+                >
+                  <div className="flex items-start justify-between">
+                    <div className={`flex h-10 w-10 items-center justify-center rounded-xl bg-gradient-to-br ${gradient}`}>
+                      <Icon className={`h-4 w-4 ${iconColor}`} />
+                    </div>
+                    <span className="inline-flex items-center rounded-full bg-violet-500/10 px-2 py-0.5 text-[9px] font-bold uppercase tracking-wider text-violet-600 dark:text-violet-400">
+                      New
+                    </span>
+                  </div>
+                  <p className="mt-4 text-sm font-bold text-foreground">{title}</p>
+                  <p className="mt-1.5 text-xs leading-5 text-muted-foreground">{desc}</p>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ═══════════════════════════════════════════
             COLLABORATIVE SECTION
         ═══════════════════════════════════════════ */}
         <section className="relative border-b border-border/50 py-28 overflow-hidden">
@@ -698,8 +755,8 @@ export default function LandingPage() {
                 <ul className="space-y-2.5">
                   {[
                     { label: 'About', href: '/about' },
+                    { label: 'Thanks', href: '/thanks' },
                     { label: 'Profile', href: '/profile' },
-                    { label: 'Dashboard', href: '/dashboard' },
                     { label: 'Quotes', href: '/quotes' },
                   ].map(({ label, href }) => (
                     <li key={label}>
