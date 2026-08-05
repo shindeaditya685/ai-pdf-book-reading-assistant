@@ -26,6 +26,7 @@ import { usePDFStore } from '@/store/use-pdf-store'
 import { SettingsPanel } from '@/components/settings-panel'
 import { useShareSSE } from '@/hooks/useShareSSE'
 import { authFetch } from '@/lib/api'
+import { generateFirstPageCover } from '@/lib/pdf-cover'
 import { getActiveBook, getStoredBookPage, setActiveBook, setStoredBookPage } from '@/lib/reading-progress'
 import { useIsMobile } from '@/hooks/use-mobile'
 import {
@@ -160,10 +161,11 @@ export default function DashboardPage() {
         })
         if (!res.ok) { alert('Upload failed'); return }
         const data = await res.json()
-        sessionStorage.setItem('pdfmindai-pdf-data-' + data.pdf._id, dataUrl)
+        if (!data?.id) { alert('Upload failed'); return }
         setPdfDataUrl(dataUrl)
-        setPdfFileName(data.pdf.fileName)
-        window.history.replaceState({}, '', '/dashboard?open=' + encodeURIComponent(data.pdf.fileName))
+        setPdfFileName(file.name)
+        window.history.replaceState({}, '', '/dashboard?open=' + encodeURIComponent(file.name))
+        generateFirstPageCover(file.name, dataUrl).catch(() => {})
       }
       reader.readAsDataURL(file)
     } catch { alert('Upload failed') }

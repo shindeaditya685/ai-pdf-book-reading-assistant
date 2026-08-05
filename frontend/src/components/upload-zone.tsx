@@ -9,6 +9,7 @@ import { useAuth } from '@/context/auth-context'
 import { clearActiveBook, setActiveBook, setStoredBookPage, getStoredBookPage } from '@/lib/reading-progress'
 import { usePDFStore } from '@/store/use-pdf-store'
 import { authFetch } from '@/lib/api'
+import { generateFirstPageCover } from '@/lib/pdf-cover'
 import { toast } from '@/hooks/use-toast'
 
 type UploadZoneProps = {
@@ -133,28 +134,7 @@ export function UploadZone({ variant = 'header' }: UploadZoneProps) {
 
           // Generate cover thumbnail from first page
           try {
-            const pdfjsLib = await import('pdfjs-dist')
-            if (typeof window !== 'undefined' && !pdfjsLib.GlobalWorkerOptions.workerSrc) {
-              pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf-worker/pdf.worker.min.mjs'
-            }
-            const loadingTask = pdfjsLib.getDocument(dataUrl)
-            const pdf = await loadingTask.promise
-            const page = await pdf.getPage(1)
-            const scale = 0.3
-            const viewport = page.getViewport({ scale })
-            const canvas = document.createElement('canvas')
-            canvas.width = viewport.width
-            canvas.height = viewport.height
-            const ctx = canvas.getContext('2d')
-            if (ctx) {
-              await page.render({ canvasContext: ctx, viewport }).promise
-              const coverDataUrl = canvas.toDataURL('image/jpeg', 0.8)
-              await authFetch('/api/cover', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ fileName: file.name, coverImage: coverDataUrl }),
-              })
-            }
+            await generateFirstPageCover(file.name, dataUrl)
           } catch {
             // Cover generation is non-critical — silently continue
           }
