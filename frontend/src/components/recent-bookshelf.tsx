@@ -47,6 +47,42 @@ const SPINE_HIGHLIGHTS = [
   "#6ad0aa", // mint
 ];
 
+/* ── wood texture: procedural SVG turbulence (no external assets) ──
+   Warm antique-oak planks: base gradient + organic grain + plank seams + knots. */
+const WOOD_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="400" viewBox="0 0 1200 400">
+<defs>
+  <linearGradient id="base" x1="0" y1="0" x2="0" y2="1">
+    <stop offset="0" stop-color="#9a5f33"/>
+    <stop offset="0.45" stop-color="#7c4623"/>
+    <stop offset="1" stop-color="#4f2d13"/>
+  </linearGradient>
+  <radialGradient id="knot" cx="0.5" cy="0.5" r="0.5">
+    <stop offset="0" stop-color="#241407"/>
+    <stop offset="0.16" stop-color="#33200e"/>
+    <stop offset="0.32" stop-color="#5a3a1f"/>
+    <stop offset="0.5" stop-color="#8a5a30"/>
+    <stop offset="0.68" stop-color="#4a2d16"/>
+    <stop offset="0.82" stop-color="#7c4623"/>
+    <stop offset="1" stop-color="#7c4623" stop-opacity="0"/>
+  </radialGradient>
+  <filter id="grain" x="0" y="0" width="100%" height="100%">
+    <feTurbulence type="fractalNoise" baseFrequency="0.015 0.09" numOctaves="4" seed="13" result="n"/>
+    <feColorMatrix in="n" type="matrix" values="0.3 0 0 0 0  0.22 0 0 0 0  0.12 0 0 0 0  0 0 0 0.42 0"/>
+  </filter>
+</defs>
+<rect width="1200" height="400" fill="url(#base)"/>
+<rect width="1200" height="400" filter="url(#grain)"/>
+<line x1="300" y1="0" x2="300" y2="400" stroke="#241407" stroke-width="3"/>
+<line x1="302" y1="0" x2="302" y2="400" stroke="rgba(255,255,255,0.06)" stroke-width="1.5"/>
+<line x1="820" y1="0" x2="820" y2="400" stroke="#241407" stroke-width="3"/>
+<line x1="822" y1="0" x2="822" y2="400" stroke="rgba(255,255,255,0.06)" stroke-width="1.5"/>
+<circle cx="150" cy="120" r="28" fill="url(#knot)"/>
+<circle cx="150" cy="120" r="28" fill="none" stroke="#241407" stroke-width="2" opacity="0.45"/>
+<circle cx="985" cy="305" r="22" fill="url(#knot)"/>
+<circle cx="985" cy="305" r="22" fill="none" stroke="#241407" stroke-width="2" opacity="0.45"/>
+</svg>`;
+const WOOD_TEXTURE_URL = `url("data:image/svg+xml;charset=utf-8,${encodeURIComponent(WOOD_SVG)}")`;
+
 function hashColorIndex(name: string) {
   let hash = 0;
   for (let i = 0; i < name.length; i++) {
@@ -375,8 +411,15 @@ export function RecentBookshelf({
       <div
         className="rounded-2xl overflow-hidden"
         style={{
-          background: "linear-gradient(180deg, #141210 0%, #1a1714 40%, #0f0e0c 100%)",
-          boxShadow: "0 4px 30px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.03)",
+          backgroundColor: "#5a3a1f",
+          backgroundImage: [
+            WOOD_TEXTURE_URL,
+            "repeating-linear-gradient(90deg, transparent 0px, transparent 118px, rgba(0,0,0,0.28) 118px, rgba(0,0,0,0.28) 120px, rgba(255,255,255,0.04) 120px, rgba(255,255,255,0.04) 121px, transparent 121px, transparent 128px)",
+            "linear-gradient(180deg, rgba(0,0,0,0.5) 0%, rgba(0,0,0,0.08) 28%, rgba(0,0,0,0.42) 100%)",
+          ].join(", "),
+          backgroundSize: "auto, auto, 100% 100%",
+          backgroundBlendMode: "normal, multiply, multiply",
+          boxShadow: "0 4px 30px -10px rgba(0,0,0,0.5), inset 0 1px 0 rgba(255,255,255,0.06)",
         }}
       >
         {/* ── Header ── */}
