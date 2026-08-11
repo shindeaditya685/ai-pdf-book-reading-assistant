@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { GridFSBucket, ObjectId, type MongoClient, type Db } from 'mongodb'
 import { connectToDatabase } from '@/lib/db'
 import { getUserFromRequest } from '@/lib/auth'
+import { isStorageConfigured, putPdfObject, deleteStorageObject, pdfKey } from '@/lib/storage'
 
 const toPositiveInt = (value: unknown, fallback = 0) => {
   const parsed = Number(value)
@@ -98,6 +99,51 @@ export async function POST(request: Request) {
     const buffer = Buffer.from(base64, 'base64')
 
     const existing = await conn.db.collection('pdfs').findOne({ fileName, username: user.username })
+
+    // R2 configured → PDF binaries live in Cloudflare R2, Mongo only stores metadata.
+    if (isStorageConfigured()) {
+      const key = pdfKey(user.username, fileName)
+      await putPdfObject(key, buffer)
+
+      // Clean up any legacy GridFS object stored in Mongo for this book.
+      if (existing && (existing as any).gridFsId) {
+        const bucket = getGridFsBucket(conn)
+        if (bucket) {
+          await bucket.delete(new ObjectId((existing as any).gridFsId)).catch(() => {})
+        }
+      }
+
+      if (existing) {
+        const existingPageCount = toPositiveInt(existing.pageCount, 0)
+        const existingLastPage = Math.max(1, toPositiveInt(existing.lastPage, 1))
+        await conn.db.collection('pdfs').updateOne(
+          { _id: existing._id },
+          {
+            $set: {
+              r2Key: key,
+              size: buffer.length,
+              pageCount: Math.max(existingPageCount, safePageCount),
+              lastPage: Math.max(existingLastPage, safeLastPage),
+              updatedAt: new Date(),
+            },
+            $unset: { content: '', gridFsId: '' },
+          }
+        )
+        return NextResponse.json({ id: existing._id.toString(), success: true })
+      }
+
+      const result = await conn.db.collection('pdfs').insertOne({
+        fileName,
+        r2Key: key,
+        size: buffer.length,
+        pageCount: safePageCount,
+        lastPage: safeLastPage,
+        username: user.username,
+        createdAt: new Date(),
+        updatedAt: new Date(),
+      })
+      return NextResponse.json({ id: result.insertedId.toString(), success: true })
+    }
 
     // Delete old GridFS file if it exists (only if new storage will also use GridFS or we're cleaning up)
     if (existing) {
@@ -235,6 +281,11 @@ export async function DELETE(request: Request) {
 
     const doc = await conn.db.collection('pdfs').findOne({ fileName, username: user.username })
     if (!doc) return NextResponse.json({ success: false })
+
+    // Delete R2 object if present
+    if ((doc as any).r2Key) {
+      await deleteStorageObject((doc as any).r2Key)
+    }
 
     // Delete GridFS file if present
     if ((doc as any).gridFsId) {

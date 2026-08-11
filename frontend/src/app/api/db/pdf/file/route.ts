@@ -1,7 +1,9 @@
 import { NextResponse } from 'next/server'
 import { GridFSBucket, ObjectId } from 'mongodb'
+import { Readable } from 'stream'
 import { connectToDatabase } from '@/lib/db'
 import { getUserFromRequest } from '@/lib/auth'
+import { getPdfObject } from '@/lib/storage'
 
 export async function GET(request: Request) {
   const user = getUserFromRequest(request)
@@ -18,6 +20,19 @@ export async function GET(request: Request) {
     const pdf = await conn.db.collection('pdfs').findOne({ fileName, username: user.username })
     if (!pdf) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
+    const pdfHeaders = {
+      'Content-Type': 'application/pdf',
+      'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"`,
+    }
+
+    // R2 (PDF binaries stored in Cloudflare R2)
+    const r2Key = (pdf as any).r2Key as string | undefined
+    if (r2Key) {
+      const stream = await getPdfObject(r2Key)
+      const body = Readable.toWeb(stream) as unknown as ReadableStream
+      return new NextResponse(body, { headers: pdfHeaders })
+    }
+
     // GridFS (large files)
     const gridFsId = (pdf as any).gridFsId as string | undefined
     if (gridFsId) {
@@ -28,12 +43,7 @@ export async function GET(request: Request) {
         chunks.push(chunk as Buffer)
       }
       const buffer = Buffer.concat(chunks)
-      return new NextResponse(buffer, {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"`,
-        },
-      })
+      return new NextResponse(buffer, { headers: pdfHeaders })
     }
 
     // Base64 inline (small files + legacy)
@@ -41,12 +51,7 @@ export async function GET(request: Request) {
     if (content) {
       const base64 = content.includes('base64,') ? content.split('base64,')[1] : content
       const buffer = Buffer.from(base64, 'base64')
-      return new NextResponse(buffer, {
-        headers: {
-          'Content-Type': 'application/pdf',
-          'Content-Disposition': `inline; filename="${encodeURIComponent(fileName)}"`,
-        },
-      })
+      return new NextResponse(buffer, { headers: pdfHeaders })
     }
 
     return NextResponse.json({ error: 'File not found' }, { status: 404 })

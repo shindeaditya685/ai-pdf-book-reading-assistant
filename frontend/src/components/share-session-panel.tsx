@@ -425,10 +425,19 @@ export function ShareSessionPanel() {
       const res = await authFetch(`/api/db/pdf?sessionId=${encodeURIComponent(shareSession._id)}`)
       if (res.ok) {
         const pdf = await res.json()
-        if (pdf?.content) {
+        if (pdf?.fileName) {
           setCurrentPage(1)
           setPdfFileName(pdf.fileName)
-          setPdfDataUrl(pdf.content)
+          if (pdf?.content) {
+            setPdfDataUrl(pdf.content)
+          } else {
+            const fileRes = await authFetch(`/api/db/pdf/file?fileName=${encodeURIComponent(pdf.fileName)}`)
+            if (fileRes.ok) {
+              const blob = await fileRes.blob()
+              const objectUrl = URL.createObjectURL(blob)
+              setPdfDataUrl(objectUrl)
+            }
+          }
           if (pathname !== '/dashboard') {
             router.push('/dashboard')
           }
