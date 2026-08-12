@@ -1,5 +1,5 @@
 import { Upload } from '@aws-sdk/lib-storage'
-import { S3Client, GetObjectCommand, DeleteObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, GetObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from '@aws-sdk/client-s3'
 import { Readable } from 'stream'
 
 // S3-compatible object storage. Works with Supabase Storage (endpoint
@@ -68,4 +68,19 @@ export async function deleteStorageObject(key: string) {
   } catch {
     // Non-critical — object may not exist
   }
+}
+
+export async function listStorageKeys(): Promise<string[]> {
+  const keys: string[] = []
+  let token: string | undefined
+  do {
+    const res = await storageClient().send(
+      new ListObjectsV2Command({ Bucket: bucket, ContinuationToken: token, MaxKeys: 1000 })
+    )
+    for (const obj of res.Contents || []) {
+      if (obj.Key) keys.push(obj.Key)
+    }
+    token = res.NextContinuationToken
+  } while (token)
+  return keys
 }

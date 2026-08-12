@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight, Sparkles, Crown, FlaskConical, Rocket, MessageSquareQuote, Download, BarChart3, History, CheckCircle, XCircle, UserCog, UserMinus, UserPlus, LogOut, KeyRound, Megaphone, CheckCheck, Square, CheckSquare, Gift } from 'lucide-react'
+import { BookOpen, Users, FileText, Bookmark, Brain, Shield, ShieldCheck, ShieldOff, ArrowLeft, Search, Loader2, Trash2, ChevronLeft, ChevronRight, Sparkles, Crown, FlaskConical, Rocket, MessageSquareQuote, Download, BarChart3, History, CheckCircle, XCircle, UserCog, UserMinus, UserPlus, LogOut, KeyRound, Megaphone, CheckCheck, Square, CheckSquare, Gift, RefreshCw } from 'lucide-react'
 import { useAuth } from '@/context/auth-context'
 import { authFetch } from '@/lib/api'
 import { PLAN_LABELS, PLAN_DESCRIPTIONS, type AIPlan } from '@/lib/ai-plan'
@@ -177,6 +177,17 @@ export default function AdminPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkPlanDialog, setBulkPlanDialog] = useState<{ plan?: AIPlan } | null>(null)
 
+  // Object-storage reconcile state
+  const [storageInfo, setStorageInfo] = useState<{
+    totalObjects: number
+    totalDocs: number
+    orphanCount: number
+    orphans: { username: string; fileName: string }[]
+  } | null>(null)
+  const [storageBusy, setStorageBusy] = useState(false)
+  const [storageMsg, setStorageMsg] = useState('')
+  const [confirmCleanup, setConfirmCleanup] = useState(false)
+
   // Bulk plan change dialog state (reuses existing confirmAction pattern)
   const [bulkConfirmAction, setBulkConfirmAction] = useState<{
     plan: AIPlan
@@ -221,6 +232,42 @@ export default function AdminPage() {
     }
     load()
   }, [user, authLoading, router])
+
+  const loadStorageInfo = async () => {
+    setStorageBusy(true)
+    setStorageMsg('')
+    try {
+      const res = await authFetch('/api/admin/storage/reconcile')
+      if (!res.ok) { setStorageMsg('Failed to load storage info'); return }
+      setStorageInfo(await res.json())
+    } catch {
+      setStorageMsg('Failed to load storage info')
+    } finally {
+      setStorageBusy(false)
+    }
+  }
+
+  const runCleanup = async () => {
+    setStorageBusy(true)
+    setStorageMsg('')
+    try {
+      const res = await authFetch('/api/admin/storage/reconcile', { method: 'POST' })
+      if (!res.ok) { setStorageMsg('Cleanup failed'); return }
+      const data = await res.json()
+      setStorageMsg(`Deleted ${data.deleted} orphaned PDF record(s)`)
+      setConfirmCleanup(false)
+      setStorageInfo(null)
+      const statsRes = await authFetch('/api/admin/stats')
+      if (statsRes.ok) {
+        const d = await statsRes.json()
+        setStats(d.stats || null)
+      }
+    } catch {
+      setStorageMsg('Cleanup failed')
+    } finally {
+      setStorageBusy(false)
+    }
+  }
 
   const handleDeleteUser = async (userId: string) => {
     const res = await authFetch(`/api/admin/users/${userId}`, { method: 'DELETE' })
@@ -567,6 +614,92 @@ export default function AdminPage() {
             ))}
           </div>
         )}
+
+        {/* ── OBJECT STORAGE RECONCILE ── */}
+        <div className="mb-8 rounded-xl border bg-background/60 p-5 shadow-sm backdrop-blur-sm">
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              <h2 className="text-sm font-bold text-foreground">Object Storage</h2>
+              <span className="text-[10px] text-muted-foreground/60">Compare PDF metadata vs. actual storage</span>
+            </div>
+            <button
+              onClick={loadStorageInfo}
+              disabled={storageBusy}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-foreground px-3 py-1.5 text-xs font-semibold text-background transition-opacity hover:opacity-80 disabled:opacity-50"
+            >
+              <RefreshCw className={`h-3.5 w-3.5 ${storageBusy ? 'animate-spin' : ''}`} />
+              {storageBusy ? 'Scanning…' : 'Scan storage'}
+            </button>
+          </div>
+
+          {storageInfo && (
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <div className="rounded-lg border border-border/40 p-3">
+                <p className="text-2xl font-bold tabular-nums">{storageInfo.totalObjects}</p>
+                <p className="text-xs text-muted-foreground">Objects in storage</p>
+              </div>
+              <div className="rounded-lg border border-border/40 p-3">
+                <p className="text-2xl font-bold tabular-nums">{storageInfo.totalDocs}</p>
+                <p className="text-xs text-muted-foreground">PDF records (MongoDB)</p>
+              </div>
+              <div className={`rounded-lg border p-3 ${storageInfo.orphanCount > 0 ? 'border-red-500/40 bg-red-50 dark:bg-red-950/20' : 'border-border/40'}`}>
+                <p className="text-2xl font-bold tabular-nums">{storageInfo.orphanCount}</p>
+                <p className="text-xs text-muted-foreground">Orphans (no object in storage)</p>
+                {storageInfo.orphanCount > 0 && (
+                  <button
+                    onClick={() => setConfirmCleanup(true)}
+                    disabled={storageBusy}
+                    className="mt-2 inline-flex items-center gap-1 rounded-lg bg-red-600 px-2.5 py-1 text-xs font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+                  >
+                    <Trash2 className="h-3 w-3" /> Delete orphan records
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+          {storageInfo && storageInfo.orphanCount > 0 && (
+            <details className="mt-3 text-xs text-muted-foreground">
+              <summary className="cursor-pointer font-medium">{storageInfo.orphans.length} orphaned record(s)</summary>
+              <ul className="mt-2 max-h-40 space-y-1 overflow-auto">
+                {storageInfo.orphans.map((o, i) => (
+                  <li key={i} className="truncate">
+                    <span className="font-medium text-foreground">{o.fileName}</span>
+                    <span className="text-muted-foreground/60"> ({o.username})</span>
+                  </li>
+                ))}
+              </ul>
+            </details>
+          )}
+          {storageMsg && <p className="mt-3 text-xs text-muted-foreground">{storageMsg}</p>}
+
+          {confirmCleanup && (
+            <div className="mt-4 rounded-lg border border-red-500/40 bg-red-50 p-4 dark:bg-red-950/20">
+              <p className="text-sm font-semibold text-foreground">Delete {storageInfo?.orphanCount} orphaned PDF record(s)?</p>
+              <p className="mt-1 text-xs text-muted-foreground">
+                This removes the MongoDB metadata for books whose files were deleted from object storage directly. It does not affect any
+                files still in storage.
+              </p>
+              <div className="mt-3 flex gap-2">
+                <button
+                  onClick={runCleanup}
+                  disabled={storageBusy}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-opacity hover:opacity-80 disabled:opacity-50"
+                >
+                  {storageBusy ? <Loader2 className="h-3 w-3 animate-spin" /> : <Trash2 className="h-3 w-3" />}
+                  Yes, delete
+                </button>
+                <button
+                  onClick={() => setConfirmCleanup(false)}
+                  disabled={storageBusy}
+                  className="rounded-lg border px-3 py-1.5 text-xs font-semibold text-foreground transition-opacity hover:opacity-80"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          )}
+        </div>
 
         {/* ── ANALYTICS CHARTS ── */}
         {analytics && (
