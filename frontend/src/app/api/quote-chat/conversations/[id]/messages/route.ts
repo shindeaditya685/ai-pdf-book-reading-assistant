@@ -218,7 +218,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           try {
             const completion = await client.chat.completions.create({
               messages,
-              model: 'llama-3.3-70b-versatile',
+              model: 'openai/gpt-oss-120b',
               temperature: 0.6,
             })
             content = completion.choices?.[0]?.message?.content || ''
@@ -240,7 +240,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
           )
         }
         try {
-          const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+          const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' })
           // Gemini doesn't take a system role in the same way; merge into first user turn.
           const mergedMessages = messages[0].role === 'system'
             ? [{ role: 'user' as const, content: `${messages[0].content}\n\n---\n\n${messages[1]?.content || ''}` }, ...messages.slice(2)]

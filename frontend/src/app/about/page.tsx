@@ -23,7 +23,7 @@ const techStack = [
   {
     icon: Sparkles,
     label: "Groq AI",
-    desc: "Primary AI provider (llama-3.3-70b)",
+    desc: "Primary AI provider (gpt-oss-120b)",
   },
   { icon: Globe, label: "Gemini AI", desc: "Fallback AI provider" },
   { icon: Volume2, label: "Web Speech API", desc: "Text-to-speech engine" },

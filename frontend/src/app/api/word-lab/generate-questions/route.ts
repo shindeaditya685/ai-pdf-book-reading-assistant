@@ -87,7 +87,7 @@ Return ONLY valid JSON in this exact format with no other text:
         try {
           const completion = await client.chat.completions.create({
             messages: [{ role: 'user', content: prompt }],
-            model: 'llama-3.3-70b-versatile',
+            model: 'openai/gpt-oss-120b',
             temperature: 0.4,
           })
           content = completion.choices?.[0]?.message?.content || ''
@@ -103,7 +103,7 @@ Return ONLY valid JSON in this exact format with no other text:
         if (!process.env.GEMINI_API_KEY || process.env.GEMINI_API_KEY === 'your_gemini_api_key_here') {
           return NextResponse.json({ error: 'No AI service available' }, { status: 500 })
         }
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' })
         const result = await model.generateContent(prompt)
         content = result.response.text()
       } catch (e) {

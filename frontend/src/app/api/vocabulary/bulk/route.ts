@@ -115,7 +115,7 @@ async function callAi(prompt: string): Promise<string> {
       try {
         const completion = await client.chat.completions.create({
           messages: [{ role: 'user', content: prompt }],
-          model: 'llama-3.3-70b-versatile',
+          model: 'openai/gpt-oss-120b',
           temperature: 0.3,
         })
         const content = completion.choices?.[0]?.message?.content || ''
@@ -133,7 +133,7 @@ async function callAi(prompt: string): Promise<string> {
   }
 
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' })
     const result = await model.generateContent(prompt)
     const content = result.response.text()
     if (content) return content

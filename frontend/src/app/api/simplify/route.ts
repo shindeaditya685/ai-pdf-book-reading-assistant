@@ -117,7 +117,7 @@ export async function POST(req: NextRequest) {
           try {
             const completion = await client.chat.completions.create({
               messages: [{ role: 'user', content: prompt }],
-              model: 'llama-3.3-70b-versatile',
+              model: 'openai/gpt-oss-120b',
               temperature: 0.3,
             })
             content = completion.choices?.[0]?.message?.content || ''
@@ -146,7 +146,7 @@ export async function POST(req: NextRequest) {
       }
 
       try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-3.6-flash' })
         const genResult = await model.generateContent(prompt)
         const content = genResult.response.text()
         if (content) {
