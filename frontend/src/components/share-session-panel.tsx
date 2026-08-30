@@ -431,7 +431,7 @@ export function ShareSessionPanel() {
           if (pdf?.content) {
             setPdfDataUrl(pdf.content)
           } else {
-            const fileRes = await authFetch(`/api/db/pdf/file?fileName=${encodeURIComponent(pdf.fileName)}`)
+            const fileRes = await authFetch(`/api/db/pdf/file?fileName=${encodeURIComponent(pdf.fileName)}&sessionId=${encodeURIComponent(shareSession._id)}`)
             if (fileRes.ok) {
               const blob = await fileRes.blob()
               const objectUrl = URL.createObjectURL(blob)

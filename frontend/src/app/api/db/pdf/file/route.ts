@@ -11,13 +11,23 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url)
   const fileName = searchParams.get('fileName')
+  const sessionId = searchParams.get('sessionId')
   if (!fileName) return NextResponse.json({ error: 'fileName required' }, { status: 400 })
 
   const conn = await connectToDatabase()
   if (!conn) return NextResponse.json({ error: 'DB unavailable' }, { status: 500 })
 
   try {
-    const pdf = await conn.db.collection('pdfs').findOne({ fileName, username: user.username })
+    let pdf
+    if (sessionId) {
+      const session = await conn.db.collection('shareSessions').findOne({ _id: new ObjectId(sessionId) })
+      if (!session || !session.members.some((m: any) => m.username === user.username)) {
+        return NextResponse.json({ error: 'Not a session member' }, { status: 403 })
+      }
+      pdf = await conn.db.collection('pdfs').findOne({ fileName })
+    } else {
+      pdf = await conn.db.collection('pdfs').findOne({ fileName, username: user.username })
+    }
     if (!pdf) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
     const pdfHeaders = {
