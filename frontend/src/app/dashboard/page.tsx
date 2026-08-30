@@ -15,6 +15,7 @@ import { ReadingTimer } from '@/components/reading-timer'
 import { BookmarksPanel } from '@/components/bookmarks-panel'
 import { FlashcardReview } from '@/components/flashcard-review'
 import { ReadingAnalytics } from '@/components/reading-analytics'
+import { PageNotesPanel } from '@/components/page-notes-panel'
 import { RecentBookshelf } from '@/components/recent-bookshelf'
 import { ReadingStatsRow } from '@/components/reading-stats-row'
 import { ReadingChallenge } from '@/components/reading-challenge'
@@ -618,6 +619,7 @@ export default function DashboardPage() {
             <QuotesPanel />
             <FlashcardReview />
             <ReadingAnalytics />
+            <PageNotesPanel />
             <QuestionGeneratorPanel />
             <SummarizerPanel />
           </div>

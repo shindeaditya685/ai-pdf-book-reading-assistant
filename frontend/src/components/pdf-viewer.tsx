@@ -32,6 +32,7 @@ import {
   Bookmark,
   Clock,
   Brain,
+  StickyNote,
   Users,
   HelpCircle,
   Sparkles,
@@ -150,6 +151,7 @@ export function PDFViewer() {
     toggleBookmarks,
     toggleQuotes,
     toggleFlashcards,
+    togglePageNotes,
     toggleReadingStats,
     toggleSharePanel,
     showQuestionGenerator,
@@ -1340,6 +1342,9 @@ export function PDFViewer() {
                   <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleFlashcards} title="Flashcards (G)">
                     <Brain className="h-4 w-4" />
                   </Button>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" onClick={togglePageNotes} title="Page Notes">
+                    <StickyNote className="h-4 w-4" />
+                  </Button>
 
                   <div className="h-4 w-px bg-border mx-1" />
 
@@ -1402,6 +1407,10 @@ export function PDFViewer() {
                       <DropdownMenuItem onClick={toggleFlashcards}>
                         <Brain className="mr-2 h-4 w-4" />
                         <span>Flashcards</span>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={togglePageNotes}>
+                        <StickyNote className="mr-2 h-4 w-4" />
+                        <span>Page Notes</span>
                       </DropdownMenuItem>
                       <DropdownMenuSeparator />
                       <DropdownMenuItem 

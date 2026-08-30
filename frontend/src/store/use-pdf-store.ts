@@ -258,6 +258,16 @@ export interface Bookmark {
   example?: string;
 }
 
+export interface PageNote {
+  _id?: string;
+  id?: string;
+  pageNumber: number;
+  content: string;
+  pdfFileName: string;
+  timestamp: number;
+  updatedAt: number;
+}
+
 export interface Annotation {
   id: string;
   pdfFileName: string;
@@ -475,6 +485,10 @@ interface PDFState {
   // Bookmarks
   bookmarks: Bookmark[];
 
+  // Page Notes
+  pageNotes: PageNote[];
+  showPageNotes: boolean;
+
   // Saved Quotes
   quotes: Quote[];
   showQuotes: boolean;
@@ -618,6 +632,14 @@ interface PDFState {
   addBookmark: (bookmark: Bookmark) => void;
   removeBookmark: (id: string) => void;
   isPageBookmarked: (page: number) => boolean;
+
+  // Page Notes actions
+  setPageNotes: (notes: PageNote[]) => void;
+  addPageNote: (note: PageNote) => void;
+  updatePageNote: (id: string, content: string) => void;
+  removePageNote: (id: string) => void;
+  setShowPageNotes: (show: boolean) => void;
+  togglePageNotes: () => void;
 
   // Quote actions
   setQuotes: (quotes: Quote[]) => void;
@@ -889,6 +911,8 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
 
   wordHistory: [],
   bookmarks: [],
+  pageNotes: [],
+  showPageNotes: false,
   quotes: [],
   showQuotes: false,
   quoteConversations: [],
@@ -1136,6 +1160,32 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
   isPageBookmarked: (page) =>
     get().bookmarks.some((b) => b.pageNumber === page),
 
+  setPageNotes: (pageNotes) => set({ pageNotes }),
+  addPageNote: (note) => set((s) => ({ pageNotes: [note, ...s.pageNotes] })),
+  updatePageNote: (id, content) =>
+    set((s) => ({
+      pageNotes: s.pageNotes.map((n) => ((n._id || n.id) === id ? { ...n, content, updatedAt: Date.now() } : n)),
+    })),
+  removePageNote: (id) =>
+    set((s) => ({
+      pageNotes: s.pageNotes.filter((n) => (n._id || n.id) !== id),
+    })),
+  setShowPageNotes: (show) => set({ showPageNotes: show }),
+  togglePageNotes: () =>
+    set((s) => ({
+      showPageNotes: !s.showPageNotes,
+      showHistory: false,
+      showBookmarks: false,
+      showSearch: false,
+      showQuestionGenerator: false,
+      showSummarizer: false,
+      showFlashcards: false,
+      showSharePanel: false,
+      showReadingStats: false,
+      showQuotes: false,
+      showWordLists: false,
+    })),
+
   setQuotes: (quotes) => set({ quotes }),
   addQuote: (quote) => set((s) => ({ quotes: [quote, ...s.quotes] })),
   updateQuote: (id, patch) =>
@@ -1159,6 +1209,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showSharePanel: false,
       showReadingStats: false,
       showWordLists: false,
+      showPageNotes: false,
     })),
   removeQuotesForFile: (pdfFileName) =>
     set((s) => ({
@@ -1236,6 +1287,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showReadingStats: false,
       showQuotes: false,
       showWordLists: false,
+      showPageNotes: false,
     })),
   setShowBookmarks: (show) => set({ showBookmarks: show }),
   toggleBookmarks: () =>
@@ -1250,6 +1302,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showReadingStats: false,
       showQuotes: false,
       showWordLists: false,
+      showPageNotes: false,
     })),
   setShowSearch: (show) => set({ showSearch: show }),
   toggleSearch: () =>
@@ -1264,6 +1317,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showReadingStats: false,
       showQuotes: false,
       showWordLists: false,
+      showPageNotes: false,
     })),
   setShowQuestionGenerator: (show) => set({ showQuestionGenerator: show }),
   toggleQuestionGenerator: () =>
@@ -1276,6 +1330,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showReadingStats: false,
       showFlashcards: false,
       showWordLists: false,
+      showPageNotes: false,
     })),
   setShowSummarizer: (show) => set({ showSummarizer: show }),
   toggleSummarizer: () =>
@@ -1288,6 +1343,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showReadingStats: false,
       showFlashcards: false,
       showWordLists: false,
+      showPageNotes: false,
     })),
 
   generateSummaryStart: () =>
@@ -1334,6 +1390,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showSharePanel: false,
       showQuotes: false,
       showWordLists: false,
+      showPageNotes: false,
     })),
   setShowReadingAnalytics: (show) => set({ showReadingAnalytics: show }),
 
@@ -1353,6 +1410,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showSharePanel: false,
       showReadingStats: false,
       showQuotes: false,
+      showPageNotes: false,
     })),
   setWordListsLoading: (loading) => set({ wordListsLoading: loading }),
   setDefaultListId: (id) => {
@@ -1429,6 +1487,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showReadingStats: false,
       showQuotes: false,
       showWordLists: false,
+      showPageNotes: false,
     })),
 
   setFocusMode: (mode) => set({ focusMode: mode }),
@@ -1447,6 +1506,7 @@ export const usePDFStore = create<PDFState>()((set, get) => ({
       showReadingStats: false,
       showQuotes: false,
       showWordLists: false,
+      showPageNotes: false,
     })),
   setShareSession: (session) => set({ shareSession: session }),
   setSharedAnnotations: (annotations) =>
