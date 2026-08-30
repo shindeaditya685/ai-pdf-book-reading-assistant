@@ -118,6 +118,8 @@ export default function DashboardPage() {
   const username = user?.username
   const [recentLoading, setRecentLoading] = useState<string | null>(null)
   const [recentPdfsLoading, setRecentPdfsLoading] = useState(true)
+  const [isUploading, setIsUploading] = useState(false)
+  const [uploadProgress, setUploadProgress] = useState(0)
   const [resumeBook, setResumeBook] = useState<{
     fileName: string
     lastPage: number
@@ -150,25 +152,72 @@ export default function DashboardPage() {
     if (file.size > 50 * 1024 * 1024) { alert('File too large (max 50MB)'); return }
     if (file.type !== 'application/pdf') { alert('Please upload a PDF file'); return }
 
+    setIsUploading(true)
+    setUploadProgress(0)
     try {
-      const reader = new FileReader()
-      reader.onload = async () => {
-        const dataUrl = reader.result as string
-        const res = await authFetch('/api/db/pdf', {
-          method: 'POST',
-          headers: { 'content-type': 'application/json' },
-          body: JSON.stringify({ fileName: file.name, content: dataUrl, size: file.size }),
-        })
-        if (!res.ok) { alert('Upload failed'); return }
-        const data = await res.json()
-        if (!data?.id) { alert('Upload failed'); return }
-        setPdfDataUrl(dataUrl)
-        setPdfFileName(file.name)
-        window.history.replaceState({}, '', '/dashboard?open=' + encodeURIComponent(file.name))
-        generateFirstPageCover(file.name, dataUrl).catch(() => {})
-      }
-      reader.readAsDataURL(file)
-    } catch { alert('Upload failed') }
+      const token = typeof window !== 'undefined' ? localStorage.getItem('auth-token') : null
+      const dataUrl = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(Math.round((e.loaded / e.total) * 30))
+          }
+        }
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = reject
+        reader.readAsDataURL(file)
+      })
+
+      setUploadProgress(30)
+
+      let existingLastPage = 0
+      let existingPageCount = 0
+      try {
+        const existingRes = await authFetch(`/api/db/pdf?fileName=${encodeURIComponent(file.name)}`)
+        if (existingRes.ok) {
+          const existingPdf = await existingRes.json()
+          existingLastPage = Number(existingPdf?.lastPage) || 0
+          existingPageCount = Number(existingPdf?.pageCount) || 0
+        }
+      } catch {}
+
+      const payload = JSON.stringify({ fileName: file.name, content: dataUrl, size: file.size, pageCount: existingPageCount, lastPage: existingLastPage })
+
+      const data = await new Promise<any>((resolve, reject) => {
+        const xhr = new XMLHttpRequest()
+        xhr.open('POST', '/api/db/pdf')
+        xhr.setRequestHeader('content-type', 'application/json')
+        if (token) xhr.setRequestHeader('Authorization', `Bearer ${token}`)
+
+        xhr.upload.onprogress = (e) => {
+          if (e.lengthComputable) {
+            setUploadProgress(30 + Math.round((e.loaded / e.total) * 65))
+          }
+        }
+
+        xhr.onload = () => {
+          if (xhr.status >= 200 && xhr.status < 300) {
+            try { resolve(JSON.parse(xhr.responseText)) } catch { reject(new Error('Invalid JSON')) }
+          } else { reject(new Error(`Upload failed (${xhr.status})`)) }
+        }
+        xhr.onerror = () => reject(new Error('Network error'))
+        xhr.send(payload)
+      })
+
+      setUploadProgress(100)
+
+      if (!data?.id) { alert('Upload failed'); return }
+      setPdfDataUrl(dataUrl)
+      setPdfFileName(file.name)
+      window.history.replaceState({}, '', '/dashboard?open=' + encodeURIComponent(file.name))
+      generateFirstPageCover(file.name, dataUrl).catch(() => {})
+    } catch (err) {
+      console.error('Upload failed:', err)
+      alert('Upload failed')
+    } finally {
+      setIsUploading(false)
+      setUploadProgress(0)
+    }
   }
 
   const dismissAnnouncement = (id: string) => {
@@ -710,8 +759,9 @@ export default function DashboardPage() {
               <div className="lg:col-span-2 space-y-6">
                 {/* Upload zone */}
                 <div 
-                  className="group relative overflow-hidden rounded-2xl border border-dashed border-border/60 bg-gradient-to-br from-card/60 via-card/40 to-brand/5 p-8 lg:p-12 text-center hover:border-brand/40 hover:bg-muted/10 transition-all duration-300 shadow-sm hover:shadow-md cursor-pointer"
+                  className={`group relative overflow-hidden rounded-2xl border border-dashed border-border/60 bg-gradient-to-br from-card/60 via-card/40 to-brand/5 p-8 lg:p-12 text-center transition-all duration-300 shadow-sm hover:shadow-md ${isUploading ? 'cursor-wait' : 'hover:border-brand/40 hover:bg-muted/10 cursor-pointer'}`}
                   onClick={() => {
+                    if (isUploading) return
                     const input = document.createElement('input')
                     input.type = 'file'
                     input.accept = 'application/pdf'
@@ -723,10 +773,28 @@ export default function DashboardPage() {
                   }}
                   role="button"
                   tabIndex={0}
-                  onKeyDown={(e) => e.key === 'Enter' && (e.target as HTMLElement).click()}
+                  onKeyDown={(e) => e.key === 'Enter' && !isUploading && (e.target as HTMLElement).click()}
                 >
                   {/* Subtle hover gradient background */}
                   <div className="absolute inset-0 bg-gradient-to-tr from-brand/0 to-brand/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                  {/* Uploading overlay */}
+                  {isUploading && (
+                    <div className="absolute inset-0 z-10 flex items-center justify-center bg-background/80 backdrop-blur-sm">
+                      <div className="flex flex-col items-center gap-3">
+                        <div className="relative h-14 w-14">
+                          <svg className="h-14 w-14 -rotate-90" viewBox="0 0 56 56">
+                            <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" strokeWidth="4" className="text-muted-foreground/15" />
+                            <circle cx="28" cy="28" r="24" fill="none" stroke="currentColor" strokeWidth="4" strokeLinecap="round" className="text-emerald-500 transition-all duration-300" strokeDasharray={`${(uploadProgress / 100) * 150.8} 150.8`} />
+                          </svg>
+                          <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-foreground">{uploadProgress}%</span>
+                        </div>
+                        <p className="text-sm font-medium text-foreground">
+                          {uploadProgress < 30 ? 'Reading file...' : uploadProgress < 95 ? 'Uploading to server...' : 'Saving...'}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   
                   <div className="relative flex flex-col items-center">
                     <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-soft text-brand mb-4 group-hover:scale-105 group-hover:rotate-2 transition-transform duration-300 shadow-sm border border-brand/10">
